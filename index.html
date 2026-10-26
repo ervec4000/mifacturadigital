@@ -56,11 +56,6 @@
     </footer>
 
     <script>
-        // Inicialización del cliente Supabase
-        const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
-        const SUPABASE_ANON_KEY = sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji; 
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
         // Cálculo inicial al cargar la página
         window.onload = function() {
             calcularImpuestos();
@@ -83,6 +78,11 @@
 
         async function emitirFactura() {
             try {
+                // Credenciales y cliente inicializados de forma segura dentro de la acción
+                const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
+                const SUPABASE_ANON_KEY = sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji; 
+                const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
                 const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
                 const usd = parseFloat(document.getElementById('montoUsd').value) || 0;
 
