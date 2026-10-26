@@ -45,7 +45,7 @@
                 </div>
             </div>
 
-            <button onclick="emitirFactura()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-lg shadow-emerald-900/20">
+            <button onclick="emitirFactura()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-lg shadow-emerald-900/20 cursor-pointer">
                 Emitir Factura Digital
             </button>
         </div>
@@ -56,9 +56,15 @@
     </footer>
 
     <script>
+        // Inicialización del cliente Supabase
         const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
         const SUPABASE_ANON_KEY = sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji; 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Cálculo inicial al cargar la página
+        window.onload = function() {
+            calcularImpuestos();
+        };
 
         function calcularImpuestos() {
             const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
@@ -76,44 +82,47 @@
         }
 
         async function emitirFactura() {
-            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
-            const usd = parseFloat(document.getElementById('montoUsd').value) || 0;
+            try {
+                const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
+                const usd = parseFloat(document.getElementById('montoUsd').value) || 0;
 
-            if (usd <= 0) {
-                alert('Por favor ingrese un monto válido en divisas.');
-                return;
-            }
+                if (usd <= 0) {
+                    alert('Por favor ingrese un monto válido en divisas.');
+                    return;
+                }
 
-            const subtotalBs = usd * tasa;
-            const ivaBs = subtotalBs * 0.16;
-            const igtfBs = subtotalBs * 0.03;
-            const totalBs = subtotalBs + ivaBs + igtfBs;
+                const subtotalBs = usd * tasa;
+                const ivaBs = subtotalBs * 0.16;
+                const igtfBs = subtotalBs * 0.03;
+                const totalBs = subtotalBs + ivaBs + igtfBs;
 
-            // Nota: si tu tabla de facturas quedó traducida en Supabase, ajusta el nombre aquí abajo (ej. 'invoices' o 'facturas')
-            const { data, error } = await supabaseClient
-                .from('invoices')
-                .insert([
-                    {
-                        tenant_id: 'a0ee93d8-1111-2222-3333-444455556666',
-                        factura_nro: 'FAC-' + Math.floor(1000 + Math.random() * 9000),
-                        nro_control: '00-' + Math.floor(100000 + Math.random() * 900000),
-                        tasa_bcv: tasa,
-                        monto_usd: usd,
-                        subtotal_bs: subtotalBs,
-                        iva_bs: ivaBs,
-                        igtf_bs: igtfBs,
-                        total_bs: totalBs,
-                        metodo_pago: 'DIVISAS / EFECTIVO'
-                    }
-                ]);
+                // Inserción en la tabla de Supabase
+                const { data, error } = await supabaseClient
+                    .from('invoices')
+                    .insert([
+                        {
+                            tenant_id: 'a0ee93d8-1111-2222-3333-444455556666',
+                            factura_nro: 'FAC-' + Math.floor(1000 + Math.random() * 9000),
+                            nro_control: '00-' + Math.floor(100000 + Math.random() * 900000),
+                            tasa_bcv: tasa,
+                            monto_usd: usd,
+                            subtotal_bs: subtotalBs,
+                            iva_bs: ivaBs,
+                            igtf_bs: igtfBs,
+                            total_bs: totalBs,
+                            metodo_pago: 'DIVISAS / EFECTIVO'
+                        }
+                    ]);
 
-            if (error) {
-                console.error('Error al guardar en Supabase:', error);
-                alert('Error al emitir: ' + error.message);
-            } else {
-                alert('¡Factura emitida y guardada en Supabase correctamente!');
-                document.getElementById('montoUsd').value = '';
-                calcularImpuestos();
+                if (error) {
+                    alert('Error al guardar en Supabase: ' + error.message);
+                } else {
+                    alert('¡Factura emitida y guardada en Supabase con éxito!');
+                    document.getElementById('montoUsd').value = '';
+                    calcularImpuestos();
+                }
+            } catch (err) {
+                alert('Excepción crítica capturada: ' + err.message);
             }
         }
     </script>
