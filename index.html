@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiFacturaDigital.com.ve - POS, Arqueo, Reporte Z, Notas de Crédito y Débito</title>
+    <title>MiFacturaDigital.com.ve - POS, Arqueo, Reporte Z, Notas y Libro de Ventas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -53,7 +53,7 @@
                 Historial Comprobantes
             </button>
             <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                📊 Reporte Z y Arqueo
+                📊 Reporte Z y Libro de Ventas
             </button>
             <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 📦 Materiales / Stock
@@ -190,15 +190,18 @@
             </div>
         </div>
 
-        <!-- SECCIÓN 3: REPORTE Z Y ARQUEO DE CAJA -->
+        <!-- SECCIÓN 3: REPORTE Z, ARQUEO Y LIBRO DE VENTAS -->
         <div id="seccionCierrez" class="hidden space-y-6">
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
-                <div class="flex justify-between items-center">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                     <div>
-                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📊 Reporte Z y Arqueo de Caja Diario</h3>
-                        <p class="text-xs text-slate-400">Consolidado fiscal y desglose por canal de pago de la jornada</p>
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📊 Reporte Z, Arqueo y Libro de Ventas</h3>
+                        <p class="text-xs text-slate-400">Consolidado fiscal diario y exportación contable para el SENIAT</p>
                     </div>
-                    <button onclick="generarReporteZ()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer">🔄 Calcular Cierre</button>
+                    <div class="flex gap-2">
+                        <button onclick="generarReporteZ()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-2 rounded-lg font-semibold cursor-pointer">🔄 Recalcular</button>
+                        <button onclick="exportarLibroVentasCSV()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer shadow-lg shadow-sky-900/20">📥 Descargar Libro de Ventas (CSV)</button>
+                    </div>
                 </div>
 
                 <div id="resultadoReporteZ" class="space-y-4 border-t border-slate-700 pt-4 font-mono text-xs">
@@ -1127,6 +1130,52 @@
             document.getElementById('zTotalVentas').innerText = 'Bs. ' + totalVentas.toLocaleString('es-VE', {minimumFractionDigits: 2});
         }
 
+        // --- EXPORTAR LIBRO DE VENTAS EN CSV (EXCEL) ---
+        async function exportarLibroVentasCSV() {
+            if (!supabaseClient || !tenantActual) return;
+
+            const { data: facturas } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
+            const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
+            const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
+
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // UTF-8 BOM para Excel
+            csvContent += "Fecha,Tipo Documento,Nro Documento,Nro Control,RIF Cliente,Razon Social,Metodo Pago / Motivo,Tasa BCV,Subtotal Bs,IVA Bs,IGTF Bs,Total Bs\n";
+
+            if (facturas) {
+                facturas.forEach(f => {
+                    const fecha = new Date(f.created_at).toLocaleString();
+                    const sub = f.subtotal_bs || 0;
+                    csvContent += `"${fecha}","FACTURA","${f.factura_nro}","${f.nro_control}","${f.cliente_rif}","${f.cliente_nombre}","${f.metodo_pago || ''}",${f.tasa_bcv},${sub.toFixed(2)},${f.iva_bs.toFixed(2)},${f.igtf_bs.toFixed(2)},${f.total_bs.toFixed(2)}\n`;
+                });
+            }
+
+            if (notasCredito) {
+                notasCredito.forEach(nc => {
+                    const fecha = new Date(nc.created_at).toLocaleString();
+                    const cliNombre = nc.invoices?.cliente_nombre || 'Cliente';
+                    const cliRif = nc.invoices?.cliente_rif || 'V-000';
+                    csvContent += `"${fecha}","NOTA CREDITO","${nc.nota_nro}","${nc.nro_control}","${cliRif}","${cliNombre}","${nc.motivo}",${nc.tasa_bcv},0.00,0.00,0.00,${nc.total_bs.toFixed(2)}\n`;
+                });
+            }
+
+            if (notasDebito) {
+                notasDebito.forEach(nd => {
+                    const fecha = new Date(nd.created_at).toLocaleString();
+                    const cliNombre = nd.invoices?.cliente_nombre || 'Cliente';
+                    const cliRif = nd.invoices?.cliente_rif || 'V-000';
+                    csvContent += `"${fecha}","NOTA DEBITO","${nd.nota_nro}","${nd.nro_control}","${cliRif}","${cliNombre}","${nd.motivo}",${nd.tasa_bcv},0.00,0.00,0.00,${nd.total_bs.toFixed(2)}\n`;
+                });
+            }
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Libro_Ventas_${tenantActual.rif}_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         // --- CARGAR HISTORIAL UNIFICADO (FACTURAS, NC Y ND) ---
         async function cargarHistorial() {
             if (!supabaseClient || !tenantActual) return;
@@ -1287,7 +1336,7 @@
                     </div>
                 `;
                 document.getElementById('ticketTotal').innerText = 'Bs. ' + doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
-                document.getElementById('ticketLabelTotal').innerText = 'TOTAL NOTA DÉBITO:';
+                document.getElementById('ticketLabelTotal').innerText = 'TOTAL NOTN DÉBITO:';
             }
 
             document.getElementById('modalTicket').classList.remove('hidden');
