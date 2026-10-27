@@ -536,6 +536,7 @@
         };
 
         function formatearFecha8Digitos(isoString) {
+            if (!isoString) return '--/--/---- --:--';
             const d = new Date(isoString);
             const dd = String(d.getDate()).padStart(2, '0');
             const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -543,7 +544,7 @@
             const hh = String(d.getHours()).padStart(2, '0');
             const min = String(d.getMinutes()).padStart(2, '0');
             const ss = String(d.getSeconds()).padStart(2, '0');
-            return `${dd}/${mm}/${AAAA} ${hh}:${min}:${ss}`;
+            return `${dd}/${mm}/${aaaa} ${hh}:${min}:${ss}`;
         }
 
         async function iniciarSesionTenant() {
@@ -1250,8 +1251,8 @@
             const fechaHasta = document.getElementById('filtroFechaHasta').value;
 
             const { data: facturas } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
-            const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*, invoices(cliente_nombre, cliente_rif, factura_nro)').eq('tenant_id', tenantActual.id);
-            const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*, invoices(cliente_nombre, cliente_rif, factura_nro)').eq('tenant_id', tenantActual.id);
+            const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*').eq('tenant_id', tenantActual.id);
+            const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*').eq('tenant_id', tenantActual.id);
 
             let csvContent = "\uFEFFsep=;\nFecha;Tipo Documento;Nro Documento;Nro Control;Doc Afectado;RIF Cliente;Razon Social;Metodo Pago;Tasa BCV;Subtotal ($/Bs);IVA ($/Bs);IGTF ($/Bs);Total ($/Bs)\n";
 
@@ -1259,7 +1260,6 @@
                 facturas.forEach(f => {
                     const fechaInv = f.created_at.slice(0,10);
                     if ((fechaDesde && fechaInv < fechaDesde) || (fechaHasta && fechaInv > fechaHasta)) return;
-                    const d = new Date(f.created_at);
                     const t = f.tasa_bcv;
                     csvContent += `"${formatearFecha8Digitos(f.created_at)}";"FACTURA";"${f.factura_nro}";"${f.nro_control}";"N/A";"${f.cliente_rif}";"${(f.cliente_nombre||'').replace(/"/g,'""')}";"${f.metodo_pago}";${t};$ ${(f.subtotal_bs/t).toFixed(2)} / Bs. ${f.subtotal_bs.toFixed(2)};$ ${(f.iva_bs/t).toFixed(2)} / Bs. ${f.iva_bs.toFixed(2)};$ ${(f.igtf_bs/t).toFixed(2)} / Bs. ${f.igtf_bs.toFixed(2)};$ ${(f.total_bs/t).toFixed(2)} / Bs. ${f.total_bs.toFixed(2)}\n`;
                 });
@@ -1268,18 +1268,16 @@
                 notasCredito.forEach(nc => {
                     const fechaInv = nc.created_at.slice(0,10);
                     if ((fechaDesde && fechaInv < fechaDesde) || (fechaHasta && fechaInv > fechaHasta)) return;
-                    const d = new Date(nc.created_at);
                     const t = nc.tasa_bcv;
-                    csvContent += `"${formatearFecha8Digitos(nc.created_at)}";"NOTA CREDITO";"${nc.nota_nro}";"${nc.nro_control}";"${nc.invoices?.factura_nro||'N/A'}";"${nc.invoices?.cliente_rif||'V-000'}";"${(nc.invoices?.cliente_nombre||'').replace(/"/g,'""')}";"${nc.motivo}";${t};0.00;0.00;0.00;$ ${(nc.total_bs/t).toFixed(2)} / Bs. ${nc.total_bs.toFixed(2)}\n`;
+                    csvContent += `"${formatearFecha8Digitos(nc.created_at)}";"NOTA CREDITO";"${nc.nota_nro}";"${nc.nro_control}";"N/A";"V-000";"CLIENTE";"${nc.motivo}";${t};0.00;0.00;0.00;$ ${(nc.total_bs/t).toFixed(2)} / Bs. ${nc.total_bs.toFixed(2)}\n`;
                 });
             }
             if (notasDebito) {
                 notasDebito.forEach(nd => {
                     const fechaInv = nd.created_at.slice(0,10);
                     if ((fechaDesde && fechaInv < fechaDesde) || (fechaHasta && fechaInv > fechaHasta)) return;
-                    const d = new Date(nd.created_at);
                     const t = nd.tasa_bcv;
-                    csvContent += `"${formatearFecha8Digitos(nd.created_at)}";"NOTA DEBITO";"${nd.nota_nro}";"${nd.nro_control}";"${nd.invoices?.factura_nro||'N/A'}";"${nd.invoices?.cliente_rif||'V-000'}";"${(nd.invoices?.cliente_nombre||'').replace(/"/g,'""')}";"${nd.motivo}";${t};0.00;0.00;0.00;$ ${(nd.total_bs/t).toFixed(2)} / Bs. ${nd.total_bs.toFixed(2)}\n`;
+                    csvContent += `"${formatearFecha8Digitos(nd.created_at)}";"NOTA DEBITO";"${nd.nota_nro}";"${nd.nro_control}";"N/A";"V-000";"CLIENTE";"${nd.motivo}";${t};0.00;0.00;0.00;$ ${(nd.total_bs/t).toFixed(2)} / Bs. ${nd.total_bs.toFixed(2)}\n`;
                 });
             }
 
@@ -1295,14 +1293,45 @@
 
         async function cargarHistorial() {
             if (!supabaseClient || !tenantActual) return;
-            const { data: facturas } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
-            const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*, invoices(cliente_nombre, cliente_rif, factura_nro)').eq('tenant_id', tenantActual.id);
-            const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*, invoices(cliente_nombre, cliente_rif, factura_nro)').eq('tenant_id', tenantActual.id);
+            
+            // Carga independiente y segura de cada tabla para evitar fallos por relaciones rotas
+            const { data: facturas, error: errF } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
+            const { data: notasCredito, error: errNC } = await supabaseClient.from('notas_credito').select('*').eq('tenant_id', tenantActual.id);
+            const { data: notasDebito, error: errND } = await supabaseClient.from('notas_debito').select('*').eq('tenant_id', tenantActual.id);
 
             documentosHistorialCache = [];
-            if (facturas) facturas.forEach(f => documentosHistorialCache.push({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
-            if (notasCredito) notasCredito.forEach(nc => documentosHistorialCache.push({...nc, tipoDoc: 'NOTA CREDITO', numero: nc.nota_nro, factura_afectada: nc.invoices?.factura_nro, cliente_nombre: nc.invoices?.cliente_nombre||'Cliente', cliente_rif: nc.invoices?.cliente_rif||'V-000'}));
-            if (notasDebito) notasDebito.forEach(nd => documentosHistorialCache.push({...nd, tipoDoc: 'NOTA DEBITO', numero: nd.nota_nro, factura_afectada: nd.invoices?.factura_nro, cliente_nombre: nd.invoices?.cliente_nombre||'Cliente', cliente_rif: nd.invoices?.cliente_rif||'V-000'}));
+            
+            if (facturas) {
+                facturas.forEach(f => documentosHistorialCache.push({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
+            }
+            
+            if (notasCredito) {
+                notasCredito.forEach(nc => {
+                    const facturaOrigen = (facturas || []).find(f => f.id === nc.invoice_id);
+                    documentosHistorialCache.push({
+                        ...nc, 
+                        tipoDoc: 'NOTA CREDITO', 
+                        numero: nc.nota_nro, 
+                        factura_afectada: facturaOrigen ? facturaOrigen.factura_nro : 'N/A', 
+                        cliente_nombre: facturaOrigen ? facturaOrigen.cliente_nombre : 'Cliente', 
+                        cliente_rif: facturaOrigen ? facturaOrigen.cliente_rif : 'V-000'
+                    });
+                });
+            }
+
+            if (notasDebito) {
+                notasDebito.forEach(nd => {
+                    const facturaOrigen = (facturas || []).find(f => f.id === nd.invoice_id);
+                    documentosHistorialCache.push({
+                        ...nd, 
+                        tipoDoc: 'NOTA DEBITO', 
+                        numero: nd.nota_nro, 
+                        factura_afectada: facturaOrigen ? facturaOrigen.factura_nro : 'N/A', 
+                        cliente_nombre: facturaOrigen ? facturaOrigen.cliente_nombre : 'Cliente', 
+                        cliente_rif: facturaOrigen ? facturaOrigen.cliente_rif : 'V-000'
+                    });
+                });
+            }
 
             documentosHistorialCache.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             renderizarHistorial(documentosHistorialCache);
@@ -1325,8 +1354,8 @@
         function renderizarHistorial(lista) {
             const tbody = document.getElementById('tablaHistorial');
             tbody.innerHTML = '';
-            if (lista.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No hay comprobantes.</td></tr>`;
+            if (!lista || lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No hay comprobantes registrados.</td></tr>`;
                 return;
             }
             lista.forEach(doc => {
@@ -1335,7 +1364,8 @@
                 let badgeColor = 'text-emerald-400 bg-emerald-900/35 border-emerald-700/50';
                 if (doc.tipoDoc === 'NOTA CREDITO') badgeColor = 'text-amber-400 bg-amber-900/35 border-amber-700/50';
                 if (doc.tipoDoc === 'NOTA DEBITO') badgeColor = 'text-sky-400 bg-sky-900/35 border-sky-700/50';
-                const totalUsd = (doc.total_bs / doc.tasa_bcv).toFixed(2);
+                const tasaVal = doc.tasa_bcv || 1;
+                const totalUsd = (doc.total_bs / tasaVal).toFixed(2);
                 const refInfo = doc.factura_afectada ? `<br><span class="text-[10px] text-slate-400">Ref. Factura: ${doc.factura_afectada}</span>` : '';
 
                 tbody.innerHTML += `
@@ -1344,11 +1374,11 @@
                             <span class="px-2 py-0.5 rounded text-[10px] border ${badgeColor}">${doc.tipoDoc}</span><br>
                             <span class="text-white mt-1 inline-block">${doc.numero}</span>${refInfo}
                         </td>
-                        <td class="p-2.5 font-mono text-slate-300">${doc.nro_control}</td>
+                        <td class="p-2.5 font-mono text-slate-300">${doc.nro_control || 'N/A'}</td>
                         <td class="p-2.5 text-slate-300">${clienteStr}</td>
                         <td class="p-2.5 text-slate-300 font-mono text-[11px]">${doc.metodo_pago || doc.motivo || 'N/A'}</td>
                         <td class="p-2.5 text-slate-400">${fecha}</td>
-                        <td class="p-2.5 font-mono text-white">$ ${totalUsd} | Bs. ${doc.total_bs.toFixed(2)}</td>
+                        <td class="p-2.5 font-mono text-white">$ ${totalUsd} | Bs. ${(doc.total_bs || 0).toFixed(2)}</td>
                         <td class="p-2.5 text-center space-x-1">
                             <button onclick='verComprobanteUnificado(${JSON.stringify(doc)})' class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1 rounded text-xs cursor-pointer">Ver / Imprimir</button>
                             ${doc.tipoDoc === 'FACTURA' ? `
@@ -1366,7 +1396,7 @@
             document.getElementById('ticketComercioNombre').innerText = tenantActual.razon_social;
             document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif}`;
             document.getElementById('ticketFecha').innerText = 'Fecha/Hora: ' + formatearFecha8Digitos(doc.created_at);
-            document.getElementById('ticketTasa').innerText = doc.tasa_bcv.toFixed(2);
+            document.getElementById('ticketTasa').innerText = (doc.tasa_bcv || 1).toFixed(2);
             document.getElementById('ticketCliente').innerText = `Cliente: ${doc.cliente_nombre || 'Consumidor Final'} | RIF: ${doc.cliente_rif || 'V-000'}`;
             document.getElementById('ticketAplicaIgtf').innerText = `IGTF (3%): SÍ / NO`;
 
