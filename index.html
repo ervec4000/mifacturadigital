@@ -9,7 +9,7 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-between p-4">
 
-    <!-- 1. PANTALLA DE LOGIN SEGURO (SOLO ACCESO) -->
+    <!-- 1. PANTALLA DE LOGIN SEGURO -->
     <div id="vistaLogin" class="w-full max-w-md bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-700 my-auto space-y-6">
         <header class="text-center space-y-2">
             <h1 class="text-2xl font-bold text-emerald-400">MiFacturaDigital</h1>
@@ -32,7 +32,7 @@
         </div>
     </div>
 
-    <!-- 2. SISTEMA PRINCIPAL (AISLADO POR INQUILINO) -->
+    <!-- 2. SISTEMA PRINCIPAL -->
     <div id="vistaPrincipal" class="hidden w-full max-w-4xl bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-700 my-6 space-y-6">
         <header class="flex flex-col md:flex-row justify-between items-center border-b border-slate-700 pb-4 gap-3">
             <div>
@@ -111,6 +111,7 @@
                             <tr>
                                 <th class="p-2">Descripción</th>
                                 <th class="p-2">Cant</th>
+                                <th class="p-2">Unidad</th>
                                 <th class="p-2">P.U ($)</th>
                                 <th class="p-2">Tipo</th>
                                 <th class="p-2">Subtotal ($)</th>
@@ -179,10 +180,22 @@
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
                 <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📦 Registrar Nuevo Material / Producto</h3>
                 <input type="hidden" id="editProductoId">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Código SKU</label>
                         <input type="text" id="prodSku" placeholder="SKU-001" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Unidad de Medida</label>
+                        <select id="prodUnidad" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                            <option value="Und">Unidad (Und)</option>
+                            <option value="L">Litro (L)</option>
+                            <option value="Kg">Kilogramo (Kg)</option>
+                            <option value="ml">Mililitro (ml)</option>
+                            <option value="g">Gramo (g)</option>
+                            <option value="m">Metro (m)</option>
+                            <option value="Servicio">Servicio (Serv)</option>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Precio Unitario ($ USD)</label>
@@ -214,6 +227,7 @@
                             <tr>
                                 <th class="p-2">SKU</th>
                                 <th class="p-2">Descripción</th>
+                                <th class="p-2">Unidad</th>
                                 <th class="p-2">Precio ($)</th>
                                 <th class="p-2">Tipo</th>
                                 <th class="p-2 text-center">Acciones</th>
@@ -342,7 +356,6 @@
             }
         };
 
-        // --- AUTENTICACIÓN SEGURA POR CREDENCIALES ---
         async function iniciarSesionTenant() {
             const emailInput = document.getElementById('loginEmail').value.trim();
             const passwordInput = document.getElementById('loginPassword').value.trim();
@@ -395,7 +408,6 @@
             document.getElementById('loginPassword').value = '';
         }
 
-        // --- NAVEGACIÓN ---
         function cambiarPestana(pestana) {
             const tabs = ['pos', 'historial', 'productos', 'clientes'];
             tabs.forEach(t => {
@@ -419,7 +431,7 @@
             }
         }
 
-        // --- MÓDULO PRODUCTOS (CRUD aislado por tenant) ---
+        // --- MÓDULO PRODUCTOS (Con Unidad de Medida) ---
         async function cargarProductosSelect() {
             if (!supabaseClient || !tenantActual) return;
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
@@ -431,8 +443,9 @@
                 return;
             }
             productosCache.forEach(prod => {
+                const unidad = prod.unidad_medida || 'Und';
                 const tipoTexto = prod.es_exento ? 'EXENTO' : 'GRAVADO 16%';
-                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}">${prod.descripcion} - $${prod.precio_unitario_usd.toFixed(2)} (${tipoTexto})</option>`;
+                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${unidad}">${prod.descripcion} (${unidad}) - $${prod.precio_unitario_usd.toFixed(2)} (${tipoTexto})</option>`;
             });
         }
 
@@ -442,18 +455,20 @@
             const tbody = document.getElementById('tablaProductosGestion');
             tbody.innerHTML = '';
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay productos registrados para este comercio.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No hay productos registrados.</td></tr>`;
                 return;
             }
             data.forEach(prod => {
+                const unidad = prod.unidad_medida || 'Und';
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50">
                         <td class="p-2 font-mono text-emerald-400">${prod.codigo_sku || 'S/N'}</td>
                         <td class="p-2">${prod.descripcion}</td>
+                        <td class="p-2 text-slate-300">${unidad}</td>
                         <td class="p-2 font-mono">$ ${prod.precio_unitario_usd.toFixed(2)}</td>
                         <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${prod.es_exento ? 'bg-amber-900/50 text-amber-300' : 'bg-emerald-900/50 text-emerald-300'}">${prod.es_exento ? 'EXENTO' : 'GRAVADO'}</span></td>
                         <td class="p-2 text-center space-x-2">
-                            <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku || ''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento})' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Editar</button>
+                            <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku || ''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento}, "${unidad}")' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Editar</button>
                             <button onclick='eliminarProducto("${prod.id}")' class="text-rose-400 hover:text-rose-300 font-semibold cursor-pointer">Eliminar</button>
                         </td>
                     </tr>
@@ -465,6 +480,7 @@
             const id = document.getElementById('editProductoId').value;
             const sku = document.getElementById('prodSku').value.trim();
             const descripcion = document.getElementById('prodDescripcion').value.trim();
+            const unidad = document.getElementById('prodUnidad').value;
             const precio = parseFloat(document.getElementById('prodPrecio').value);
             const esExento = document.getElementById('prodExento').value === 'true';
 
@@ -474,18 +490,19 @@
             }
 
             if (id) {
-                await supabaseClient.from('productos').update({ codigo_sku: sku, descripcion, precio_unitario_usd: precio, es_exento: esExento }).eq('id', id);
+                await supabaseClient.from('productos').update({ codigo_sku: sku, descripcion, unidad_medida: unidad, precio_unitario_usd: precio, es_exento: esExento }).eq('id', id);
             } else {
-                await supabaseClient.from('productos').insert([{ tenant_id: tenantActual.id, codigo_sku: sku, descripcion, precio_unitario_usd: precio, es_exento: esExento }]);
+                await supabaseClient.from('productos').insert([{ tenant_id: tenantActual.id, codigo_sku: sku, descripcion, unidad_medida: unidad, precio_unitario_usd: precio, es_exento: esExento }]);
             }
             limpiarFormProducto();
             cargarProductosGestion();
         }
 
-        function editarProducto(id, sku, descripcion, precio, esExento) {
+        function editarProducto(id, sku, descripcion, precio, esExento, unidad) {
             document.getElementById('editProductoId').value = id;
             document.getElementById('prodSku').value = sku;
             document.getElementById('prodDescripcion').value = descripcion;
+            document.getElementById('prodUnidad').value = unidad || 'Und';
             document.getElementById('prodPrecio').value = precio;
             document.getElementById('prodExento').value = esExento.toString();
             document.getElementById('tituloFormProducto').innerText = '✏️ Editar Producto';
@@ -496,6 +513,7 @@
             document.getElementById('editProductoId').value = '';
             document.getElementById('prodSku').value = '';
             document.getElementById('prodDescripcion').value = '';
+            document.getElementById('prodUnidad').value = 'Und';
             document.getElementById('prodPrecio').value = '';
             document.getElementById('prodExento').value = 'false';
             document.getElementById('tituloFormProducto').innerText = '📦 Registrar Nuevo Material / Producto';
@@ -508,7 +526,7 @@
             cargarProductosGestion();
         }
 
-        // --- MÓDULO CLIENTES (CRUD aislado por tenant) ---
+        // --- MÓDULO CLIENTES ---
         async function cargarClientesSelect() {
             if (!supabaseClient || !tenantActual) return;
             const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
@@ -614,7 +632,8 @@
 
             carritoItems.push({
                 productoId: select.value,
-                descripcion: option.text.split(' - ')[0],
+                descripcion: option.text.split(' (')[0],
+                unidad: option.getAttribute('data-unidad') || 'Und',
                 precio: parseFloat(option.getAttribute('data-precio')),
                 esExento: option.getAttribute('data-exento') === 'true',
                 cantidad: cantidad
@@ -631,7 +650,7 @@
             const tbody = document.getElementById('tablaItems');
             tbody.innerHTML = '';
             if (carritoItems.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-slate-500">No hay ítems agregados.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-3 text-center text-slate-500">No hay ítems agregados.</td></tr>`;
             }
             carritoItems.forEach((item, index) => {
                 const subUsd = item.precio * item.cantidad;
@@ -639,6 +658,7 @@
                     <tr class="hover:bg-slate-800/50">
                         <td class="p-2">${item.descripcion}</td>
                         <td class="p-2">${item.cantidad}</td>
+                        <td class="p-2 text-slate-300">${item.unidad}</td>
                         <td class="p-2">$ ${item.precio.toFixed(2)}</td>
                         <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${item.esExento ? 'bg-amber-900/50 text-amber-300' : 'bg-emerald-900/50 text-emerald-300'}">${item.esExento ? 'EXENTO' : 'GRAVADO'}</span></td>
                         <td class="p-2 font-mono">$ ${subUsd.toFixed(2)}</td>
@@ -729,7 +749,7 @@
                     precio_unitario_usd: item.precio,
                     es_exento: item.esExento,
                     subtotal_usd: item.precio * item.cantidad,
-                    descripcion: item.descripcion
+                    descripcion: `${item.descripcion} (${item.unidad})`
                 }));
 
                 await supabaseClient.from('invoice_items').insert(itemsParaInsertar);
@@ -756,7 +776,7 @@
             const tbody = document.getElementById('tablaHistorial');
             tbody.innerHTML = '';
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No hay facturas registradas para este comercio.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No hay facturas registradas.</td></tr>`;
                 return;
             }
 
