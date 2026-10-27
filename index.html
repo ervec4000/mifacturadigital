@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiFacturaDigital.com.ve - POS, Arqueo de Caja y Reporte Z</title>
+    <title>MiFacturaDigital.com.ve - POS, Arqueo, Reporte Z, Notas de Crédito y Débito</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -166,10 +166,10 @@
             </button>
         </div>
 
-        <!-- SECCIÓN 2: HISTORIAL -->
-        <div id="seccionHistorial" class="hidden space-y-4">
+        <!-- SECCIÓN 2: HISTORIAL Y NOTAS -->
+        <div id="seccionHistorial" class="hidden space-y-6">
             <div class="flex justify-between items-center">
-                <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Comprobantes Fiscales Emitidos</h3>
+                <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Comprobantes Fiscales y Notas (Crédito / Débito)</h3>
                 <button onclick="cargarHistorial()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded-lg text-slate-200 cursor-pointer">🔄 Actualizar</button>
             </div>
             <div class="overflow-x-auto">
@@ -182,7 +182,7 @@
                             <th class="p-2.5">Método Pago</th>
                             <th class="p-2.5">Fecha</th>
                             <th class="p-2.5">Total Bs.</th>
-                            <th class="p-2.5 text-center">Acción</th>
+                            <th class="p-2.5 text-center">Acciones Fiscales</th>
                         </tr>
                     </thead>
                     <tbody id="tablaHistorial" class="divide-y divide-slate-700/50"></tbody>
@@ -357,7 +357,7 @@
         </div>
     </div>
 
-    <!-- MODAL TICKET -->
+    <!-- MODAL TICKET FACTURA -->
     <div id="modalTicket" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-white text-slate-900 w-full max-w-md rounded-xl p-6 shadow-2xl relative font-mono text-xs space-y-3 max-h-[90vh] overflow-y-auto">
             <div class="text-center border-b border-dashed border-slate-400 pb-3 space-y-1">
@@ -403,6 +403,64 @@
         </div>
     </div>
 
+    <!-- MODAL EMITIR NOTA DE CRÉDITO -->
+    <div id="modalNotaCredito" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-base font-bold text-amber-400">📄 Emitir Nota de Crédito (Devolución / Anulación)</h3>
+            <div class="text-xs space-y-2 bg-slate-900 p-3 rounded-lg border border-slate-700">
+                <p class="text-slate-300">Factura Referencia: <span id="ncFacturaRef" class="font-bold text-white">--</span></p>
+                <p class="text-slate-300">Cliente: <span id="ncClienteRef" class="text-white">--</span></p>
+            </div>
+
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Motivo de la Nota de Crédito</label>
+                <input type="text" id="ncMotivo" placeholder="Ej. Devolución de mercancía por defecto" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-xs text-slate-400">Ítems de la Factura a Reintegrar al Stock:</label>
+                <div id="ncItemsContainer" class="space-y-1 bg-slate-900/60 p-3 rounded-lg border border-slate-700 max-h-40 overflow-y-auto text-xs"></div>
+            </div>
+
+            <div class="flex justify-between font-bold text-sm border-t border-slate-700 pt-2 text-amber-400">
+                <span>Total Reintegro Nota de Crédito:</span>
+                <span id="ncTotalBs">Bs. 0,00</span>
+            </div>
+
+            <div class="flex space-x-2 pt-2">
+                <button onclick="procesarNotaCredito()" class="w-full bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Confirmar y Emitir Nota de Crédito</button>
+                <button onclick="cerrarModalNotaCredito()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL EMITIR NOTA DE DÉBITO -->
+    <div id="modalNotaDebito" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 class="text-base font-bold text-sky-400">📄 Emitir Nota de Débito (Recargo / Incremento)</h3>
+            <div class="text-xs space-y-2 bg-slate-900 p-3 rounded-lg border border-slate-700">
+                <p class="text-slate-300">Factura Referencia: <span id="ndFacturaRef" class="font-bold text-white">--</span></p>
+                <p class="text-slate-300">Cliente: <span id="ndClienteRef" class="text-white">--</span></p>
+                <p class="text-slate-300">Monto Original Factura: <span id="ndMontoOrigRef" class="text-white font-mono">--</span></p>
+            </div>
+
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Motivo de la Nota de Débito</label>
+                <input type="text" id="ndMotivo" placeholder="Ej. Recargo por diferencia de precio o flete adicional" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+            </div>
+
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Monto del Recargo / Incremento en Bolívares (Bs.)</label>
+                <input type="number" id="ndMontoBs" step="0.01" placeholder="500.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm font-mono">
+            </div>
+
+            <div class="flex space-x-2 pt-2">
+                <button onclick="procesarNotaDebito()" class="w-full bg-sky-600 hover:bg-sky-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Confirmar y Emitir Nota de Débito</button>
+                <button onclick="cerrarModalNotaDebito()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <footer class="text-xs text-slate-500 text-center mt-4">
         MiFacturaDigital.com.ve &copy; 2026 - Zero-Migration Architecture
     </footer>
@@ -416,6 +474,9 @@
         let carritoItems = [];
         let productosCache = [];
         let clientesCache = [];
+        let facturaSeleccionadaParaNC = null;
+        let facturaItemsParaNC = [];
+        let facturaSeleccionadaParaND = null;
 
         window.onload = function() {
             if (window.supabase) {
@@ -697,7 +758,7 @@
             cargarClientesGestion();
         }
 
-        // --- POS Y FACTURACIÓN CON MÉTODOS DE PAGO Y STOCK ---
+        // --- POS Y FACTURACIÓN ---
         function agregarItem() {
             const select = document.getElementById('productoSelect');
             if (!select.value || productosCache.length === 0) {
@@ -860,6 +921,152 @@
             }
         }
 
+        // --- MÓDULO NOTAS DE CRÉDITO ---
+        async function abrirModalNotaCredito(inv) {
+            facturaSeleccionadaParaNC = inv;
+            document.getElementById('ncFacturaRef').innerText = inv.factura_nro + ' (Control: ' + inv.nro_control + ')';
+            document.getElementById('ncClienteRef').innerText = `${inv.cliente_nombre} (${inv.cliente_rif})`;
+            document.getElementById('ncMotivo').value = '';
+
+            const { data: items } = await supabaseClient.from('invoice_items').select('*').eq('invoice_id', inv.id);
+            facturaItemsParaNC = items || [];
+
+            let htmlItems = '';
+            let totalBancarioBs = inv.total_bs;
+
+            if (facturaItemsParaNC.length === 0) {
+                htmlItems = '<p class="text-slate-500">No hay ítems en esta factura.</p>';
+            } else {
+                facturaItemsParaNC.forEach((item, idx) => {
+                    const subBs = item.subtotal_usd * inv.tasa_bcv;
+                    htmlItems += `
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-1">
+                            <span>${item.cantidad} x ${item.descripcion}</span>
+                            <span class="font-mono">$ ${item.subtotal_usd.toFixed(2)} (Bs. ${subBs.toLocaleString('es-VE', {minimumFractionDigits: 2})})</span>
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('ncItemsContainer').innerHTML = htmlItems;
+            document.getElementById('ncTotalBs').innerText = 'Bs. ' + totalBancarioBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('modalNotaCredito').classList.remove('hidden');
+        }
+
+        function cerrarModalNotaCredito() {
+            document.getElementById('modalNotaCredito').classList.add('hidden');
+            facturaSeleccionadaParaNC = null;
+            facturaItemsParaNC = [];
+        }
+
+        async function procesarNotaCredito() {
+            try {
+                if (!facturaSeleccionadaParaNC) return;
+                const motivo = document.getElementById('ncMotivo').value.trim();
+                if (!motivo) {
+                    alert('Por favor ingrese el motivo de la Nota de Crédito.');
+                    return;
+                }
+
+                const inv = facturaSeleccionadaParaNC;
+                const notaNro = 'NC-' + Math.floor(1000 + Math.random() * 9000);
+                const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
+
+                const { data: ncData, error: ncError } = await supabaseClient
+                    .from('notas_credito')
+                    .insert([{
+                        tenant_id: tenantActual.id,
+                        invoice_id: inv.id,
+                        nota_nro: notaNro,
+                        nro_control: nroControl,
+                        motivo: motivo,
+                        total_bs: inv.total_bs,
+                        tasa_bcv: inv.tasa_bcv
+                    }]).select();
+
+                if (ncError) throw ncError;
+                const ncId = ncData[0].id;
+
+                for (const item of facturaItemsParaNC) {
+                    await supabaseClient.from('nota_credito_items').insert([{
+                        nota_credito_id: ncId,
+                        producto_id: item.producto_id,
+                        cantidad: item.cantidad,
+                        precio_unitario_usd: item.precio_unitario_usd,
+                        subtotal_usd: item.subtotal_usd,
+                        descripcion: item.descripcion
+                    }]);
+
+                    if (item.producto_id) {
+                        const { data: prodData } = await supabaseClient.from('productos').select('stock').eq('id', item.producto_id).single();
+                        if (prodData) {
+                            const nuevoStock = (prodData.stock || 0) + item.cantidad;
+                            await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.producto_id);
+                        }
+                    }
+                }
+
+                alert(`¡Nota de Crédito ${notaNro} emitida con éxito! Stock reintegrado al inventario.`);
+                cerrarModalNotaCredito();
+                cargarHistorial();
+            } catch (err) {
+                alert('Error al emitir Nota de Crédito: ' + err.message);
+            }
+        }
+
+        // --- MÓDULO NOTAS DE DÉBITO ---
+        function abrirModalNotaDebito(inv) {
+            facturaSeleccionadaParaND = inv;
+            document.getElementById('ndFacturaRef').innerText = inv.factura_nro + ' (Control: ' + inv.nro_control + ')';
+            document.getElementById('ndClienteRef').innerText = `${inv.cliente_nombre} (${inv.cliente_rif})`;
+            document.getElementById('ndMontoOrigRef').innerText = 'Bs. ' + inv.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('ndMotivo').value = '';
+            document.getElementById('ndMontoBs').value = '';
+            document.getElementById('modalNotaDebito').classList.remove('hidden');
+        }
+
+        function cerrarModalNotaDebito() {
+            document.getElementById('modalNotaDebito').classList.add('hidden');
+            facturaSeleccionadaParaND = null;
+        }
+
+        async function procesarNotaDebito() {
+            try {
+                if (!facturaSeleccionadaParaND) return;
+                const motivo = document.getElementById('ndMotivo').value.trim();
+                const montoBs = parseFloat(document.getElementById('ndMontoBs').value);
+
+                if (!motivo || isNaN(montoBs) || montoBs <= 0) {
+                    alert('Por favor ingrese un motivo válido y un monto de recargo en Bolívares.');
+                    return;
+                }
+
+                const inv = facturaSeleccionadaParaND;
+                const notaNro = 'ND-' + Math.floor(1000 + Math.random() * 9000);
+                const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
+
+                const { error: ndError } = await supabaseClient
+                    .from('notas_debito')
+                    .insert([{
+                        tenant_id: tenantActual.id,
+                        invoice_id: inv.id,
+                        nota_nro: notaNro,
+                        nro_control: nroControl,
+                        motivo: motivo,
+                        total_bs: montoBs,
+                        tasa_bcv: inv.tasa_bcv
+                    }]);
+
+                if (ndError) throw ndError;
+
+                alert(`¡Nota de Débito ${notaNro} emitida con éxito por Bs. ${montoBs.toLocaleString('es-VE', {minimumFractionDigits: 2})}!`);
+                cerrarModalNotaDebito();
+                cargarHistorial();
+            } catch (err) {
+                alert('Error al emitir Nota de Débito: ' + err.message);
+            }
+        }
+
         // --- MÓDULO REPORTE Z Y ARQUEO DE CAJA ---
         async function generarReporteZ() {
             if (!supabaseClient || !tenantActual) return;
@@ -898,7 +1105,6 @@
                     totalIgtf += inv.igtf_bs;
                     totalVentas += inv.total_bs;
 
-                    // Desglose por método de pago (Arqueo de caja)
                     const metodo = inv.metodo_pago || 'EFECTIVO DIVISAS';
                     if (metodo === 'EFECTIVO DIVISAS') efectivousd += inv.total_bs;
                     else if (metodo === 'ZELLE') zelle += inv.total_bs;
@@ -909,7 +1115,6 @@
                 });
             }
 
-            // Mostrar Arqueo de Caja
             document.getElementById('arqEfectivoUsd').innerText = 'Bs. ' + efectivousd.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('arqZelle').innerText = 'Bs. ' + zelle.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('arqPagoMovil').innerText = 'Bs. ' + pagomovil.toLocaleString('es-VE', {minimumFractionDigits: 2});
@@ -917,7 +1122,6 @@
             document.getElementById('arqCredito').innerText = 'Bs. ' + creditobs.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('arqEfectivoBs').innerText = 'Bs. ' + efectivobs.toLocaleString('es-VE', {minimumFractionDigits: 2});
 
-            // Resumen Fiscal
             document.getElementById('zBaseGravada').innerText = 'Bs. ' + totalSubtotal.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('zIva').innerText = 'Bs. ' + totalIva.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('zIgtf').innerText = 'Bs. ' + totalIgtf.toLocaleString('es-VE', {minimumFractionDigits: 2});
@@ -951,8 +1155,10 @@
                         <td class="p-2.5 text-slate-300 font-mono text-[11px]">${metodoStr}</td>
                         <td class="p-2.5 text-slate-400">${fecha}</td>
                         <td class="p-2.5 font-mono text-white">Bs. ${inv.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</td>
-                        <td class="p-2.5 text-center">
-                            <button onclick='verTicket(${JSON.stringify(inv)})' class="bg-slate-700 hover:bg-slate-600 text-emerald-300 px-3 py-1 rounded text-xs cursor-pointer">Ver Ticket</button>
+                        <td class="p-2.5 text-center space-x-1">
+                            <button onclick='verTicket(${JSON.stringify(inv)})' class="bg-slate-700 hover:bg-slate-600 text-emerald-300 px-2 py-1 rounded text-xs cursor-pointer">Ticket</button>
+                            <button onclick='abrirModalNotaCredito(${JSON.stringify(inv)})' class="bg-amber-900/50 hover:bg-amber-900 text-amber-300 border border-amber-700/50 px-2 py-1 rounded text-xs cursor-pointer">NC</button>
+                            <button onclick='abrirModalNotaDebito(${JSON.stringify(inv)})' class="bg-sky-900/50 hover:bg-sky-900 text-sky-300 border border-sky-700/50 px-2 py-1 rounded text-xs cursor-pointer">ND</button>
                         </td>
                     </tr>
                 `;
