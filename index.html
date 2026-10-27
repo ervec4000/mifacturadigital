@@ -924,7 +924,8 @@
             tbody.innerHTML = '';
             if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay tenants.</td></tr>`; return; }
             data.forEach(t => {
-                const estatusActivo = (t.activo === true || t.activo === 'true') ? '<span class="text-emerald-400 font-bold">Activo</span>' : '<span class="text-rose-400 font-bold">Inactivo</span>';
+                const esActivo = t.activo === true || t.activo === 'true' || t.activo === null || t.activo === undefined;
+                const estatusActivo = esActivo ? '<span class="text-emerald-400 font-bold">Activo</span>' : '<span class="text-rose-400 font-bold">Inactivo</span>';
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50">
                         <td class="p-2.5 font-mono text-emerald-400">${t.email}<br><span class="text-[10px] text-slate-400">${t.razon_social || 'Sin Razón Social'}</span></td>
@@ -932,7 +933,7 @@
                         <td class="p-2.5"><span class="text-sky-300 font-bold">${t.plan_activo || 'Freemium'}</span><br>${estatusActivo}</td>
                         <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-900/50 text-amber-300 font-bold uppercase">${t.rol || 'user'}</span></td>
                         <td class="p-2.5 text-center">
-                            <button onclick='editarInquilinoMaster("${t.id}", "${t.email}", "${t.password || ''}", "${t.rol || ''}", "${t.rif || ''}", "${t.razon_social || ''}", "${t.telefono || ''}", "${t.direccion || ''}", "${t.plan_activo || 'Freemium'}", "${t.activo !== false}", "${t.logo || ''}")' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Configurar</button>
+                            <button onclick='editarInquilinoMaster("${t.id}", "${t.email}", "${t.password || ''}", "${t.rol || ''}", "${t.rif || ''}", "${t.razon_social || ''}", "${t.telefono || ''}", "${t.direccion || ''}", "${t.plan_activo || 'Freemium'}", ${esActivo}, "${t.logo || ''}")' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Configurar</button>
                         </td>
                     </tr>
                 `;
@@ -965,7 +966,7 @@
             document.getElementById('masterTelefono').value = telefono;
             document.getElementById('masterDireccion').value = direccion;
             document.getElementById('masterPlanActivo').value = planActivo || 'Freemium';
-            document.getElementById('masterActivo').value = (activo === 'false' || activo === false) ? 'false' : 'true';
+            document.getElementById('masterActivo').value = (activo === false || activo === 'false') ? 'false' : 'true';
             document.getElementById('masterLogo').value = logo;
             document.getElementById('tituloTenantModal').innerText = '⚙️ Configurar Tenant';
             document.getElementById('modalTenantMaster').classList.remove('hidden');
@@ -990,14 +991,16 @@
             try {
                 let payload = { email, password, rol, rif, razon_social, telefono, direccion, plan_activo, activo, logo };
                 if (id) {
-                    await supabaseClient.from('tenants').update(payload).eq('id', id);
+                    const { error } = await supabaseClient.from('tenants').update(payload).eq('id', id);
+                    if (error) throw error;
                 } else {
-                    await supabaseClient.from('tenants').insert([payload]);
+                    const { error } = await supabaseClient.from('tenants').insert([payload]);
+                    if (error) throw error;
                 }
                 alert('¡Tenant guardado con éxito!');
                 cerrarModalTenantMaster();
                 cargarInquilinosMaster();
-            } catch (err) { alert('Error: ' + err.message); }
+            } catch (err) { alert('Error al guardar: ' + err.message); }
         }
 
         // --- PRODUCTOS / STOCK ---
