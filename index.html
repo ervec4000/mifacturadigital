@@ -3,36 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiFacturaDigital.com.ve - POS y Facturación Fiscal</title>
+    <title>MiFacturaDigital.com.ve - POS y Facturación Fiscal Avanzada</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-between p-4">
 
-    <div class="w-full max-w-md bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-700">
+    <div class="w-full max-w-2xl bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-700 my-6">
         <header class="text-center mb-6">
             <h1 class="text-2xl font-bold text-emerald-400">MiFacturaDigital</h1>
-            <p class="text-xs text-slate-400">Facturación ágil bajo Providencia SENIAT</p>
+            <p class="text-xs text-slate-400">Facturación Comercial y Fiscal bajo Providencia SENIAT</p>
         </header>
 
-        <div class="space-y-4">
-            <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Tasa BCV del Día (Bs.)</label>
-                <input type="number" id="tasaBcv" step="0.0001" value="887.3020" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500" oninput="calcularImpuestos()">
+        <div class="space-y-6">
+            <!-- Sección 1: Datos de Configuración y Cliente -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Tasa BCV del Día (Bs.)</label>
+                    <input type="number" id="tasaBcv" step="0.0001" value="887.3020" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500" oninput="recalcularTodo()">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">RIF / Cédula del Cliente Final</label>
+                    <input type="text" id="clienteRif" placeholder="J-00000000-0" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Razón Social / Nombre del Comprador</label>
+                    <input type="text" id="clienteNombre" placeholder="Comercio o Cliente Comprador C.A." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
+                </div>
             </div>
 
-            <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Monto Total en Divisas ($ USD)</label>
-                <input type="number" id="montoUsd" step="0.01" placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500" oninput="calcularImpuestos()">
+            <!-- Sección 2: Selección de Productos / Materiales -->
+            <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-3">
+                <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Agregar Ítems a la Factura</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                    <div class="md:col-span-5">
+                        <label class="block text-xs text-slate-400 mb-1">Producto / Material</label>
+                        <select id="productoSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                            <option value="prod-1" data-precio="15.00" data-exento="false">Derclean - Lavacarros 1L (Gravado)</option>
+                            <option value="prod-2" data-precio="8.50" data-exento="false">Desengrasante Industrial 5L (Gravado)</option>
+                            <option value="prod-3" data-precio="5.00" data-exento="true">Cloro Doméstico 1L (Exento)</option>
+                            <option value="prod-4" data-precio="12.00" data-exento="true">Semilla Certificada Maíz 1kg (Exento)</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="block text-xs text-slate-400 mb-1">Cantidad</label>
+                        <input type="number" id="cantidadItem" min="1" value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                    </div>
+                    <div class="md:col-span-4">
+                        <button onclick="agregarItem()" class="w-full bg-slate-700 hover:bg-slate-600 text-emerald-300 font-semibold py-2.5 px-4 rounded-lg transition duration-200 text-sm border border-slate-600 cursor-pointer">
+                            + Añadir Ítem
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla de Ítems Agregados -->
+                <div class="overflow-x-auto mt-3">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900 text-slate-400 uppercase">
+                            <tr>
+                                <th class="p-2">Descripción</th>
+                                <th class="p-2">Cant</th>
+                                <th class="p-2">P.U ($)</th>
+                                <th class="p-2">Tipo</th>
+                                <th class="p-2">Subtotal ($)</th>
+                                <th class="p-2 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaItems" class="divide-y divide-slate-700/50">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700/50 space-y-2 text-sm">
+            <!-- Sección 3: Resumen Fiscal y Totales -->
+            <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 space-y-2 text-sm">
                 <div class="flex justify-between text-slate-300">
-                    <span>Subtotal Bs:</span>
-                    <span id="subtotalBs" class="font-mono">Bs. 0,00</span>
+                    <span>Base Imponible (Gravado):</span>
+                    <span id="baseGravadaBs" class="font-mono">Bs. 0,00</span>
                 </div>
                 <div class="flex justify-between text-slate-300">
-                    <span>IVA (16%):</span>
+                    <span>Monto Exento:</span>
+                    <span id="montoExentoBs" class="font-mono">Bs. 0,00</span>
+                </div>
+                <div class="flex justify-between text-slate-300">
+                    <span>IVA (16% sobre Gravados):</span>
                     <span id="ivaBs" class="font-mono">Bs. 0,00</span>
                 </div>
                 <div class="flex justify-between text-slate-300">
@@ -46,7 +102,7 @@
             </div>
 
             <button onclick="emitirFactura()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-lg shadow-emerald-900/20 cursor-pointer">
-                Emitir Factura Digital
+                Emitir Factura Fiscal Definitiva
             </button>
         </div>
     </div>
@@ -56,21 +112,96 @@
     </footer>
 
     <script>
-        // Cálculo inicial al cargar la página
+        let carritoItems = [];
+
         window.onload = function() {
-            calcularImpuestos();
+            // Añadir un ítem por defecto para agilizar pruebas
+            agregarItemPorDefecto();
         };
 
-        function calcularImpuestos() {
-            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
-            const usd = parseFloat(document.getElementById('montoUsd').value) || 0;
-            
-            const subtotalBs = usd * tasa;
-            const ivaBs = subtotalBs * 0.16;
-            const igtfBs = subtotalBs * 0.03;
-            const totalBs = subtotalBs + ivaBs + igtfBs;
+        function agregarItemPorDefecto() {
+            const select = document.getElementById('productoSelect');
+            const option = select.options[0];
+            carritoItems.push({
+                id: option.value,
+                descripcion: option.text,
+                precio: parseFloat(option.getAttribute('data-precio')),
+                esExento: option.getAttribute('data-exento') === 'true',
+                cantidad: 1
+            });
+            actualizarTablaYCalculos();
+        }
 
-            document.getElementById('subtotalBs').innerText = 'Bs. ' + subtotalBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+        function agregarItem() {
+            const select = document.getElementById('productoSelect');
+            const option = select.options[select.selectedIndex];
+            const cantidad = parseFloat(document.getElementById('cantidadItem').value) || 1;
+
+            carritoItems.push({
+                id: option.value,
+                descripcion: option.text,
+                precio: parseFloat(option.getAttribute('data-precio')),
+                esExento: option.getAttribute('data-exento') === 'true',
+                cantidad: cantidad
+            });
+
+            actualizarTablaYCalculos();
+        }
+
+        function eliminarItem(index) {
+            carritoItems.splice(index, 1);
+            actualizarTablaYCalculos();
+        }
+
+        function actualizarTablaYCalculos() {
+            const tbody = document.getElementById('tablaItems');
+            tbody.innerHTML = '';
+
+            if (carritoItems.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-slate-500">No hay ítems agregados.</td></tr>`;
+            }
+
+            carritoItems.forEach((item, index) => {
+                const subUsd = item.precio * item.cantidad;
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/50">
+                        <td class="p-2">${item.descripcion}</td>
+                        <td class="p-2">${item.cantidad}</td>
+                        <td class="p-2">$ ${item.precio.toFixed(2)}</td>
+                        <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${item.esExento ? 'bg-amber-900/50 text-amber-300 border border-amber-700/50' : 'bg-emerald-900/50 text-emerald-300 border border-emerald-700/50'}">${item.esExento ? 'EXENTO' : 'GRAVADO'}</span></td>
+                        <td class="p-2 font-mono">$ ${subUsd.toFixed(2)}</td>
+                        <td class="p-2 text-center"><button onclick="eliminarItem(${index})" class="text-rose-400 hover:text-rose-300 font-bold">×</button></td>
+                    </tr>
+                `;
+            });
+
+            recalcularTodo();
+        }
+
+        function recalcularTodo() {
+            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
+            
+            let baseGravadaUsd = 0;
+            let montoExentoUsd = 0;
+
+            carritoItems.forEach(item => {
+                const sub = item.precio * item.cantidad;
+                if (item.esExento) {
+                    montoExentoUsd += sub;
+                } else {
+                    baseGravadaUsd += sub;
+                }
+            });
+
+            const baseGravadaBs = baseGravadaUsd * tasa;
+            const montoExentoBs = montoExentoUsd * tasa;
+            const ivaBs = baseGravadaBs * 0.16; // 16% solo sobre gravados
+            const totalSubtotalBs = baseGravadaBs + montoExentoBs;
+            const igtfBs = (totalSubtotalBs + ivaBs) * 0.03; // 3% IGTF sobre pagos divisas
+            const totalBs = totalSubtotalBs + ivaBs + igtfBs;
+
+            document.getElementById('baseGravadaBs').innerText = 'Bs. ' + baseGravadaBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('montoExentoBs').innerText = 'Bs. ' + montoExentoBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('ivaBs').innerText = 'Bs. ' + ivaBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('igtfBs').innerText = 'Bs. ' + igtfBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('totalBs').innerText = 'Bs. ' + totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
@@ -78,8 +209,20 @@
 
         async function emitirFactura() {
             try {
+                if (carritoItems.length === 0) {
+                    alert('Debe agregar al menos un ítem a la factura.');
+                    return;
+                }
+
+                const rifCliente = document.getElementById('clienteRif').value.trim();
+                const nombreCliente = document.getElementById('clienteNombre').value.trim();
+
+                if (!rifCliente || !nombreCliente) {
+                    alert('Por favor ingrese el RIF y la Razón Social del cliente.');
+                    return;
+                }
+
                 const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
-                // Clave correctamente encerrada entre comillas simples
                 const SUPABASE_ANON_KEY = 'sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji'; 
                 
                 if (!window.supabase) {
@@ -87,47 +230,78 @@
                 }
                 
                 const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
                 const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
-                const usd = parseFloat(document.getElementById('montoUsd').value) || 0;
 
-                if (usd <= 0) {
-                    alert('Por favor ingrese un monto válido en divisas.');
-                    return;
-                }
+                // 1. Guardar o verificar cliente (opcional, insertamos directo en la tabla clientes)
+                const { data: clienteData, error: clienteError } = await client
+                    .from('clientes')
+                    .insert([{
+                        tenant_id: 'a0ee93d8-1111-2222-3333-444455556666',
+                        rif: rifCliente,
+                        razon_social: nombreCliente,
+                        direccion: 'San Felipe, Yaracuy'
+                    }]).select();
 
-                const subtotalBs = usd * tasa;
-                const ivaBs = subtotalBs * 0.16;
-                const igtfBs = subtotalBs * 0.03;
+                // 2. Calcular totales finales para la cabecera
+                let baseGravadaUsd = 0;
+                let montoExentoUsd = 0;
+                carritoItems.forEach(item => {
+                    const sub = item.precio * item.cantidad;
+                    if (item.esExento) montoExentoUsd += sub;
+                    else baseGravadaUsd += sub;
+                });
+
+                const subtotalBs = (baseGravadaUsd + montoExentoUsd) * tasa;
+                const ivaBs = (baseGravadaUsd * tasa) * 0.16;
+                const igtfBs = (subtotalBs + ivaBs) * 0.03;
                 const totalBs = subtotalBs + ivaBs + igtfBs;
 
-                // Inserción directa en la tabla invoices de Supabase
-                const { data, error } = await client
-                    .from('invoices')
-                    .insert([
-                        {
-                            tenant_id: 'a0ee93d8-1111-2222-3333-444455556666',
-                            factura_nro: 'FAC-' + Math.floor(1000 + Math.random() * 9000),
-                            nro_control: '00-' + Math.floor(100000 + Math.random() * 900000),
-                            tasa_bcv: tasa,
-                            monto_usd: usd,
-                            subtotal_bs: subtotalBs,
-                            iva_bs: ivaBs,
-                            igtf_bs: igtfBs,
-                            total_bs: totalBs,
-                            metodo_pago: 'DIVISAS / EFECTIVO'
-                        }
-                    ]);
+                // 3. Insertar la Factura Principal (`invoices`)
+                const facturaNro = 'FAC-' + Math.floor(1000 + Math.random() * 9000);
+                const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
 
-                if (error) {
-                    alert('Error al guardar en Supabase: ' + error.message);
-                } else {
-                    alert('¡Factura emitida y guardada en Supabase con éxito!');
-                    document.getElementById('montoUsd').value = '';
-                    calcularImpuestos();
-                }
+                const { data: facturaData, error: facturaError } = await client
+                    .from('invoices')
+                    .insert([{
+                        tenant_id: 'a0ee93d8-1111-2222-3333-444455556666',
+                        factura_nro: facturaNro,
+                        nro_control: nroControl,
+                        tasa_bcv: tasa,
+                        monto_usd: baseGravadaUsd + montoExentoUsd,
+                        subtotal_bs: subtotalBs,
+                        iva_bs: ivaBs,
+                        igtf_bs: igtfBs,
+                        total_bs: totalBs,
+                        metodo_pago: 'DIVISAS / EFECTIVO'
+                    }]).select();
+
+                if (facturaError) throw facturaError;
+
+                const invoiceId = facturaData[0].id;
+
+                // 4. Insertar los ítems de la factura (`invoice_items`)
+                const itemsParaInsertar = carritoItems.map(item => ({
+                    invoice_id: invoiceId,
+                    cantidad: item.cantidad,
+                    precio_unitario_usd: item.precio,
+                    es_exento: item.esExento,
+                    subtotal_usd: item.precio * item.cantidad
+                }));
+
+                const { error: itemsError } = await client
+                    .from('invoice_items')
+                    .insert(itemsParaInsertar);
+
+                if (itemsError) throw itemsError;
+
+                alert(`¡Factura ${facturaNro} emitida y guardada en Supabase con éxito!`);
+                carritoItems = [];
+                document.getElementById('clienteRif').value = '';
+                document.getElementById('clienteNombre').value = '';
+                actualizarTablaYCalculos();
+
             } catch (err) {
-                alert('Excepción crítica capturada: ' + err.message);
+                alert('Error al procesar la factura: ' + err.message);
             }
         }
     </script>
