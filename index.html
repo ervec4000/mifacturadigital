@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiFacturaDigital.com.ve - SaaS Multi-tenant Seguro</title>
+    <title>MiFacturaDigital.com.ve - Acceso Privado</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-between p-4">
 
-    <!-- 1. PANTALLA DE LOGIN SEGURO -->
+    <!-- 1. PANTALLA DE LOGIN SEGURO (SOLO ACCESO) -->
     <div id="vistaLogin" class="w-full max-w-md bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-700 my-auto space-y-6">
         <header class="text-center space-y-2">
             <h1 class="text-2xl font-bold text-emerald-400">MiFacturaDigital</h1>
@@ -29,17 +29,10 @@
             <button onclick="iniciarSesionTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-lg shadow-emerald-900/20 cursor-pointer text-sm">
                 Iniciar Sesión
             </button>
-
-            <div class="border-t border-slate-700 pt-4 text-center">
-                <p class="text-xs text-slate-400 mb-2">¿Quieres registrar tu comercio?</p>
-                <button onclick="mostrarModalNuevoTenant()" class="w-full bg-slate-700 hover:bg-slate-600 text-emerald-300 font-semibold py-2.5 rounded-xl transition duration-200 text-xs border border-slate-600 cursor-pointer">
-                    + Registrar Nuevo Inquilino
-                </button>
-            </div>
         </div>
     </div>
 
-    <!-- 2. SISTEMA PRINCIPAL -->
+    <!-- 2. SISTEMA PRINCIPAL (AISLADO POR INQUILINO) -->
     <div id="vistaPrincipal" class="hidden w-full max-w-4xl bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-700 my-6 space-y-6">
         <header class="flex flex-col md:flex-row justify-between items-center border-b border-slate-700 pb-4 gap-3">
             <div>
@@ -64,9 +57,6 @@
             </button>
             <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 👥 Clientes
-            </button>
-            <button onclick="cambiarPestana('comercio')" id="btnTabComercio" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                ⚙️ Mi Comercio
             </button>
         </div>
 
@@ -282,88 +272,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- SECCIÓN 5: GESTIÓN DEL INQUILINO ACTIVO (MI COMERCIO / PERFIL) -->
-        <div id="seccionComercio" class="hidden space-y-6">
-            <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
-                <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">⚙️ Configuración y Perfil del Comercio</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                    <div>
-                        <label class="block text-slate-400 mb-1">RIF del Comercio</label>
-                        <input type="text" id="tenantEditRif" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 mb-1">Razón Social</label>
-                        <input type="text" id="tenantEditRazon" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-slate-400 mb-1">Dirección Fiscal</label>
-                        <input type="text" id="tenantEditDireccion" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 mb-1">Persona de Contacto</label>
-                        <input type="text" id="tenantEditContacto" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 mb-1">Teléfono</label>
-                        <input type="text" id="tenantEditTelefono" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 mb-1">Correo Electrónico (Usuario)</label>
-                        <input type="email" id="tenantEditEmail" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 mb-1">Contraseña de Acceso</label>
-                        <input type="text" id="tenantEditPassword" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                    </div>
-                </div>
-                <div class="flex flex-col md:flex-row justify-between pt-2 gap-2">
-                    <button onclick="actualizarDatosComercio()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2.5 rounded-lg text-xs cursor-pointer">💾 Guardar Cambios del Comercio</button>
-                    <button onclick="eliminarComercio()" class="bg-rose-900/60 hover:bg-rose-900 text-rose-300 border border-rose-700 font-semibold px-4 py-2.5 rounded-lg text-xs cursor-pointer">🗑️ Eliminar Cuenta de Comercio</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL NUEVO INQUILINO -->
-    <div id="modalNuevoTenant" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-        <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-base font-bold text-emerald-400">Registrar Nuevo Comercio Inquilino</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                <div>
-                    <label class="block text-slate-400 mb-1">RIF del Comercio</label>
-                    <input type="text" id="nuevoTenantRif" placeholder="J-98765432-1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Razón Social</label>
-                    <input type="text" id="nuevoTenantRazon" placeholder="Mi Nueva Tienda C.A." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-slate-400 mb-1">Dirección Fiscal</label>
-                    <input type="text" id="nuevoTenantDireccion" placeholder="Yaracuy, Venezuela" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Persona de Contacto</label>
-                    <input type="text" id="nuevoTenantContacto" placeholder="Nombre y Apellido" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Teléfono</label>
-                    <input type="text" id="nuevoTenantTelefono" placeholder="0414-1234567" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Correo Electrónico (Usuario)</label>
-                    <input type="email" id="nuevoTenantEmail" placeholder="correo@comercio.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Contraseña</label>
-                    <input type="password" id="nuevoTenantPassword" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-                </div>
-            </div>
-            <div class="flex space-x-2 pt-2">
-                <button onclick="registrarNuevoTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Registrarse</button>
-                <button onclick="cerrarModalNuevoTenant()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
-            </div>
-        </div>
     </div>
 
     <!-- MODAL TICKET -->
@@ -434,7 +342,7 @@
             }
         };
 
-        // --- AUTENTICACIÓN SEGURA ---
+        // --- AUTENTICACIÓN SEGURA POR CREDENCIALES ---
         async function iniciarSesionTenant() {
             const emailInput = document.getElementById('loginEmail').value.trim();
             const passwordInput = document.getElementById('loginPassword').value.trim();
@@ -487,105 +395,9 @@
             document.getElementById('loginPassword').value = '';
         }
 
-        function mostrarModalNuevoTenant() { document.getElementById('modalNuevoTenant').classList.remove('hidden'); }
-        function cerrarModalNuevoTenant() { document.getElementById('modalNuevoTenant').classList.add('hidden'); }
-
-        async function registrarNuevoTenant() {
-            const rif = document.getElementById('nuevoTenantRif').value.trim();
-            const razon = document.getElementById('nuevoTenantRazon').value.trim();
-            const direccion = document.getElementById('nuevoTenantDireccion').value.trim();
-            const contacto = document.getElementById('nuevoTenantContacto').value.trim();
-            const telefono = document.getElementById('nuevoTenantTelefono').value.trim();
-            const email = document.getElementById('nuevoTenantEmail').value.trim();
-            const password = document.getElementById('nuevoTenantPassword').value.trim();
-
-            if (!rif || !razon || !email || !password) {
-                alert('Por favor complete los campos obligatorios (RIF, Razón Social, Email y Contraseña).');
-                return;
-            }
-
-            const { data, error } = await supabaseClient.from('tenants').insert([{
-                rif,
-                razon_social: razon,
-                direccion,
-                contacto,
-                telefono,
-                email,
-                password
-            }]).select();
-
-            if (error) {
-                alert('Error al registrar comercio: ' + error.message);
-                return;
-            }
-
-            tenantActual = data[0];
-            localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
-            cerrarModalNuevoTenant();
-            activarVistaPrincipal();
-            alert('¡Comercio registrado e iniciado con éxito!');
-        }
-
-        // --- GESTIÓN DE PERFIL DEL COMERCIO (INQUILINO) ---
-        function cargarDatosComercioEnFormulario() {
-            if (!tenantActual) return;
-            document.getElementById('tenantEditRif').value = tenantActual.rif || '';
-            document.getElementById('tenantEditRazon').value = tenantActual.razon_social || '';
-            document.getElementById('tenantEditDireccion').value = tenantActual.direccion || '';
-            document.getElementById('tenantEditContacto').value = tenantActual.contacto || '';
-            document.getElementById('tenantEditTelefono').value = tenantActual.telefono || '';
-            document.getElementById('tenantEditEmail').value = tenantActual.email || '';
-            document.getElementById('tenantEditPassword').value = tenantActual.password || '';
-        }
-
-        async function actualizarDatosComercio() {
-            if (!tenantActual) return;
-            const rif = document.getElementById('tenantEditRif').value.trim();
-            const razon = document.getElementById('tenantEditRazon').value.trim();
-            const direccion = document.getElementById('tenantEditDireccion').value.trim();
-            const contacto = document.getElementById('tenantEditContacto').value.trim();
-            const telefono = document.getElementById('tenantEditTelefono').value.trim();
-            const email = document.getElementById('tenantEditEmail').value.trim();
-            const password = document.getElementById('tenantEditPassword').value.trim();
-
-            if (!rif || !razon || !email || !password) {
-                alert('Los campos RIF, Razón Social, Correo y Contraseña son obligatorios.');
-                return;
-            }
-
-            const { data, error } = await supabaseClient
-                .from('tenants')
-                .update({ rif, razon_social: razon, direccion, contacto, telefono, email, password })
-                .eq('id', tenantActual.id)
-                .select();
-
-            if (error) {
-                alert('Error al actualizar comercio: ' + error.message);
-                return;
-            }
-
-            tenantActual = data[0];
-            localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
-            activarVistaPrincipal();
-            alert('¡Datos del comercio actualizados con éxito!');
-        }
-
-        async function eliminarComercio() {
-            if (!confirm('¿Está seguro de eliminar su cuenta de comercio? Se borrarán todos sus productos, clientes e historial.')) return;
-            
-            const { error } = await supabaseClient.from('tenants').delete().eq('id', tenantActual.id);
-            if (error) {
-                alert('Error al eliminar comercio: ' + error.message);
-                return;
-            }
-
-            alert('Cuenta eliminada con éxito.');
-            cerrarSesion();
-        }
-
         // --- NAVEGACIÓN ---
         function cambiarPestana(pestana) {
-            const tabs = ['pos', 'historial', 'productos', 'clientes', 'comercio'];
+            const tabs = ['pos', 'historial', 'productos', 'clientes'];
             tabs.forEach(t => {
                 const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
                 const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -601,14 +413,13 @@
             if (pestana === 'historial') cargarHistorial();
             if (pestana === 'productos') cargarProductosGestion();
             if (pestana === 'clientes') cargarClientesGestion();
-            if (pestana === 'comercio') cargarDatosComercioEnFormulario();
             if (pestana === 'pos') {
                 cargarProductosSelect();
                 cargarClientesSelect();
             }
         }
 
-        // --- MÓDULO PRODUCTOS ---
+        // --- MÓDULO PRODUCTOS (CRUD aislado por tenant) ---
         async function cargarProductosSelect() {
             if (!supabaseClient || !tenantActual) return;
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
@@ -697,7 +508,7 @@
             cargarProductosGestion();
         }
 
-        // --- MÓDULO CLIENTES ---
+        // --- MÓDULO CLIENTES (CRUD aislado por tenant) ---
         async function cargarClientesSelect() {
             if (!supabaseClient || !tenantActual) return;
             const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
