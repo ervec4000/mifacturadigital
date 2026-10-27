@@ -78,9 +78,9 @@
 
         async function emitirFactura() {
             try {
-                // Credenciales y cliente configurados de forma segura con tu llave real
                 const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
-                const SUPABASE_ANON_KEY = 'sb_publishable_78gLKFnFoK_RBIprxxl1w_CF-G0'; 
+                // Pega aquí la clave anon/public JWT (la larga que empieza por eyJ...)
+                const SUPABASE_ANON_KEY = sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji; 
                 
                 if (!window.supabase) {
                     throw new Error('La librería de Supabase no se ha cargado correctamente.');
