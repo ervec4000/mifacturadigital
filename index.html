@@ -114,7 +114,7 @@
                     <label class="block text-xs font-semibold text-slate-300 mb-1">¿Aplica IGTF (3% Divisas)?</label>
                     <select id="aplicaIgtfSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-emerald-400 font-semibold text-sm" onchange="recalcularTodo()">
                         <option value="SI">SÍ - Aplica IGTF (Pago en Divisas/Cripto)</option>
-                        <option value="NO">NO - Exento / Pago en Bolívares</option>
+                        <option value="NO" selected>NO - Exento / Pago en Bolívares</option>
                     </select>
                 </div>
             </div>
@@ -918,7 +918,7 @@
             
             const totalText = document.getElementById('totalBs').innerText;
             const totalBsStr = totalText.split('| Bs. ')[1] || '0';
-            const totalBs = parseFloat(totalBsStr.replace(/\./g, '').replace(',', '.')) || 0;
+            const totalBs = parseFloat(totalBsStr.trim()) || 0;
 
             const recibidoUsd = parseFloat(document.getElementById('pagoRecibidoUsd')?.value || 0);
             const recibidoBs = parseFloat(document.getElementById('pagoRecibidoBs')?.value || 0);
@@ -1003,8 +1003,7 @@
                         total_bs: totalBs,
                         cliente_rif: rifCliente,
                         cliente_nombre: nombreCliente,
-                        metodo_pago: metodoPago,
-                        aplica_igtf: aplicaIgtf ? 'SÍ' : 'NO'
+                        metodo_pago: metodoPago
                     }]).select();
 
                 if (facturaError) throw facturaError;
@@ -1062,7 +1061,7 @@
                         tenant_id: fac.tenant_id, factura_nro: fac.factura_nro, nro_control: fac.nro_control,
                         tasa_bcv: fac.tasa_bcv, monto_usd: fac.monto_usd, subtotal_bs: fac.subtotal_bs,
                         iva_bs: fac.iva_bs, igtf_bs: fac.igtf_bs, total_bs: fac.total_bs,
-                        cliente_rif: fac.cliente_rif, cliente_nombre: fac.cliente_nombre, metodo_pago: fac.metodo_pago, aplica_igtf: fac.aplica_igtf
+                        cliente_rif: fac.cliente_rif, cliente_nombre: fac.cliente_nombre, metodo_pago: fac.metodo_pago
                     }]).select();
                     if (error) throw error;
                     const invoiceId = facturaData[0].id;
@@ -1359,7 +1358,7 @@
             document.getElementById('ticketFecha').innerText = 'Fecha/Hora: ' + fechaHora.toLocaleDateString() + ' ' + fechaHora.toLocaleTimeString();
             document.getElementById('ticketTasa').innerText = doc.tasa_bcv.toFixed(2);
             document.getElementById('ticketCliente').innerText = `Cliente: ${doc.cliente_nombre || 'Consumidor Final'} | RIF: ${doc.cliente_rif || 'V-000'}`;
-            document.getElementById('ticketAplicaIgtf').innerText = `IGTF (3%): ${doc.aplica_igtf || 'NO'}`;
+            document.getElementById('ticketAplicaIgtf').innerText = `IGTF (3%): SÍ / NO`;
 
             const tituloTipo = document.getElementById('ticketTipoTitulo');
             const nroDocElem = document.getElementById('ticketNro');
