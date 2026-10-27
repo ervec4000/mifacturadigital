@@ -26,12 +26,12 @@
 
         <div class="space-y-4">
             <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico (Inquilino / Supabase)</label>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico (Supabase tenants)</label>
                 <input type="email" id="loginEmail" placeholder="ervec2000@gmail.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
             <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Contraseña (Opcional)</label>
-                <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-emerald-500">
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Contraseña</label>
+                <input type="password" id="loginPassword" placeholder="123456" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
 
             <button onclick="iniciarSesionTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-lg shadow-emerald-900/20 cursor-pointer text-sm">
@@ -45,7 +45,7 @@
         <header class="flex flex-col md:flex-row justify-between items-center border-b border-slate-700 pb-4 gap-3">
             <div>
                 <h1 class="text-xl font-bold text-emerald-400" id="headerTenantNombre">Comercio Activo</h1>
-                <p class="text-xs text-slate-400">RIF: <span id="headerTenantRif">J-000</span> | Plan: <span id="headerTenantRol" class="font-bold text-amber-400 uppercase">--</span> | Ref: <span id="headerTenantRefCode" class="text-emerald-300 font-mono">--</span></p>
+                <p class="text-xs text-slate-400">RIF: <span id="headerTenantRif">J-000</span> | Rol: <span id="headerTenantRol" class="font-bold text-amber-400 uppercase">--</span></p>
             </div>
             <div class="flex items-center gap-2">
                 <span id="offlineBadge" class="hidden bg-amber-900/50 text-amber-300 border border-amber-700 text-[10px] px-2 py-1 rounded-lg">⚠️ Offline (<span id="contadorOffline">0</span>)</span>
@@ -426,11 +426,11 @@
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">🏢 Directorio de Inquilinos / Comercios Afiliados</h3>
-                        <p class="text-xs text-slate-400">Control maestro de accesos, planes y estatus fiscal de cada negocio en la PWA</p>
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">🏢 Directorio de Tenants (Inquilinos)</h3>
+                        <p class="text-xs text-slate-400">Control maestro de accesos, credenciales y roles en la PWA</p>
                     </div>
                     <button onclick="abrirModalNuevoTenant()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-2 rounded-lg font-semibold cursor-pointer">
-                        + Nuevo Inquilino
+                        + Nuevo Tenant
                     </button>
                 </div>
 
@@ -438,10 +438,9 @@
                     <table class="w-full text-left text-xs text-slate-300">
                         <thead class="bg-slate-900 text-slate-400 uppercase">
                             <tr>
-                                <th class="p-2.5">RIF</th>
-                                <th class="p-2.5">Razón Social / Comercio</th>
-                                <th class="p-2.5">Correo Electrónico</th>
-                                <th class="p-2.5">Plan Activo</th>
+                                <th class="p-2.5">Correo (email)</th>
+                                <th class="p-2.5">Contraseña (password)</th>
+                                <th class="p-2.5">Rol (rol)</th>
                                 <th class="p-2.5 text-center">Acciones Maestras</th>
                             </tr>
                         </thead>
@@ -502,41 +501,37 @@
         </div>
     </div>
 
-    <!-- MODAL: GESTIÓN DE PERFIL Y CAMBIO DE CONTRASEÑA -->
+    <!-- MODAL: GESTIÓN DE PERFIL -->
     <div id="modalPerfilUsuario" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
             <h3 class="text-base font-bold text-emerald-400">👤 Perfil de Usuario y Seguridad</h3>
-            
             <div class="space-y-3 text-xs">
                 <div>
-                    <label class="block text-slate-400 mb-1">Correo Electrónico (Identificador)</label>
+                    <label class="block text-slate-400 mb-1">Correo Electrónico (email)</label>
                     <input type="email" id="perfilEmail" readonly class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-400 font-mono cursor-not-allowed">
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">Razón Social / Nombre Comercial</label>
-                    <input type="text" id="perfilRazonSocial" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
+                    <label class="block text-slate-400 mb-1">Contraseña Actual</label>
+                    <input type="text" id="perfilPassword" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white font-mono">
                 </div>
             </div>
-
             <div class="flex space-x-2 pt-2">
-                <button onclick="guardarCambiosPerfil()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Actualizar Datos</button>
+                <button onclick="guardarCambiosPerfil()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Actualizar Contraseña</button>
                 <button onclick="cerrarModalPerfil()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cerrar</button>
             </div>
         </div>
     </div>
 
-    <!-- MODAL GESTIÓN DE USUARIOS DEL INQUILINO -->
+    <!-- MODAL GESTIÓN DE USUARIOS -->
     <div id="modalGestionUsuarios" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 class="text-base font-bold text-sky-400">👥 Gestión de Usuarios Internos</h3>
+            <h3 class="text-base font-bold text-sky-400">👥 Gestión de Tenants Registrados</h3>
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-slate-300">
                     <thead class="bg-slate-900 text-slate-400 uppercase">
                         <tr>
                             <th class="p-2">Correo</th>
-                            <th class="p-2">Razón Social</th>
-                            <th class="p-2">Plan</th>
-                            <th class="p-2 text-center">Estatus</th>
+                            <th class="p-2">Rol</th>
                         </tr>
                     </thead>
                     <tbody id="tablaUsuariosTenant" class="divide-y divide-slate-700/50"></tbody>
@@ -546,36 +541,29 @@
         </div>
     </div>
 
-    <!-- MODAL MASTER: NUEVO / EDITAR INQUILINO -->
+    <!-- MODAL MASTER: NUEVO / EDITAR TENANT -->
     <div id="modalTenantMaster" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 class="text-base font-bold text-emerald-400" id="tituloTenantModal">🏢 Registrar Nuevo Inquilino</h3>
+            <h3 class="text-base font-bold text-emerald-400" id="tituloTenantModal">🏢 Registrar Nuevo Tenant</h3>
             <input type="hidden" id="masterTenantId">
             
             <div class="space-y-3 text-xs">
                 <div>
-                    <label class="block text-slate-400 mb-1">RIF del Comercio</label>
-                    <input type="text" id="masterRif" placeholder="J-12345678-9" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white font-mono">
+                    <label class="block text-slate-400 mb-1">Correo Electrónico (email)</label>
+                    <input type="email" id="masterEmail" placeholder="usuario@dominio.com" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">Razón Social</label>
-                    <input type="text" id="masterRazonSocial" placeholder="Distribidora Autorizada C.A." class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
+                    <label class="block text-slate-400 mb-1">Contraseña (password)</label>
+                    <input type="text" id="masterPassword" placeholder="123456" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white font-mono">
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">Correo Electrónico</label>
-                    <input type="email" id="masterEmail" placeholder="comercio@empresa.com" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Plan Activo</label>
-                    <select id="masterPlan" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-amber-400 font-semibold">
-                        <option value="Administración">Administración (Total)</option>
-                        <option value="Freemium">Freemium</option>
-                    </select>
+                    <label class="block text-slate-400 mb-1">Rol (ej. admin o vacío)</label>
+                    <input type="text" id="masterRol" placeholder="admin" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-amber-400 font-semibold">
                 </div>
             </div>
 
             <div class="flex space-x-2 pt-2">
-                <button onclick="guardarInquilinoMaster()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Guardar Inquilino</button>
+                <button onclick="guardarInquilinoMaster()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Guardar Tenant</button>
                 <button onclick="cerrarModalTenantMaster()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
             </div>
         </div>
@@ -693,16 +681,29 @@
 
         async function iniciarSesionTenant() {
             const emailInput = document.getElementById('loginEmail').value.trim();
+            const passwordInput = document.getElementById('loginPassword').value.trim();
             if (!emailInput) { alert('Ingrese un correo electrónico.'); return; }
 
-            // Consulta validando únicamente el correo registrado en Supabase
+            // Consulta directa a la tabla "tenants" usando los campos correctos (email y password)
             const { data, error } = await supabaseClient
-                .from('Inquilinos').select('*').eq('Correo electrónico', emailInput).single();
+                .from('tenants')
+                .select('*')
+                .eq('email', emailInput)
+                .single();
 
-            if (error || !data) { alert('Correo electrónico no registrado en el sistema.'); return; }
+            if (error || !data) { alert('Correo electrónico no registrado en la tabla tenants.'); return; }
+
+            // Validar contraseña si existe en la base de datos
+            if (data.password && data.password !== passwordInput) {
+                alert('Contraseña incorrecta.');
+                return;
+            }
 
             tenantActual = data;
-            if (!tenantActual.plan_activo) tenantActual.plan_activo = 'Freemium';
+            tenantActual.plan_activo = (tenantActual.rol === 'admin') ? 'Administración' : 'Freemium';
+            tenantActual.razon_social = tenantActual.razon_social || tenantActual.email;
+            tenantActual.Rif = tenantActual.rif || 'J-00000000-0';
+
             localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
             activarVistaPrincipal();
         }
@@ -711,7 +712,6 @@
             const guardado = localStorage.getItem('tenant_actual');
             if (guardado) {
                 tenantActual = JSON.parse(guardado);
-                if (!tenantActual.plan_activo) tenantActual.plan_activo = 'Freemium';
                 activarVistaPrincipal();
             }
         }
@@ -719,27 +719,24 @@
         function activarVistaPrincipal() {
             document.getElementById('vistaLogin').classList.add('hidden');
             document.getElementById('vistaPrincipal').classList.remove('hidden');
-            document.getElementById('headerTenantNombre').innerText = tenantActual.razon_social || tenantActual['Correo electrónico'];
+            document.getElementById('headerTenantNombre').innerText = tenantActual.email;
             document.getElementById('headerTenantRif').innerText = tenantActual.Rif || 'J-000';
-            document.getElementById('headerTenantRol').innerText = (tenantActual.plan_activo || 'Freemium').toUpperCase();
+            document.getElementById('headerTenantRol').innerText = (tenantActual.rol || 'freemium').toUpperCase();
             
-            document.getElementById('lblPerfilNombre').innerText = tenantActual.razon_social || tenantActual['Correo electrónico'];
-            const initials = (tenantActual.razon_social || 'EV').slice(0, 2).toUpperCase();
+            document.getElementById('lblPerfilNombre').innerText = tenantActual.email;
+            const initials = tenantActual.email.slice(0, 2).toUpperCase();
             document.getElementById('avatarUserInitials').innerText = initials;
 
-            const rifText = tenantActual.Rif || 'MASTER';
-            const refCode = 'REF-' + rifText.replace(/[^a-zA-Z0-9]/g, '');
-            document.getElementById('headerTenantRefCode').innerText = refCode;
+            const refCode = 'REF-' + tenantActual.email.replace(/[^a-zA-Z0-9]/g, '');
             document.getElementById('miCodigoRef').value = `https://mifacturadigital.com.ve/?ref=${refCode}`;
 
             const elementosAdmin = document.querySelectorAll('.tab-admin');
             const elementosMaster = document.querySelectorAll('.tab-master');
             const btnAdminUsuarios = document.getElementById('btnMenuAdminUsuarios');
 
-            const emailUser = tenantActual['Correo electrónico'] || '';
-            const esMasterGlobal = emailUser === 'ervec2000@gmail.com' || tenantActual.plan_activo === 'Administración';
+            const esAdmin = tenantActual.rol === 'admin' || tenantActual.email === 'ervec2000@gmail.com';
 
-            if (esMasterGlobal) {
+            if (esAdmin) {
                 elementosAdmin.forEach(el => el.classList.remove('hidden'));
                 elementosMaster.forEach(el => el.classList.remove('hidden'));
                 btnAdminUsuarios.classList.remove('hidden');
@@ -801,25 +798,22 @@
 
         // --- PERFIL Y USUARIOS TENANT ---
         function abrirModalPerfil() {
-            document.getElementById('perfilEmail').value = tenantActual['Correo electrónico'] || '';
-            document.getElementById('perfilRazonSocial').value = tenantActual.razon_social || '';
+            document.getElementById('perfilEmail').value = tenantActual.email || '';
+            document.getElementById('perfilPassword').value = tenantActual.password || '';
             document.getElementById('modalPerfilUsuario').classList.remove('hidden');
         }
 
         function cerrarModalPerfil() { document.getElementById('modalPerfilUsuario').classList.add('hidden'); }
 
         async function guardarCambiosPerfil() {
-            const nuevaRazon = document.getElementById('perfilRazonSocial').value.trim();
-            if (!nuevaRazon) { alert('La razón social no puede estar vacía.'); return; }
+            const nuevoPassword = document.getElementById('perfilPassword').value.trim();
             try {
-                let updatePayload = { razon_social: nuevaRazon };
-                const { error } = await supabaseClient.from('Inquilinos').update(updatePayload).eq('id', tenantActual.id);
+                const { error } = await supabaseClient.from('tenants').update({ password: nuevoPassword }).eq('id', tenantActual.id);
                 if (error) throw error;
-                tenantActual.razon_social = nuevaRazon;
+                tenantActual.password = nuevoPassword;
                 localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
-                alert('¡Perfil actualizado con éxito!');
+                alert('¡Contraseña actualizada con éxito!');
                 cerrarModalPerfil();
-                activarVistaPrincipal();
             } catch (err) { alert('Error: ' + err.message); }
         }
 
@@ -831,39 +825,36 @@
         function cerrarModalGestionUsuarios() { document.getElementById('modalGestionUsuarios').classList.add('hidden'); }
 
         async function cargarUsuariosTenant() {
-            if (!supabaseClient || !tenantActual) return;
-            const { data } = await supabaseClient.from('Inquilinos').select('id, "Correo electrónico", razon_social, plan_activo, created_at').eq('id', tenantActual.id);
+            if (!supabaseClient) return;
+            const { data } = await supabaseClient.from('tenants').select('id, email, rol');
             const tbody = document.getElementById('tablaUsuariosTenant');
             tbody.innerHTML = '';
             if (!data) return;
             data.forEach(user => {
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50">
-                        <td class="p-2.5 font-mono text-emerald-400">${user['Correo electrónico']}</td>
-                        <td class="p-2.5 font-semibold text-white">${user.razon_social || 'Sin Nombre'}</td>
-                        <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-900/50 text-amber-300 font-bold uppercase">${user.plan_activo || 'Freemium'}</span></td>
-                        <td class="p-2.5 text-center"><span class="text-xs text-slate-400">Activo</span></td>
+                        <td class="p-2.5 font-mono text-emerald-400">${user.email}</td>
+                        <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-900/50 text-amber-300 font-bold uppercase">${user.rol || 'user'}</span></td>
                     </tr>
                 `;
             });
         }
 
-        // --- GESTIÓN MAESTRA DE INQUILINOS ---
+        // --- GESTIÓN MAESTRA DE TENANTS ---
         async function cargarInquilinosMaster() {
             if (!supabaseClient) return;
-            const { data } = await supabaseClient.from('Inquilinos').select('*').order('created_at', { ascending: false });
+            const { data } = await supabaseClient.from('tenants').select('*');
             const tbody = document.getElementById('tablaInquilinosMaster');
             tbody.innerHTML = '';
-            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay inquilinos.</td></tr>`; return; }
+            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">No hay tenants.</td></tr>`; return; }
             data.forEach(t => {
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50">
-                        <td class="p-2.5 font-mono text-emerald-400">${t.Rif || 'S/R'}</td>
-                        <td class="p-2.5 font-semibold text-white">${t.razon_social || 'Sin Nombre'}</td>
-                        <td class="p-2.5 text-slate-300">${t['Correo electrónico'] || 'Sin Correo'}</td>
-                        <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-900/50 text-amber-300 font-bold uppercase">${t.plan_activo || 'Freemium'}</span></td>
+                        <td class="p-2.5 font-mono text-emerald-400">${t.email}</td>
+                        <td class="p-2.5 font-mono text-slate-300">${t.password || 'N/A'}</td>
+                        <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-900/50 text-amber-300 font-bold uppercase">${t.rol || 'user'}</span></td>
                         <td class="p-2.5 text-center space-x-2">
-                            <button onclick='editarInquilinoMaster("${t.id}", "${t.Rif || ''}", "${t.razon_social || ''}", "${t['Correo electrónico'] || ''}", "${t.plan_activo || 'Freemium'}")' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Configurar</button>
+                            <button onclick='editarInquilinoMaster("${t.id}", "${t.email}", "${t.password || ''}", "${t.rol || ''}")' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Configurar</button>
                         </td>
                     </tr>
                 `;
@@ -872,21 +863,19 @@
 
         function abrirModalNuevoTenant() {
             document.getElementById('masterTenantId').value = '';
-            document.getElementById('masterRif').value = '';
-            document.getElementById('masterRazonSocial').value = '';
             document.getElementById('masterEmail').value = '';
-            document.getElementById('masterPlan').value = 'Freemium';
-            document.getElementById('tituloTenantModal').innerText = '🏢 Registrar Nuevo Inquilino';
+            document.getElementById('masterPassword').value = '';
+            document.getElementById('masterRol').value = 'admin';
+            document.getElementById('tituloTenantModal').innerText = '🏢 Registrar Nuevo Tenant';
             document.getElementById('modalTenantMaster').classList.remove('hidden');
         }
 
-        function editarInquilinoMaster(id, rif, razon, email, plan) {
+        function editarInquilinoMaster(id, email, password, rol) {
             document.getElementById('masterTenantId').value = id;
-            document.getElementById('masterRif').value = rif;
-            document.getElementById('masterRazonSocial').value = razon;
             document.getElementById('masterEmail').value = email;
-            document.getElementById('masterPlan').value = plan;
-            document.getElementById('tituloTenantModal').innerText = '⚙️ Configurar Inquilino';
+            document.getElementById('masterPassword').value = password;
+            document.getElementById('masterRol').value = rol;
+            document.getElementById('tituloTenantModal').innerText = '⚙️ Configurar Tenant';
             document.getElementById('modalTenantMaster').classList.remove('hidden');
         }
 
@@ -894,22 +883,19 @@
 
         async function guardarInquilinoMaster() {
             const id = document.getElementById('masterTenantId').value;
-            const rif = document.getElementById('masterRif').value.trim();
-            const razon_social = document.getElementById('masterRazonSocial').value.trim();
             const email = document.getElementById('masterEmail').value.trim();
-            const plan_activo = document.getElementById('masterPlan').value;
+            const password = document.getElementById('masterPassword').value.trim();
+            const rol = document.getElementById('masterRol').value.trim();
 
-            if (!rif || !razon_social || !email) { alert('Complete RIF, Razón Social y Correo.'); return; }
+            if (!email) { alert('Ingrese el correo electrónico.'); return; }
             try {
-                let payload = { Rif: rif, razon_social, 'Correo electrónico': email, plan_activo };
-
+                let payload = { email, password, rol };
                 if (id) {
-                    await supabaseClient.from('Inquilinos').update(payload).eq('id', id);
+                    await supabaseClient.from('tenants').update(payload).eq('id', id);
                 } else {
-                    await supabaseClient.from('Inquilinos').insert([payload]);
+                    await supabaseClient.from('tenants').insert([payload]);
                 }
-
-                alert('¡Inquilino guardado con éxito!');
+                alert('¡Tenant guardado con éxito!');
                 cerrarModalTenantMaster();
                 cargarInquilinosMaster();
             } catch (err) { alert('Error: ' + err.message); }
@@ -933,7 +919,7 @@
 
         async function cargarProductosGestion() {
             if (!supabaseClient || !tenantActual) return;
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             const tbody = document.getElementById('tablaProductosGestion');
             tbody.innerHTML = '';
             if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No hay productos.</td></tr>`; return; }
@@ -1026,7 +1012,7 @@
 
         async function cargarClientesGestion() {
             if (!supabaseClient || !tenantActual) return;
-            const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
+            const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
             const tbody = document.getElementById('tablaClientesGestion');
             tbody.innerHTML = '';
             if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay clientes.</td></tr>`; return; }
@@ -1342,8 +1328,7 @@
                 const doc = documentoActualTicket;
                 let encoder = new TextEncoder();
                 let comandos = '\x1B\x40\x1B\x61\x01';
-                comandos += `${tenantActual.razon_social}\nRIF: ${tenantActual.Rif}\n`;
-                comandos += `FACTURA FISCAL DIGITAL\n--------------------------------\n`;
+                comandos += `${tenantActual.email}\nFACTURA FISCAL DIGITAL\n--------------------------------\n`;
                 comandos += `Nro: ${doc.factura_nro || doc.nota_nro} | Ctrl: ${doc.nro_control}\n`;
                 comandos += `Total: $ ${(doc.total_bs / doc.tasa_bcv).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}\n`;
                 comandos += `Copia sin derecho a credito fiscal\n\n\n`;
@@ -1529,7 +1514,7 @@
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
-            link.setAttribute("download", `Libro_Ventas_SENIAT_${tenantActual.Rif || 'MASTER'}_${fechaDesde}_al_${fechaHasta}.csv`);
+            link.setAttribute("download", `Libro_Ventas_SENIAT_${tenantActual.email}_${fechaDesde}_al_${fechaHasta}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -1615,8 +1600,8 @@
 
         async function verComprobanteUnificado(doc) {
             documentoActualTicket = doc;
-            document.getElementById('ticketComercioNombre').innerText = tenantActual.razon_social || 'COMERCIO C.A.';
-            document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.Rif || 'J-00000000-0'}`;
+            document.getElementById('ticketComercioNombre').innerText = tenantActual.email;
+            document.getElementById('ticketComercioRif').innerText = `RIF: J-00000000-0`;
             document.getElementById('ticketFecha').innerText = 'Fecha/Hora: ' + formatearFecha8Digitos(doc.created_at);
             document.getElementById('ticketTasa').innerText = (doc.tasa_bcv || 1).toFixed(2);
             document.getElementById('ticketCliente').innerText = `Cliente: ${doc.cliente_nombre || 'Consumidor Final'} | RIF: ${doc.cliente_rif || 'V-000'}`;
@@ -1699,7 +1684,7 @@
             if (!documentoActualTicket || !tenantActual) return;
             const doc = documentoActualTicket;
             const fechaHora = formatearFecha8Digitos(doc.created_at);
-            let mensaje = `*${tenantActual.razon_social || 'Comercio'}*_%0A*RIF:* ${tenantActual.Rif || 'J-000'}%0A%0A📄 *${doc.tipoDoc}:* ${doc.numero}%0A📌 *Control:* ${doc.nro_control}%0A📅 *Fecha:* ${fechaHora}%0A👤 *Cliente:* ${doc.cliente_nombre || 'Consumidor Final'} (${doc.cliente_rif || 'V-000'})%0A💰 *Total:* $ ${(doc.total_bs/doc.tasa_bcv).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}%0A%0A¡Gracias por su compra!`;
+            let mensaje = `*${tenantActual.email}*_%0A📄 *${doc.tipoDoc}:* ${doc.numero}%0A📌 *Control:* ${doc.nro_control}%0A📅 *Fecha:* ${fechaHora}%0A👤 *Cliente:* ${doc.cliente_nombre || 'Consumidor Final'} (${doc.cliente_rif || 'V-000'})%0A💰 *Total:* $ ${(doc.total_bs/doc.tasa_bcv).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}%0A%0A¡Gracias por su compra!`;
             window.open(`https://wa.me/?text=${mensaje}`, '_blank');
         }
     </script>
