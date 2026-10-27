@@ -82,7 +82,10 @@
         <div id="seccionPos" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">Tasa BCV del Día (Bs. / $)</label>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-semibold text-slate-300">Tasa BCV Oficial (Bs. / $)</label>
+                        <button onclick="consultarTasaBcvApi()" class="text-[10px] text-emerald-400 hover:underline cursor-pointer">🔄 Consultar API Oficial</button>
+                    </div>
                     <input type="text" id="tasaBcv" value="887.30" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500 font-mono" oninput="recalcularTodo()">
                 </div>
                 <div>
@@ -244,7 +247,7 @@
                     </div>
                     <div class="flex gap-2">
                         <button onclick="generarReporteZ()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-2 rounded-lg font-semibold cursor-pointer">🔄 Recalcular</button>
-                        <button onclick="exportarLibroVentasCSV()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer">📥 Descargar Libro (Excel)</button>
+                        <button onclick="exportarLibroVentasCSV()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer">📥 Descargar Libro SENIAT (Excel/CSV)</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-900 p-4 rounded-lg border border-slate-700 items-end">
@@ -547,6 +550,21 @@
             return `${dd}/${mm}/${aaaa} ${hh}:${min}:${ss}`;
         }
 
+        async function consultarTasaBcvApi() {
+            try {
+                const res = await fetch('https://pydolarvenezuela-api.valtx.workers.dev/api/v1/dollar/bcv');
+                const json = await res.json();
+                if (json && json.monitors && json.monitors.usd) {
+                    const tasaOficial = json.monitors.usd.price;
+                    document.getElementById('tasaBcv').value = tasaOficial.toFixed(2);
+                    recalcularTodo();
+                    alert(`¡Tasa BCV oficial actualizada desde API: ${tasaOficial.toFixed(2)} Bs.!`);
+                }
+            } catch (e) {
+                console.warn('No se pudo conectar con la API de BCV automática. Se mantiene la tasa actual.', e);
+            }
+        }
+
         async function iniciarSesionTenant() {
             const emailInput = document.getElementById('loginEmail').value.trim();
             const passwordInput = document.getElementById('loginPassword').value.trim();
@@ -631,7 +649,11 @@
             }
             if (pestana === 'productos') cargarProductosGestion();
             if (pestana === 'clientes') cargarClientesGestion();
-            if (pestana === 'pos') { cargarProductosSelect(); cargarClientesSelect(); }
+            if (pestana === 'pos') { 
+                consultarTasaBcvApi();
+                cargarProductosSelect(); 
+                cargarClientesSelect(); 
+            }
         }
 
         function copiarCodigoRef() {
@@ -1254,30 +1276,39 @@
             const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*').eq('tenant_id', tenantActual.id);
             const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*').eq('tenant_id', tenantActual.id);
 
-            let csvContent = "\uFEFFsep=;\nFecha;Tipo Documento;Nro Documento;Nro Control;Doc Afectado;RIF Cliente;Razon Social;Metodo Pago;Tasa BCV;Subtotal ($/Bs);IVA ($/Bs);IGTF ($/Bs);Total ($/Bs)\n";
+            // Cabecera estrictamente formateada para auditoría del Libro de Ventas SENIAT
+            let csvContent = "\uFEFFsep=;\nFecha;Tipo Documento;Nro Documento;Nro Control;Doc Afectado;RIF Cliente;Razon Social;Metodo Pago;Tasa BCV;Ventas Exentas (Bs);Base Imponible Gravada (Bs);Alicuota IVA (%);IVA Debito Fiscal (Bs);IGTF Percibido (Bs);Total Venta (Bs)\n";
 
             if (facturas) {
                 facturas.forEach(f => {
                     const fechaInv = f.created_at.slice(0,10);
                     if ((fechaDesde && fechaInv < fechaDesde) || (fechaHasta && fechaInv > fechaHasta)) return;
-                    const t = f.tasa_bcv;
-                    csvContent += `"${formatearFecha8Digitos(f.created_at)}";"FACTURA";"${f.factura_nro}";"${f.nro_control}";"N/A";"${f.cliente_rif}";"${(f.cliente_nombre||'').replace(/"/g,'""')}";"${f.metodo_pago}";${t};$ ${(f.subtotal_bs/t).toFixed(2)} / Bs. ${f.subtotal_bs.toFixed(2)};$ ${(f.iva_bs/t).toFixed(2)} / Bs. ${f.iva_bs.toFixed(2)};$ ${(f.igtf_bs/t).toFixed(2)} / Bs. ${f.igtf_bs.toFixed(2)};$ ${(f.total_bs/t).toFixed(2)} / Bs. ${f.total_bs.toFixed(2)}\n`;
+                    const t = f.tasa_bcv || 1;
+                    const ivaBs = f.iva_bs || 0;
+                    const baseGravadaBs = ivaBs > 0 ? (ivaBs / 0.16) : 0;
+                    const exentoBs = Math.max(0, f.total_bs - baseGravadaBs - ivaBs - (f.igtf_bs || 0));
+                    
+                    csvContent += `"${formatearFecha8Digitos(f.created_at)}";"FACTURA";"${f.factura_nro}";"${f.nro_control}";"N/A";"${f.cliente_rif}";"${(f.cliente_nombre||'').replace(/"/g,'""')}";"${f.metodo_pago}";${t};${exentoBs.toFixed(2)};${baseGravadaBs.toFixed(2)};16%;${ivaBs.toFixed(2)};${(f.igtf_bs||0).toFixed(2)};${f.total_bs.toFixed(2)}\n`;
                 });
             }
             if (notasCredito) {
                 notasCredito.forEach(nc => {
                     const fechaInv = nc.created_at.slice(0,10);
                     if ((fechaDesde && fechaInv < fechaDesde) || (fechaHasta && fechaInv > fechaHasta)) return;
-                    const t = nc.tasa_bcv;
-                    csvContent += `"${formatearFecha8Digitos(nc.created_at)}";"NOTA CREDITO";"${nc.nota_nro}";"${nc.nro_control}";"N/A";"V-000";"CLIENTE";"${nc.motivo}";${t};0.00;0.00;0.00;$ ${(nc.total_bs/t).toFixed(2)} / Bs. ${nc.total_bs.toFixed(2)}\n`;
+                    const t = nc.tasa_bcv || 1;
+                    const facturaOrigen = (facturas || []).find(f => f.id === nc.invoice_id);
+                    const nroRef = facturaOrigen ? facturaOrigen.factura_nro : 'N/A';
+                    csvContent += `"${formatearFecha8Digitos(nc.created_at)}";"NOTA CREDITO";"${nc.nota_nro}";"${nc.nro_control}";"${nroRef}";"${facturaOrigen?.cliente_rif || 'V-000'}";"${(facturaOrigen?.cliente_nombre||'CLIENTE').replace(/"/g,'""')}";"${nc.motivo}";${t};0.00;0.00;16%;0.00;0.00;${nc.total_bs.toFixed(2)}\n`;
                 });
             }
             if (notasDebito) {
                 notasDebito.forEach(nd => {
                     const fechaInv = nd.created_at.slice(0,10);
                     if ((fechaDesde && fechaInv < fechaDesde) || (fechaHasta && fechaInv > fechaHasta)) return;
-                    const t = nd.tasa_bcv;
-                    csvContent += `"${formatearFecha8Digitos(nd.created_at)}";"NOTA DEBITO";"${nd.nota_nro}";"${nd.nro_control}";"N/A";"V-000";"CLIENTE";"${nd.motivo}";${t};0.00;0.00;0.00;$ ${(nd.total_bs/t).toFixed(2)} / Bs. ${nd.total_bs.toFixed(2)}\n`;
+                    const t = nd.tasa_bcv || 1;
+                    const facturaOrigen = (facturas || []).find(f => f.id === nd.invoice_id);
+                    const nroRef = facturaOrigen ? facturaOrigen.factura_nro : 'N/A';
+                    csvContent += `"${formatearFecha8Digitos(nd.created_at)}";"NOTA DEBITO";"${nd.nota_nro}";"${nd.nro_control}";"${nroRef}";"${facturaOrigen?.cliente_rif || 'V-000'}";"${(facturaOrigen?.cliente_nombre||'CLIENTE').replace(/"/g,'""')}";"${nd.motivo}";${t};0.00;${nd.total_bs.toFixed(2)};16%;${(nd.total_bs*0.16).toFixed(2)};0.00;${nd.total_bs.toFixed(2)}\n`;
                 });
             }
 
@@ -1285,7 +1316,7 @@
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
-            link.setAttribute("download", `Libro_Ventas_Multimoneda_${tenantActual.rif}_${fechaDesde}_al_${fechaHasta}.csv`);
+            link.setAttribute("download", `Libro_Ventas_SENIAT_${tenantActual.rif}_${fechaDesde}_al_${fechaHasta}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
@@ -1294,10 +1325,9 @@
         async function cargarHistorial() {
             if (!supabaseClient || !tenantActual) return;
             
-            // Carga independiente y segura de cada tabla para evitar fallos por relaciones rotas
-            const { data: facturas, error: errF } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
-            const { data: notasCredito, error: errNC } = await supabaseClient.from('notas_credito').select('*').eq('tenant_id', tenantActual.id);
-            const { data: notasDebito, error: errND } = await supabaseClient.from('notas_debito').select('*').eq('tenant_id', tenantActual.id);
+            const { data: facturas } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
+            const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*').eq('tenant_id', tenantActual.id);
+            const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*').eq('tenant_id', tenantActual.id);
 
             documentosHistorialCache = [];
             
