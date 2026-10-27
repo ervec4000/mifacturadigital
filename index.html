@@ -690,11 +690,11 @@
             const passwordInput = document.getElementById('loginPassword').value.trim();
             if (!emailInput || !passwordInput) { alert('Ingrese correo y contraseña.'); return; }
 
-            // Consulta apuntando exactamente a la columna 'Correo electrónico' de tu tabla Inquilinos
+            // Consulta exacta apuntando a la columna 'Correo electrónico' y 'password'
             const { data, error } = await supabaseClient
                 .from('Inquilinos').select('*').eq('Correo electrónico', emailInput).eq('password', passwordInput).single();
 
-            if (error || !data) { alert('Credenciales incorrectas.'); return; }
+            if (error || !data) { alert('Credenciales incorrectas o contraseña no configurada.'); return; }
 
             tenantActual = data;
             if (!tenantActual.plan_activo) tenantActual.plan_activo = 'Freemium';
@@ -731,7 +731,6 @@
             const elementosMaster = document.querySelectorAll('.tab-master');
             const btnAdminUsuarios = document.getElementById('btnMenuAdminUsuarios');
 
-            // CONDICIÓN MAESTRA GLOBAL: Reconoce automáticamente tu correo 'ervec2000@gmail.com' o plan 'Administración' como Maestro
             const emailUser = tenantActual['Correo electrónico'] || '';
             const esMasterGlobal = emailUser === 'ervec2000@gmail.com' || tenantActual.plan_activo === 'Administración';
 
@@ -849,23 +848,6 @@
                     </tr>
                 `;
             });
-        }
-
-        async function registrarNuevoUsuarioTenant() {
-            const email = document.getElementById('nuevoUserEmail').value.trim();
-            const password = document.getElementById('nuevoUserPass').value.trim();
-            const razonSocial = document.getElementById('nuevoUserRazon').value.trim();
-            const plan = document.getElementById('nuevoUserRol').value;
-            if (!email || !password || !razonSocial) { alert('Complete todos los campos.'); return; }
-            try {
-                const { error } = await supabaseClient.from('Inquilinos').insert([{ 'Correo electrónico': email, password, razon_social: razonSocial, plan_activo: plan, Rif: tenantActual.Rif }]);
-                if (error) throw error;
-                alert('¡Usuario creado con éxito!');
-                document.getElementById('nuevoUserEmail').value = '';
-                document.getElementById('nuevoUserPass').value = '';
-                document.getElementById('nuevoUserRazon').value = '';
-                cargarUsuariosTenant();
-            } catch (err) { alert('Error: ' + err.message); }
         }
 
         // --- GESTIÓN MAESTRA DE INQUILINOS (TABLA Inquilinos) ---
