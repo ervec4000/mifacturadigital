@@ -1290,7 +1290,6 @@
             }
         }
 
-        // --- GENERACIÓN CONSECUTIVA AUTOMÁTICA ---
         async function obtenerSiguienteCorrelativo() {
             try {
                 const { data, error } = await supabaseClient
@@ -1304,7 +1303,7 @@
                     return { facturaNro: 'FAC-0001', nroControl: '00-000001' };
                 }
 
-                const ultimaFactura = data[0].factura_nro; // Ej: "FAC-0005"
+                const ultimaFactura = data[0].factura_nro;
                 const numeroActual = parseInt(ultimaFactura.replace('FAC-', '')) || 0;
                 const siguienteNum = numeroActual + 1;
 
@@ -1318,6 +1317,7 @@
             }
         }
 
+        // --- EMISIÓN DE FACTURA + KARDEX INTEGRADO ---
         async function emitirFactura() {
             if (carritoItems.length === 0) { alert('Agregue ítems.'); return; }
             const rifCliente = document.getElementById('clienteRif').value.trim();
@@ -1329,6 +1329,7 @@
             let tasaRaw = document.getElementById('tasaBcv').value.toString().replace(',', '.');
             const tasa = parseFloat(tasaRaw) || 1;
             let baseGravadaUsd = 0, montoExentoUsd = 0;
+            
             carritoItems.forEach(item => {
                 const sub = item.precio * item.cantidad;
                 if (item.esExento) montoExentoUsd += sub;
@@ -1342,36 +1343,12 @@
             const igtfBs = aplicaIgtf ? subtotalBs * 0.03 : 0;
             const totalBs = subtotalBs + igtfBs;
 
-            // Obtener correlativo consecutivo automático
             const correlativo = await obtenerSiguienteCorrelativo();
             const facturaNro = correlativo.facturaNro;
             const nroControl = correlativo.nroControl;
 
-            const facturaObjeto = {
-                tenant_id: tenantActual.id,
-                factura_nro: facturaNro,
-                nro_control: nroControl,
-                tasa_bcv: tasa,
-                monto_usd: baseGravadaUsd + montoExentoUsd,
-                subtotal_bs: subtotalBs,
-                iva_bs: ivaBs,
-                igtf_bs: igtfBs,
-                total_bs: totalBs,
-                cliente_rif: rifCliente,
-                cliente_nombre: nombreCliente,
-                metodo_pago: metodoPago,
-                created_at: new Date().toISOString(),
-                items: carritoItems.map(item => ({
-                    producto_id: item.productoId,
-                    cantidad: item.cantidad,
-                    precio_unitario_usd: item.precio,
-                    es_exento: item.esExento,
-                    subtotal_usd: item.precio * item.cantidad,
-                    descripcion: `${item.descripcion}${item.esExento ? ' (E)' : ''} (${item.unidad})`
-                }))
-            };
-
             try {
+                // 1. Insertar Factura Principal
                 const { data: facturaData, error: facturaError } = await supabaseClient
                     .from('invoices').insert([{
                         tenant_id: tenantActual.id, factura_nro: facturaNro, nro_control: nroControl,
@@ -1382,23 +1359,54 @@
 
                 if (facturaError) throw facturaError;
                 const invoiceId = facturaData[0].id;
-                const itemsParaInsertar = facturaObjeto.items.map(i => ({ ...i, invoice_id: invoiceId }));
-                await supabaseClient.from('invoice_items').insert(itemsParaInsertar);
 
+                // 2. Insertar Ítems y Actualizar Stock + Kardex Inteligente
                 for (const item of carritoItems) {
-                    const prodOriginal = productosCache.find(p => p.id === item.productoId);
-                    if (prodOriginal) {
-                        const stockActual = prodOriginal.stock || 100;
-                        await supabaseClient.from('productos').update({ stock: Math.max(0, stockActual - item.cantidad) }).eq('id', item.productoId);
-                    }
+                    await supabaseClient.from('invoice_items').insert([{
+                        invoice_id: invoiceId,
+                        producto_id: item.productoId,
+                        cantidad: item.cantidad,
+                        precio_unitario_usd: item.precio,
+                        es_exento: item.esExento,
+                        subtotal_usd: item.precio * item.cantidad,
+                        descripcion: `${item.descripcion}${item.esExento ? ' (E)' : ''} (${item.unidad})`
+                    }]);
+
+                    const { data: prodData } = await supabaseClient
+                        .from('productos')
+                        .select('stock, precio_unitario_usd')
+                        .eq('id', item.productoId)
+                        .single();
+
+                    const stockActual = prodData ? (prodData.stock || 0) : 100;
+                    const nuevoStock = Math.max(0, stockActual - item.cantidad);
+
+                    // Actualizar Stock en la tabla productos
+                    await supabaseClient.from('productos')
+                        .update({ stock: nuevoStock })
+                        .eq('id', item.productoId);
+
+                    // Registrar movimiento de SALIDA en kardex_movimientos
+                    await supabaseClient.from('kardex_movimientos').insert([{
+                        tenant_id: tenantActual.id,
+                        producto_id: item.productoId,
+                        tipo_movimiento: 'SALIDA',
+                        documento_ref: facturaNro,
+                        cantidad_out: item.cantidad,
+                        precio_venta_usd: item.precio,
+                        saldo_cantidad: nuevoStock,
+                        costo_promedio_usd: prodData ? prodData.precio_unitario_usd : item.precio,
+                        tasa_bcv: tasa
+                    }]);
                 }
-                alert(`¡Factura ${facturaNro} emitida con éxito (Consecutivo automático)!`);
+
+                alert(`¡Factura ${facturaNro} emitida y Kardex actualizado con éxito!`);
             } catch (err) {
                 let cola = JSON.parse(localStorage.getItem('facturas_offline') || '[]');
-                cola.push(facturaObjeto);
+                cola.push({ facturaNro, nroControl, tasa, baseGravadaUsd, montoExentoUsd, subtotalBs, ivaBs, igtfBs, totalBs, rifCliente, nombreCliente, metodoPago, items: carritoItems });
                 localStorage.setItem('facturas_offline', JSON.stringify(cola));
                 verificarColaOffline();
-                alert(`⚠️ Sin conexión. Factura ${facturaNro} guardada localmente.`);
+                alert(`⚠️ Sin conexión. Factura ${facturaNro} respaldada localmente.`);
             }
 
             carritoItems = [];
@@ -1430,16 +1438,12 @@
             if (cola.length === 0) return;
             try {
                 for (let fac of cola) {
-                    const { data: facturaData, error } = await supabaseClient.from('invoices').insert([{
-                        tenant_id: fac.tenant_id, factura_nro: fac.factura_nro, nro_control: fac.nro_control,
-                        tasa_bcv: fac.tasa_bcv, monto_usd: fac.monto_usd, subtotal_bs: fac.subtotal_bs,
-                        iva_bs: fac.iva_bs, igtf_bs: fac.igtf_bs, total_bs: fac.total_bs,
-                        cliente_rif: fac.cliente_rif, cliente_nombre: fac.cliente_nombre, metodo_pago: fac.metodo_pago
-                    }]).select();
-                    if (error) throw error;
-                    const invoiceId = facturaData[0].id;
-                    const itemsIns = fac.items.map(i => ({ ...i, invoice_id: invoiceId }));
-                    await supabaseClient.from('invoice_items').insert(itemsIns);
+                    await supabaseClient.from('invoices').insert([{
+                        tenant_id: tenantActual.id, factura_nro: fac.facturaNro, nro_control: fac.nroControl,
+                        tasa_bcv: fac.tasa, monto_usd: fac.baseGravadaUsd + fac.montoExentoUsd, subtotal_bs: fac.subtotalBs,
+                        iva_bs: fac.ivaBs, igtf_bs: fac.igtfBs, total_bs: fac.totalBs,
+                        cliente_rif: fac.rifCliente, cliente_nombre: fac.nombreCliente, metodo_pago: fac.metodoPago
+                    }]);
                 }
                 localStorage.removeItem('facturas_offline');
                 verificarColaOffline();
@@ -1510,10 +1514,25 @@
                     await supabaseClient.from('nota_credito_items').insert([{ nota_credito_id: ncId, producto_id: item.producto_id, cantidad: item.cantidad, precio_unitario_usd: item.precio_unitario_usd, subtotal_usd: item.subtotal_usd, descripcion: item.descripcion }]);
                     if (item.producto_id) {
                         const { data: prodData } = await supabaseClient.from('productos').select('stock').eq('id', item.producto_id).single();
-                        if (prodData) await supabaseClient.from('productos').update({ stock: (prodData.stock || 0) + item.cantidad }).eq('id', item.producto_id);
+                        if (prodData) {
+                            const nuevoStock = (prodData.stock || 0) + item.cantidad;
+                            await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.producto_id);
+                            // Registrar ENTRADA en kardex por Nota de Crédito
+                            await supabaseClient.from('kardex_movimientos').insert([{
+                                tenant_id: tenantActual.id,
+                                producto_id: item.producto_id,
+                                tipo_movimiento: 'NOTA_CREDITO',
+                                documento_ref: notaNro,
+                                cantidad_in: item.cantidad,
+                                costo_unit_usd_in: item.precio_unitario_usd,
+                                saldo_cantidad: nuevoStock,
+                                costo_promedio_usd: item.precio_unitario_usd,
+                                tasa_bcv: inv.tasa_bcv
+                            }]);
+                        }
                     }
                 }
-                alert(`¡Nota de Crédito ${notaNro} emitida con éxito!`);
+                alert(`¡Nota de Crédito ${notaNro} emitida y Stock reintegrado!`);
                 cerrarModalNotaCredito();
                 cargarHistorial();
             } catch (err) { alert('Error: ' + err.message); }
