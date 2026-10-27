@@ -45,14 +45,18 @@
         <header class="flex flex-col md:flex-row justify-between items-center border-b border-slate-700 pb-4 gap-3">
             <div>
                 <h1 class="text-xl font-bold text-emerald-400" id="headerTenantNombre">Comercio Activo</h1>
-                <p class="text-xs text-slate-400" id="headerTenantRif">RIF: J-00000000-0 | Contacto: <span id="headerTenantContacto">--</span></p>
+                <p class="text-xs text-slate-400" id="headerTenantRif">RIF: J-00000000-0 | Rol: <span id="headerTenantRol" class="font-bold text-amber-400 uppercase">--</span></p>
             </div>
-            <button onclick="cerrarSesion()" class="bg-rose-900/50 hover:bg-rose-900 text-rose-300 border border-rose-700/50 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition">
-                🚪 Cerrar Sesión
-            </button>
+            <div class="flex items-center gap-2">
+                <span id="offlineBadge" class="hidden bg-amber-900/50 text-amber-300 border border-amber-700 text-[10px] px-2 py-1 rounded-lg">⚠️ Modo Offline (Pendientes: <span id="contadorOffline">0</span>)</span>
+                <button onclick="sincronizarOffline()" id="btnSincronizar" class="hidden bg-sky-600 hover:bg-sky-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold cursor-pointer">Sincronizar</button>
+                <button onclick="cerrarSesion()" class="bg-rose-900/50 hover:bg-rose-900 text-rose-300 border border-rose-700/50 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition">
+                    🚪 Cerrar Sesión
+                </button>
+            </div>
         </header>
 
-        <!-- Navegación por pestañas -->
+        <!-- Navegación por pestañas (Adaptativa por Rol) -->
         <div class="flex flex-wrap justify-center gap-2 border-b border-slate-700 pb-4">
             <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer shadow-lg shadow-emerald-900/25">
                 Punto de Venta (POS)
@@ -60,18 +64,18 @@
             <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 Historial Comprobantes
             </button>
-            <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                📊 Reporte Z y Caja
+            <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
+                📊 Reporte Z y Libro de Ventas
             </button>
-            <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
+            <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 📦 Materiales / Stock
             </button>
-            <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
+            <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 👥 Clientes
             </button>
         </div>
 
-        <!-- SECCIÓN 1: POS -->
+        <!-- SECCIÓN 1: POS CON CALCULADORA DE VUELTO Y PAGOS MIXTOS -->
         <div id="seccionPos" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
                 <div>
@@ -93,7 +97,7 @@
                     <input type="text" id="clienteNombre" placeholder="EDISON VELIZ" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
                 </div>
                 <div class="md:col-span-2">
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">Método de Pago (Arqueo de Caja)</label>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Método de Pago Principal / Arqueo</label>
                     <select id="metodoPagoSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
                         <option value="EFECTIVO DIVISAS">Efectivo Divisas ($ USD)</option>
                         <option value="ZELLE">Zelle / Divisas Digitales</option>
@@ -145,27 +149,36 @@
                 </div>
             </div>
 
-            <!-- Resumen -->
-            <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 space-y-2 text-sm">
-                <div class="flex justify-between text-slate-300">
-                    <span>Base Imponible (Gravado):</span>
-                    <span id="baseGravadaBs" class="font-mono">Bs. 0,00</span>
+            <!-- Resumen y Calculadora de Vuelto Multidivisa -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 space-y-2 text-sm">
+                    <div class="flex justify-between text-slate-300"><span>Base Imponible (Gravado):</span><span id="baseGravadaBs" class="font-mono">Bs. 0,00</span></div>
+                    <div class="flex justify-between text-slate-300"><span>Monto Exento:</span><span id="montoExentoBs" class="font-mono">Bs. 0,00</span></div>
+                    <div class="flex justify-between text-slate-300"><span>IVA (16%):</span><span id="ivaBs" class="font-mono">Bs. 0,00</span></div>
+                    <div class="flex justify-between text-slate-300"><span>IGTF (3% Divisas):</span><span id="igtfBs" class="font-mono">Bs. 0,00</span></div>
+                    <div class="border-t border-slate-700 pt-2 flex justify-between font-bold text-emerald-400 text-base">
+                        <span>Total a Pagar:</span>
+                        <span id="totalBs" class="font-mono">Bs. 0,00</span>
+                    </div>
                 </div>
-                <div class="flex justify-between text-slate-300">
-                    <span>Monto Exento:</span>
-                    <span id="montoExentoBs" class="font-mono">Bs. 0,00</span>
-                </div>
-                <div class="flex justify-between text-slate-300">
-                    <span>IVA (16% sobre Gravados):</span>
-                    <span id="ivaBs" class="font-mono">Bs. 0,00</span>
-                </div>
-                <div class="flex justify-between text-slate-300">
-                    <span>IGTF (3% Divisas):</span>
-                    <span id="igtfBs" class="font-mono">Bs. 0,00</span>
-                </div>
-                <div class="border-t border-slate-700 pt-2 flex justify-between font-bold text-emerald-400 text-base">
-                    <span>Total a Pagar:</span>
-                    <span id="totalBs" class="font-mono">Bs. 0,00</span>
+
+                <!-- Panel de Vuelto / Pagos Recibidos -->
+                <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 space-y-3 text-xs">
+                    <h4 class="font-bold text-emerald-400 uppercase">🧮 Calculadora de Vuelto Multidivisa</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-slate-400 mb-1">Recibido en Efectivo ($ USD)</label>
+                            <input type="number" id="pagoRecibidoUsd" step="0.01" value="0" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white font-mono" oninput="calcularVuelto()">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Recibido en Efectivo (Bs.)</label>
+                            <input type="number" id="pagoRecibidoBs" step="0.01" value="0" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white font-mono" oninput="calcularVuelto()">
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 p-2.5 rounded border border-slate-700 space-y-1">
+                        <div class="flex justify-between text-slate-300 font-semibold"><span>Vuelto Exacto en Bolívares:</span><span id="vueltoBs" class="text-amber-400 font-mono">Bs. 0,00</span></div>
+                        <div class="flex justify-between text-slate-300 font-semibold"><span>Vuelto Equivalente en Dólares:</span><span id="vueltoUsd" class="text-emerald-400 font-mono">$ 0,00</span></div>
+                    </div>
                 </div>
             </div>
 
@@ -174,14 +187,13 @@
             </button>
         </div>
 
-        <!-- SECCIÓN 2: HISTORIAL Y NOTAS UNIFICADAS CON FILTROS -->
+        <!-- SECCIÓN 2: HISTORIAL Y FILTROS AVANZADOS -->
         <div id="seccionHistorial" class="hidden space-y-6">
             <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                 <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Comprobantes Fiscales y Notas</h3>
                 <button onclick="cargarHistorial()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded-lg text-slate-200 cursor-pointer">🔄 Actualizar</button>
             </div>
 
-            <!-- Filtros de Búsqueda Avanzada -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1">Buscar por Nro Documento o RIF / Cliente</label>
@@ -216,45 +228,47 @@
             </div>
         </div>
 
-        <!-- SECCIÓN 3: REPORTE Z, FONDO DE CAMBIO Y LIBRO DE VENTAS -->
-        <div id="seccionCierrez" class="hidden space-y-6">
+        <!-- SECCIÓN 3: REPORTE Z, RANGO DE FECHAS Y LIBRO DE VENTAS -->
+        <div id="seccionCierrez" class="hidden tab-admin space-y-6">
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                     <div>
-                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📊 Reporte Z, Fondo de Caja y Libro de Ventas</h3>
-                        <p class="text-xs text-slate-400">Arqueo diario, control de efectivo en gaveta y exportación contable</p>
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📊 Reporte Z y Libro de Ventas (Rango Personalizado)</h3>
+                        <p class="text-xs text-slate-400">Arqueo fiscal y exportación contable con filtro por fechas</p>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="generarReporteZ()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-2 rounded-lg font-semibold cursor-pointer">🔄 Recalcular</button>
-                        <button onclick="exportarLibroVentasCSV()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer shadow-lg shadow-sky-900/20">📥 Descargar Libro de Ventas (Excel)</button>
+                        <button onclick="exportarLibroVentasCSV()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer shadow-lg shadow-sky-900/20">📥 Descargar Libro (Excel)</button>
                     </div>
                 </div>
 
-                <!-- Fondo de Cambio Inicial -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900 p-4 rounded-lg border border-slate-700 items-center">
+                <!-- Filtros de Rango de Fechas para el Reporte y Libro -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-900 p-4 rounded-lg border border-slate-700 items-end">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 mb-1">Fondo de Cambio Inicial en Caja (Bs.)</label>
-                        <input type="number" id="fondoCambioBs" step="0.01" value="0.00" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-xs font-mono" oninput="generarReporteZ()">
+                        <label class="block text-xs text-slate-400 mb-1">Fecha Desde</label>
+                        <input type="date" id="filtroFechaDesde" class="w-full bg-slate-850 border border-slate-700 rounded p-2 text-white text-xs" onchange="generarReporteZ()">
                     </div>
-                    <div class="text-right space-y-1">
-                        <p class="text-xs text-slate-400">Total Efectivo Esperado en Gaveta (Ventas Bs + Fondo):</p>
-                        <p id="totalGavetaEfectivo" class="text-emerald-400 font-bold font-mono text-base">Bs. 0,00</p>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Fecha Hasta</label>
+                        <input type="date" id="filtroFechaHasta" class="w-full bg-slate-850 border border-slate-700 rounded p-2 text-white text-xs" onchange="generarReporteZ()">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Fondo Inicial en Gaveta (Bs.)</label>
+                        <input type="number" id="fondoCambioBs" step="0.01" value="0.00" class="w-full bg-slate-850 border border-slate-700 rounded p-2 text-white text-xs font-mono" oninput="generarReporteZ()">
                     </div>
                 </div>
 
                 <div id="resultadoReporteZ" class="space-y-4 border-t border-slate-700 pt-4 font-mono text-xs">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900 p-4 rounded-lg border border-slate-700">
                         <div class="space-y-1">
-                            <p class="text-slate-400">Fecha del Cierre: <span id="zFecha" class="text-white font-bold">--</span></p>
-                            <p class="text-slate-400">Total Facturas: <span id="zTotalFacturas" class="text-emerald-400 font-bold">0</span></p>
+                            <p class="text-slate-400">Período Analizado: <span id="zPeriodo" class="text-white font-bold">--</span></p>
+                            <p class="text-slate-400">Total Comprobantes: <span id="zTotalFacturas" class="text-emerald-400 font-bold">0</span></p>
                         </div>
                         <div class="space-y-1 text-right">
-                            <p class="text-slate-400">Primer Nro: <span id="zPrimerFactura" class="text-white">--</span></p>
-                            <p class="text-slate-400">Última Nro: <span id="zUltimaFactura" class="text-white">--</span></p>
+                            <p class="text-slate-400">Total Efectivo Esperado en Gaveta: <span id="totalGavetaEfectivo" class="text-emerald-400 font-bold text-sm">Bs. 0,00</span></p>
                         </div>
                     </div>
 
-                    <!-- ARQUEO DE CAJA POR MÉTODO DE PAGO -->
                     <div class="space-y-2 bg-slate-900/80 p-4 rounded-lg border border-emerald-500/30 text-sm">
                         <h4 class="font-bold text-emerald-400 uppercase text-xs mb-3">💵 Arqueo de Caja (Desglose por Método de Pago)</h4>
                         <div class="flex justify-between text-slate-300"><span>Efectivo Divisas ($):</span><span id="arqEfectivoUsd" class="font-bold">Bs. 0,00</span></div>
@@ -271,7 +285,7 @@
                         <div class="flex justify-between text-slate-300"><span>Total IVA Recaudado (16%):</span><span id="zIva">Bs. 0,00</span></div>
                         <div class="flex justify-between text-slate-300"><span>Total IGTF Percibido (3%):</span><span id="zIgtf">Bs. 0,00</span></div>
                         <div class="border-t border-slate-700 pt-2 flex justify-between font-bold text-emerald-400 text-base">
-                            <span>TOTAL RECAUDACIÓN DIARIA:</span>
+                            <span>TOTAL RECAUDACIÓN PERÍODO:</span>
                             <span id="zTotalVentas">Bs. 0,00</span>
                         </div>
                     </div>
@@ -281,7 +295,7 @@
         </div>
 
         <!-- SECCIÓN 4: GESTIÓN DE PRODUCTOS / STOCK (CRUD) -->
-        <div id="seccionProductos" class="hidden space-y-6">
+        <div id="seccionProductos" class="hidden tab-admin space-y-6">
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
                 <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📦 Registrar Nuevo Material / Producto</h3>
                 <input type="hidden" id="editProductoId">
@@ -350,7 +364,7 @@
         </div>
 
         <!-- SECCIÓN 5: GESTIÓN DE CLIENTES (CRUD) -->
-        <div id="seccionClientes" class="hidden space-y-6">
+        <div id="seccionClientes" class="hidden tab-admin space-y-6">
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
                 <h3 id="tituloFormCliente" class="text-sm font-bold text-emerald-400 uppercase tracking-wide">👥 Registrar Nuevo Cliente</h3>
                 <input type="hidden" id="editClienteId">
@@ -398,7 +412,7 @@
         </div>
     </div>
 
-    <!-- MODAL TICKET / COMPROBANTE UNIFICADO CON WHATSAPP Y PDF -->
+    <!-- MODAL TICKET / COMPROBANTE UNIFICADO -->
     <div id="modalTicket" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-white text-slate-900 w-full max-w-md rounded-xl p-6 shadow-2xl relative font-mono text-xs space-y-3 max-h-[90vh] overflow-y-auto">
             <div class="text-center border-b border-dashed border-slate-400 pb-3 space-y-1">
@@ -455,22 +469,18 @@
                 <p class="text-slate-300">Factura Referencia: <span id="ncFacturaRef" class="font-bold text-white">--</span></p>
                 <p class="text-slate-300">Cliente: <span id="ncClienteRef" class="text-white">--</span></p>
             </div>
-
             <div>
                 <label class="block text-xs text-slate-400 mb-1">Motivo de la Nota de Crédito</label>
                 <input type="text" id="ncMotivo" placeholder="Ej. Devolución de mercancía por defecto" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
             </div>
-
             <div class="space-y-2">
                 <label class="block text-xs text-slate-400">Ítems de la Factura a Reintegrar al Stock:</label>
                 <div id="ncItemsContainer" class="space-y-1 bg-slate-900/60 p-3 rounded-lg border border-slate-700 max-h-40 overflow-y-auto text-xs"></div>
             </div>
-
             <div class="flex justify-between font-bold text-sm border-t border-slate-700 pt-2 text-amber-400">
                 <span>Total Reintegro Nota de Crédito:</span>
                 <span id="ncTotalBs">Bs. 0,00</span>
             </div>
-
             <div class="flex space-x-2 pt-2">
                 <button onclick="procesarNotaCredito()" class="w-full bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Confirmar y Emitir Nota de Crédito</button>
                 <button onclick="cerrarModalNotaCredito()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
@@ -487,17 +497,14 @@
                 <p class="text-slate-300">Cliente: <span id="ndClienteRef" class="text-white">--</span></p>
                 <p class="text-slate-300">Monto Original Factura: <span id="ndMontoOrigRef" class="text-white font-mono">--</span></p>
             </div>
-
             <div>
                 <label class="block text-xs text-slate-400 mb-1">Motivo de la Nota de Débito</label>
-                <input type="text" id="ndMotivo" placeholder="Ej. Recargo por diferencia de precio o flete adicional" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                <input type="text" id="ndMotivo" placeholder="Ej. Recargo por diferencia de precio" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
             </div>
-
             <div>
-                <label class="block text-xs text-slate-400 mb-1">Monto del Recargo / Incremento en Bolívares (Bs.)</label>
+                <label class="block text-xs text-slate-400 mb-1">Monto del Recargo en Bolívares (Bs.)</label>
                 <input type="number" id="ndMontoBs" step="0.01" placeholder="500.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm font-mono">
             </div>
-
             <div class="flex space-x-2 pt-2">
                 <button onclick="procesarNotaDebito()" class="w-full bg-sky-600 hover:bg-sky-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Confirmar y Emitir Nota de Débito</button>
                 <button onclick="cerrarModalNotaDebito()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
@@ -528,6 +535,7 @@
             if (window.supabase) {
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 verificarSesionGuardada();
+                verificarColaOffline();
             } else {
                 alert('Error al cargar la librería de Supabase.');
             }
@@ -555,6 +563,9 @@
             }
 
             tenantActual = data;
+            // Si el tenant no tiene rol definido en BD, asignamos 'admin' por defecto
+            if (!tenantActual.rol) tenantActual.rol = 'admin';
+
             localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
             activarVistaPrincipal();
         }
@@ -563,6 +574,7 @@
             const guardado = localStorage.getItem('tenant_actual');
             if (guardado) {
                 tenantActual = JSON.parse(guardado);
+                if (!tenantActual.rol) tenantActual.rol = 'admin';
                 activarVistaPrincipal();
             }
         }
@@ -571,9 +583,17 @@
             document.getElementById('vistaLogin').classList.add('hidden');
             document.getElementById('vistaPrincipal').classList.remove('hidden');
             document.getElementById('headerTenantNombre').innerText = tenantActual.razon_social;
-            document.getElementById('headerTenantRif').innerText = `RIF: ${tenantActual.rif}`;
-            document.getElementById('headerTenantContacto').innerText = tenantActual.contacto || 'No especificado';
-            cambiarPestana('pos');
+            document.getElementById('headerTenantRol').innerText = tenantActual.rol.toUpperCase();
+
+            // Aplicar restricción de Roles y Permisos (Cajero vs Admin)
+            const elementosAdmin = document.querySelectorAll('.tab-admin');
+            if (tenantActual.rol === 'cajero') {
+                elementosAdmin.forEach(el => el.classList.add('hidden'));
+                cambiarPestana('pos');
+            } else {
+                elementosAdmin.forEach(el => el.classList.remove('hidden'));
+                cambiarPestana('pos');
+            }
         }
 
         function cerrarSesion() {
@@ -586,10 +606,17 @@
         }
 
         function cambiarPestana(pestana) {
+            // Si es cajero y trata de entrar a pestañas admin, bloquear
+            if (tenantActual && tenantActual.rol === 'cajero' && ['cierrez', 'productos', 'clientes'].includes(pestana)) {
+                alert('Acceso restringido solo para Administradores.');
+                return;
+            }
+
             const tabs = ['pos', 'historial', 'cierrez', 'productos', 'clientes'];
             tabs.forEach(t => {
                 const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
                 const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
+                if (!btn || !sec) return;
                 if (t === pestana) {
                     btn.className = "bg-emerald-600 text-white px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer shadow-lg shadow-emerald-900/25";
                     sec.classList.remove('hidden');
@@ -600,7 +627,13 @@
             });
 
             if (pestana === 'historial') cargarHistorial();
-            if (pestana === 'cierrez') generarReporteZ();
+            if (pestana === 'cierrez') {
+                // Inicializar fechas por defecto (Hoy)
+                const hoy = new Date().toISOString().slice(0,10);
+                if (!document.getElementById('filtroFechaDesde').value) document.getElementById('filtroFechaDesde').value = hoy;
+                if (!document.getElementById('filtroFechaHasta').value) document.getElementById('filtroFechaHasta').value = hoy;
+                generarReporteZ();
+            }
             if (pestana === 'productos') cargarProductosGestion();
             if (pestana === 'clientes') cargarClientesGestion();
             if (pestana === 'pos') {
@@ -804,7 +837,7 @@
             cargarClientesGestion();
         }
 
-        // --- POS Y FACTURACIÓN ---
+        // --- POS Y CALCULADORA DE VUELTO ---
         function agregarItem() {
             const select = document.getElementById('productoSelect');
             if (!select.value || productosCache.length === 0) {
@@ -881,39 +914,86 @@
             document.getElementById('ivaBs').innerText = 'Bs. ' + ivaBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('igtfBs').innerText = 'Bs. ' + igtfBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('totalBs').innerText = 'Bs. ' + totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            
+            calcularVuelto();
+        }
+
+        function calcularVuelto() {
+            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
+            const totalBsStr = document.getElementById('totalBs').innerText.replace('Bs. ', '').replace(/\./g, '').replace(',', '.');
+            const totalBs = parseFloat(totalBsStr) || 0;
+
+            const recibidoUsd = parseFloat(document.getElementById('pagoRecibidoUsd').value) || 0;
+            const recibidoBs = parseFloat(document.getElementById('pagoRecibidoBs').value) || 0;
+
+            const totalRecibidoBs = recibidoBs + (recibidoUsd * tasa);
+            const diferenciaBs = totalRecibidoBs - totalBs;
+
+            if (diferenciaBs >= 0) {
+                document.getElementById('vueltoBs').innerText = 'Bs. ' + diferenciaBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+                document.getElementById('vueltoUsd').innerText = '$ ' + (diferenciaBs / tasa).toFixed(2);
+            } else {
+                document.getElementById('vueltoBs').innerText = 'Faltan Bs. ' + Math.abs(diferenciaBs).toLocaleString('es-VE', {minimumFractionDigits: 2});
+                document.getElementById('vueltoUsd').innerText = '$ 0,00';
+            }
         }
 
         async function emitirFactura() {
+            if (carritoItems.length === 0) {
+                alert('Agregue al menos un ítem.');
+                return;
+            }
+            const rifCliente = document.getElementById('clienteRif').value.trim();
+            const nombreCliente = document.getElementById('clienteNombre').value.trim();
+            const metodoPago = document.getElementById('metodoPagoSelect').value;
+
+            if (!rifCliente || !nombreCliente) {
+                alert('Ingrese o seleccione el cliente.');
+                return;
+            }
+
+            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
+            let baseGravadaUsd = 0, montoExentoUsd = 0;
+            carritoItems.forEach(item => {
+                const sub = item.precio * item.cantidad;
+                if (item.esExento) montoExentoUsd += sub;
+                else baseGravadaUsd += sub;
+            });
+
+            const subtotalBs = (baseGravadaUsd + montoExentoUsd) * tasa;
+            const ivaBs = (baseGravadaUsd * tasa) * 0.16;
+            const igtfBs = (subtotalBs + ivaBs) * 0.03;
+            const totalBs = subtotalBs + ivaBs + igtfBs;
+
+            const facturaNro = 'FAC-' + Math.floor(1000 + Math.random() * 9000);
+            const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
+
+            const facturaObjeto = {
+                tenant_id: tenantActual.id,
+                factura_nro: facturaNro,
+                nro_control: nroControl,
+                tasa_bcv: tasa,
+                monto_usd: baseGravadaUsd + montoExentoUsd,
+                subtotal_bs: subtotalBs,
+                iva_bs: ivaBs,
+                igtf_bs: igtfBs,
+                total_bs: totalBs,
+                cliente_rif: rifCliente,
+                cliente_nombre: nombreCliente,
+                metodo_pago: metodoPago,
+                created_at: new Date().toISOString(),
+                items: carritoItems.map(item => ({
+                    producto_id: item.productoId,
+                    cantidad: item.cantidad,
+                    precio_unitario_usd: item.precio,
+                    es_exento: item.esExento,
+                    subtotal_usd: item.precio * item.cantidad,
+                    descripcion: `${item.descripcion} (${item.unidad})`
+                }))
+            };
+
+            // Intentar enviar a Supabase o guardar Offline si hay fallo de red
             try {
-                if (carritoItems.length === 0) {
-                    alert('Agregue al menos un ítem.');
-                    return;
-                }
-                const rifCliente = document.getElementById('clienteRif').value.trim();
-                const nombreCliente = document.getElementById('clienteNombre').value.trim();
-                const metodoPago = document.getElementById('metodoPagoSelect').value;
-
-                if (!rifCliente || !nombreCliente) {
-                    alert('Ingrese o seleccione el cliente.');
-                    return;
-                }
-
-                const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
-                let baseGravadaUsd = 0, montoExentoUsd = 0;
-                carritoItems.forEach(item => {
-                    const sub = item.precio * item.cantidad;
-                    if (item.esExento) montoExentoUsd += sub;
-                    else baseGravadaUsd += sub;
-                });
-
-                const subtotalBs = (baseGravadaUsd + montoExentoUsd) * tasa;
-                const ivaBs = (baseGravadaUsd * tasa) * 0.16;
-                const igtfBs = (subtotalBs + ivaBs) * 0.03;
-                const totalBs = subtotalBs + ivaBs + igtfBs;
-
-                const facturaNro = 'FAC-' + Math.floor(1000 + Math.random() * 9000);
-                const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
-
                 const { data: facturaData, error: facturaError } = await supabaseClient
                     .from('invoices')
                     .insert([{
@@ -934,16 +1014,7 @@
                 if (facturaError) throw facturaError;
                 const invoiceId = facturaData[0].id;
 
-                const itemsParaInsertar = carritoItems.map(item => ({
-                    invoice_id: invoiceId,
-                    producto_id: item.productoId,
-                    cantidad: item.cantidad,
-                    precio_unitario_usd: item.precio,
-                    es_exento: item.esExento,
-                    subtotal_usd: item.precio * item.cantidad,
-                    descripcion: `${item.descripcion} (${item.unidad})`
-                }));
-
+                const itemsParaInsertar = facturaObjeto.items.map(i => ({ ...i, invoice_id: invoiceId }));
                 await supabaseClient.from('invoice_items').insert(itemsParaInsertar);
 
                 for (const item of carritoItems) {
@@ -956,17 +1027,78 @@
                 }
 
                 alert(`¡Factura ${facturaNro} emitida y stock actualizado con éxito!`);
-                carritoItems = [];
-                document.getElementById('clienteRif').value = '';
-                document.getElementById('clienteNombre').value = '';
-                actualizarTablaYCalculos();
-                cambiarPestana('historial');
             } catch (err) {
-                alert('Error al emitir factura: ' + err.message);
+                // Modo Offline: Guardar en localStorage
+                let cola = JSON.parse(localStorage.getItem('facturas_offline') || '[]');
+                cola.push(facturaObjeto);
+                localStorage.setItem('facturas_offline', JSON.stringify(cola));
+                verificarColaOffline();
+                alert(`⚠️ Sin conexión con el servidor. Factura ${facturaNro} guardada en modo OFFLINE localmente.`);
+            }
+
+            carritoItems = [];
+            document.getElementById('clienteRif').value = '';
+            document.getElementById('clienteNombre').value = '';
+            document.getElementById('pagoRecibidoUsd').value = '0';
+            document.getElementById('pagoRecibidoBs').value = '0';
+            actualizarTablaYCalculos();
+            cambiarPestana('historial');
+        }
+
+        // --- MODO OFFLINE SYNC ---
+        function verificarColaOffline() {
+            let cola = JSON.parse(localStorage.getItem('facturas_offline') || '[]');
+            const badge = document.getElementById('offlineBadge');
+            const btnSync = document.getElementById('btnSincronizar');
+            const contador = document.getElementById('contadorOffline');
+
+            if (cola.length > 0) {
+                badge.classList.remove('hidden');
+                btnSync.classList.remove('hidden');
+                contador.innerText = cola.length;
+            } else {
+                badge.classList.add('hidden');
+                btnSync.classList.add('hidden');
             }
         }
 
-        // --- MÓDULO NOTAS DE CRÉDITO ---
+        async function sincronizarOffline() {
+            let cola = JSON.parse(localStorage.getItem('facturas_offline') || '[]');
+            if (cola.length === 0) return;
+
+            try {
+                for (let fac of cola) {
+                    const { data: facturaData, error } = await supabaseClient.from('invoices').insert([{
+                        tenant_id: fac.tenant_id,
+                        factura_nro: fac.factura_nro,
+                        nro_control: fac.nro_control,
+                        tasa_bcv: fac.tasa_bcv,
+                        monto_usd: fac.monto_usd,
+                        subtotal_bs: fac.subtotal_bs,
+                        iva_bs: fac.iva_bs,
+                        igtf_bs: fac.igtf_bs,
+                        total_bs: fac.total_bs,
+                        cliente_rif: fac.cliente_rif,
+                        cliente_nombre: fac.cliente_nombre,
+                        metodo_pago: fac.metodo_pago
+                    }]).select();
+
+                    if (error) throw error;
+                    const invoiceId = facturaData[0].id;
+                    const itemsIns = fac.items.map(i => ({ ...i, invoice_id: invoiceId }));
+                    await supabaseClient.from('invoice_items').insert(itemsIns);
+                }
+
+                localStorage.removeItem('facturas_offline');
+                verificarColaOffline();
+                alert('¡Sincronización de facturas offline completada con éxito!');
+                cargarHistorial();
+            } catch (err) {
+                alert('Error al sincronizar. Verifique su conexión a internet: ' + err.message);
+            }
+        }
+
+        // --- NOTAS DE CRÉDITO Y DÉBITO ---
         async function abrirModalNotaCredito(inv) {
             facturaSeleccionadaParaNC = inv;
             document.getElementById('ncFacturaRef').innerText = inv.factura_nro + ' (Control: ' + inv.nro_control + ')';
@@ -977,8 +1109,6 @@
             facturaItemsParaNC = items || [];
 
             let htmlItems = '';
-            let totalBancarioBs = inv.total_bs;
-
             if (facturaItemsParaNC.length === 0) {
                 htmlItems = '<p class="text-slate-500">No hay ítems en esta factura.</p>';
             } else {
@@ -992,44 +1122,37 @@
                     `;
                 });
             }
-
             document.getElementById('ncItemsContainer').innerHTML = htmlItems;
-            document.getElementById('ncTotalBs').innerText = 'Bs. ' + totalBancarioBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('ncTotalBs').innerText = 'Bs. ' + inv.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('modalNotaCredito').classList.remove('hidden');
         }
 
         function cerrarModalNotaCredito() {
             document.getElementById('modalNotaCredito').classList.add('hidden');
             facturaSeleccionadaParaNC = null;
-            facturaItemsParaNC = [];
         }
 
         async function procesarNotaCredito() {
             try {
                 if (!facturaSeleccionadaParaNC) return;
                 const motivo = document.getElementById('ncMotivo').value.trim();
-                if (!motivo) {
-                    alert('Por favor ingrese el motivo de la Nota de Crédito.');
-                    return;
-                }
+                if (!motivo) { alert('Ingrese el motivo.'); return; }
 
                 const inv = facturaSeleccionadaParaNC;
                 const notaNro = 'NC-' + Math.floor(1000 + Math.random() * 9000);
                 const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
 
-                const { data: ncData, error: ncError } = await supabaseClient
-                    .from('notas_credito')
-                    .insert([{
-                        tenant_id: tenantActual.id,
-                        invoice_id: inv.id,
-                        nota_nro: notaNro,
-                        nro_control: nroControl,
-                        motivo: motivo,
-                        total_bs: inv.total_bs,
-                        tasa_bcv: inv.tasa_bcv
-                    }]).select();
+                const { data: ncData, error } = await supabaseClient.from('notas_credito').insert([{
+                    tenant_id: tenantActual.id,
+                    invoice_id: inv.id,
+                    nota_nro: notaNro,
+                    nro_control: nroControl,
+                    motivo: motivo,
+                    total_bs: inv.total_bs,
+                    tasa_bcv: inv.tasa_bcv
+                }]).select();
 
-                if (ncError) throw ncError;
+                if (error) throw error;
                 const ncId = ncData[0].id;
 
                 for (const item of facturaItemsParaNC) {
@@ -1041,25 +1164,20 @@
                         subtotal_usd: item.subtotal_usd,
                         descripcion: item.descripcion
                     }]);
-
                     if (item.producto_id) {
                         const { data: prodData } = await supabaseClient.from('productos').select('stock').eq('id', item.producto_id).single();
                         if (prodData) {
-                            const nuevoStock = (prodData.stock || 0) + item.cantidad;
-                            await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.producto_id);
+                            await supabaseClient.from('productos').update({ stock: (prodData.stock || 0) + item.cantidad }).eq('id', item.producto_id);
                         }
                     }
                 }
 
-                alert(`¡Nota de Crédito ${notaNro} emitida con éxito! Stock reintegrado al inventario.`);
+                alert(`¡Nota de Crédito ${notaNro} emitida y stock reintegrado!`);
                 cerrarModalNotaCredito();
                 cargarHistorial();
-            } catch (err) {
-                alert('Error al emitir Nota de Crédito: ' + err.message);
-            }
+            } catch (err) { alert('Error: ' + err.message); }
         }
 
-        // --- MÓDULO NOTAS DE DÉBITO ---
         function abrirModalNotaDebito(inv) {
             facturaSeleccionadaParaND = inv;
             document.getElementById('ndFacturaRef').innerText = inv.factura_nro + ' (Control: ' + inv.nro_control + ')';
@@ -1080,85 +1198,65 @@
                 if (!facturaSeleccionadaParaND) return;
                 const motivo = document.getElementById('ndMotivo').value.trim();
                 const montoBs = parseFloat(document.getElementById('ndMontoBs').value);
-
-                if (!motivo || isNaN(montoBs) || montoBs <= 0) {
-                    alert('Por favor ingrese un motivo válido y un monto de recargo en Bolívares.');
-                    return;
-                }
+                if (!motivo || isNaN(montoBs) || montoBs <= 0) { alert('Ingrese motivo y monto válido.'); return; }
 
                 const inv = facturaSeleccionadaParaND;
                 const notaNro = 'ND-' + Math.floor(1000 + Math.random() * 9000);
                 const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
 
-                const { error: ndError } = await supabaseClient
-                    .from('notas_debito')
-                    .insert([{
-                        tenant_id: tenantActual.id,
-                        invoice_id: inv.id,
-                        nota_nro: notaNro,
-                        nro_control: nroControl,
-                        motivo: motivo,
-                        total_bs: montoBs,
-                        tasa_bcv: inv.tasa_bcv
-                    }]);
+                await supabaseClient.from('notas_debito').insert([{
+                    tenant_id: tenantActual.id,
+                    invoice_id: inv.id,
+                    nota_nro: notaNro,
+                    nro_control: nroControl,
+                    motivo: motivo,
+                    total_bs: montoBs,
+                    tasa_bcv: inv.tasa_bcv
+                }]);
 
-                if (ndError) throw ndError;
-
-                alert(`¡Nota de Débito ${notaNro} emitida con éxito por Bs. ${montoBs.toLocaleString('es-VE', {minimumFractionDigits: 2})}!`);
+                alert(`¡Nota de Débito ${notaNro} emitida con éxito!`);
                 cerrarModalNotaDebito();
                 cargarHistorial();
-            } catch (err) {
-                alert('Error al emitir Nota de Débito: ' + err.message);
-            }
+            } catch (err) { alert('Error: ' + err.message); }
         }
 
-        // --- MÓDULO REPORTE Z Y ARQUEO CON FONDO DE CAMBIO ---
+        // --- REPORTE Z Y LIBRO DE VENTAS CON RANGO DE FECHAS ---
         async function generarReporteZ() {
             if (!supabaseClient || !tenantActual) return;
 
-            const { data, error } = await supabaseClient
-                .from('invoices')
-                .select('*')
-                .eq('tenant_id', tenantActual.id)
-                .order('created_at', { ascending: false });
+            const { data, error } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
+            if (error) { alert('Error: ' + error.message); return; }
 
-            if (error) {
-                alert('Error al generar Reporte Z: ' + error.message);
-                return;
-            }
+            const fechaDesde = document.getElementById('filtroFechaDesde').value;
+            const fechaHasta = document.getElementById('filtroFechaHasta').value;
 
-            const hoyLocalStr = new Date().toLocaleDateString();
-            const facturasHoy = data.filter(inv => new Date(inv.created_at).toLocaleDateString() === hoyLocalStr);
+            const filtradas = data.filter(inv => {
+                const fechaInv = inv.created_at.slice(0,10);
+                if (fechaDesde && fechaInv < fechaDesde) return false;
+                if (fechaHasta && fechaInv > fechaHasta) return false;
+                return true;
+            });
 
-            document.getElementById('zFecha').innerText = hoyLocalStr;
-            document.getElementById('zTotalFacturas').innerText = facturasHoy.length;
+            document.getElementById('zPeriodo').innerText = `${fechaDesde || 'Inicio'} al ${fechaHasta || 'Hoy'}`;
+            document.getElementById('zTotalFacturas').innerText = filtradas.length;
 
             let efectivousd = 0, zelle = 0, pagomovil = 0, debitobs = 0, creditobs = 0, efectivobs = 0;
             let totalSubtotal = 0, totalIva = 0, totalIgtf = 0, totalVentas = 0;
 
-            if (facturasHoy.length === 0) {
-                document.getElementById('zPrimerFactura').innerText = 'Ninguna';
-                document.getElementById('zUltimaFactura').innerText = 'Ninguna';
-            } else {
-                const ordenadas = [...facturasHoy].reverse();
-                document.getElementById('zPrimerFactura').innerText = ordenadas[0].factura_nro;
-                document.getElementById('zUltimaFactura').innerText = ordenadas[ordenadas.length - 1].factura_nro;
+            filtradas.forEach(inv => {
+                totalSubtotal += (inv.subtotal_bs || 0);
+                totalIva += inv.iva_bs;
+                totalIgtf += inv.igtf_bs;
+                totalVentas += inv.total_bs;
 
-                facturasHoy.forEach(inv => {
-                    totalSubtotal += (inv.subtotal_bs || 0);
-                    totalIva += inv.iva_bs;
-                    totalIgtf += inv.igtf_bs;
-                    totalVentas += inv.total_bs;
-
-                    const metodo = inv.metodo_pago || 'EFECTIVO DIVISAS';
-                    if (metodo === 'EFECTIVO DIVISAS') efectivousd += inv.total_bs;
-                    else if (metodo === 'ZELLE') zelle += inv.total_bs;
-                    else if (metodo === 'PAGO MOVIL') pagomovil += inv.total_bs;
-                    else if (metodo === 'TARJETA DEBITO') debitobs += inv.total_bs;
-                    else if (metodo === 'TARJETA CREDITO') creditobs += inv.total_bs;
-                    else if (metodo === 'EFECTIVO BS') efectivobs += inv.total_bs;
-                });
-            }
+                const metodo = inv.metodo_pago || 'EFECTIVO DIVISAS';
+                if (metodo === 'EFECTIVO DIVISAS') efectivousd += inv.total_bs;
+                else if (metodo === 'ZELLE') zelle += inv.total_bs;
+                else if (metodo === 'PAGO MOVIL') pagomovil += inv.total_bs;
+                else if (metodo === 'TARJETA DEBITO') debitobs += inv.total_bs;
+                else if (metodo === 'TARJETA CREDITO') creditobs += inv.total_bs;
+                else if (metodo === 'EFECTIVO BS') efectivobs += inv.total_bs;
+            });
 
             document.getElementById('arqEfectivoUsd').innerText = 'Bs. ' + efectivousd.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('arqZelle').innerText = 'Bs. ' + zelle.toLocaleString('es-VE', {minimumFractionDigits: 2});
@@ -1172,15 +1270,16 @@
             document.getElementById('zIgtf').innerText = 'Bs. ' + totalIgtf.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('zTotalVentas').innerText = 'Bs. ' + totalVentas.toLocaleString('es-VE', {minimumFractionDigits: 2});
 
-            // Cálculo del fondo de gaveta (Efectivo Divisas + Efectivo Bs + Fondo Inicial)
             const fondoInicial = parseFloat(document.getElementById('fondoCambioBs').value) || 0;
             const totalGaveta = efectivousd + efectivobs + fondoInicial;
             document.getElementById('totalGavetaEfectivo').innerText = 'Bs. ' + totalGaveta.toLocaleString('es-VE', {minimumFractionDigits: 2});
         }
 
-        // --- EXPORTAR LIBRO DE VENTAS 100% COMPATIBLE CON EXCEL ---
         async function exportarLibroVentasCSV() {
             if (!supabaseClient || !tenantActual) return;
+
+            const fechaDesde = document.getElementById('filtroFechaDesde').value;
+            const fechaHasta = document.getElementById('filtroFechaHasta').value;
 
             const { data: facturas } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
             const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
@@ -1191,34 +1290,31 @@
 
             if (facturas) {
                 facturas.forEach(f => {
+                    const fechaInv = f.created_at.slice(0,10);
+                    if ((fechaDesde && fechaInv < fechaDesde) || (fechaHasta && fechaInv > fechaHasta)) return;
                     const d = new Date(f.created_at);
                     const fechaFmt = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
-                    const sub = f.subtotal_bs || 0;
-                    const rRazon = (f.cliente_nombre || '').replace(/"/g, '""');
-                    const rMetodo = (f.metodo_pago || '').replace(/"/g, '""');
-                    csvContent += `"${fechaFmt}";"FACTURA";"${f.factura_nro}";"${f.nro_control}";"${f.cliente_rif}";"${rRazon}";"${rMetodo}";${f.tasa_bcv};${sub.toFixed(2)};${f.iva_bs.toFixed(2)};${f.igtf_bs.toFixed(2)};${f.total_bs.toFixed(2)}\n`;
+                    csvContent += `"${fechaFmt}";"FACTURA";"${f.factura_nro}";"${f.nro_control}";"${f.cliente_rif}";"${(f.cliente_nombre||'').replace(/"/g,'""')}";"${(f.metodo_pago||'').replace(/"/g,'""')}";${f.tasa_bcv};${(f.subtotal_bs||0).toFixed(2)};${f.iva_bs.toFixed(2)};${f.igtf_bs.toFixed(2)};${f.total_bs.toFixed(2)}\n`;
                 });
             }
 
             if (notasCredito) {
                 notasCredito.forEach(nc => {
+                    const fechaInv = nc.created_at.slice(0,10);
+                    if ((fechaDesde && fechaInv < fechaDesde) || (fechaHasta && fechaInv > fechaHasta)) return;
                     const d = new Date(nc.created_at);
                     const fechaFmt = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
-                    const cliNombre = (nc.invoices?.cliente_nombre || 'Cliente').replace(/"/g, '""');
-                    const cliRif = nc.invoices?.cliente_rif || 'V-000';
-                    const rMotivo = (nc.motivo || '').replace(/"/g, '""');
-                    csvContent += `"${fechaFmt}";"NOTA CREDITO";"${nc.nota_nro}";"${nc.nro_control}";"${cliRif}";"${cliNombre}";"${rMotivo}";${nc.tasa_bcv};0.00;0.00;0.00;${nc.total_bs.toFixed(2)}\n`;
+                    csvContent += `"${fechaFmt}";"NOTA CREDITO";"${nc.nota_nro}";"${nc.nro_control}";"${nc.invoices?.cliente_rif||'V-000'}";"${(nc.invoices?.cliente_nombre||'Cliente').replace(/"/g,'""')}";"${(nc.motivo||'').replace(/"/g,'""')}";${nc.tasa_bcv};0.00;0.00;0.00;${nc.total_bs.toFixed(2)}\n`;
                 });
             }
 
             if (notasDebito) {
                 notasDebito.forEach(nd => {
+                    const fechaInv = nd.created_at.slice(0,10);
+                    if ((fechaDesde && fechaInv < fechaDesde) || (fechaHasta && fechaInv > fechaHasta)) return;
                     const d = new Date(nd.created_at);
                     const fechaFmt = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
-                    const cliNombre = (nd.invoices?.cliente_nombre || 'Cliente').replace(/"/g, '""');
-                    const cliRif = nd.invoices?.cliente_rif || 'V-000';
-                    const rMotivo = (nd.motivo || '').replace(/"/g, '""');
-                    csvContent += `"${fechaFmt}";"NOTA DEBITO";"${nd.nota_nro}";"${nd.nro_control}";"${cliRif}";"${cliNombre}";"${rMotivo}";${nd.tasa_bcv};0.00;0.00;0.00;${nd.total_bs.toFixed(2)}\n`;
+                    csvContent += `"${fechaFmt}";"NOTA DEBITO";"${nd.nota_nro}";"${nd.nro_control}";"${nd.invoices?.cliente_rif||'V-000'}";"${(nd.invoices?.cliente_nombre||'Cliente').replace(/"/g,'""')}";"${(nd.motivo||'').replace(/"/g,'""')}";${nd.tasa_bcv};0.00;0.00;0.00;${nd.total_bs.toFixed(2)}\n`;
                 });
             }
 
@@ -1226,13 +1322,13 @@
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
-            link.setAttribute("download", `Libro_Ventas_${tenantActual.rif}_${new Date().toISOString().slice(0,10)}.csv`);
+            link.setAttribute("download", `Libro_Ventas_${tenantActual.rif}_${fechaDesde}_al_${fechaHasta}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        // --- CARGAR HISTORIAL Y FILTROS AVANZADOS ---
+        // --- CARGAR HISTORIAL Y FILTROS ---
         async function cargarHistorial() {
             if (!supabaseClient || !tenantActual) return;
 
@@ -1241,28 +1337,9 @@
             const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
 
             documentosHistorialCache = [];
-
-            if (facturas) {
-                facturas.forEach(f => documentosHistorialCache.push({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
-            }
-            if (notasCredito) {
-                notasCredito.forEach(nc => documentosHistorialCache.push({
-                    ...nc, 
-                    tipoDoc: 'NOTA CREDITO', 
-                    numero: nc.nota_nro, 
-                    cliente_nombre: nc.invoices?.cliente_nombre || 'Cliente',
-                    cliente_rif: nc.invoices?.cliente_rif || 'V-000'
-                }));
-            }
-            if (notasDebito) {
-                notasDebito.forEach(nd => documentosHistorialCache.push({
-                    ...nd, 
-                    tipoDoc: 'NOTA DEBITO', 
-                    numero: nd.nota_nro, 
-                    cliente_nombre: nd.invoices?.cliente_nombre || 'Cliente',
-                    cliente_rif: nd.invoices?.cliente_rif || 'V-000'
-                }));
-            }
+            if (facturas) facturas.forEach(f => documentosHistorialCache.push({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
+            if (notasCredito) notasCredito.forEach(nc => documentosHistorialCache.push({...nc, tipoDoc: 'NOTA CREDITO', numero: nc.nota_nro, cliente_nombre: nc.invoices?.cliente_nombre||'Cliente', cliente_rif: nc.invoices?.cliente_rif||'V-000'}));
+            if (notasDebito) notasDebito.forEach(nd => documentosHistorialCache.push({...nd, tipoDoc: 'NOTA DEBITO', numero: nd.nota_nro, cliente_nombre: nd.invoices?.cliente_nombre||'Cliente', cliente_rif: nd.invoices?.cliente_rif||'V-000'}));
 
             documentosHistorialCache.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             renderizarHistorial(documentosHistorialCache);
@@ -1274,36 +1351,28 @@
 
             const filtrados = documentosHistorialCache.filter(doc => {
                 const coincideTipo = (tipo === 'TODOS' || doc.tipoDoc === tipo);
-                const matchNro = (doc.numero || '').toLowerCase().includes(texto);
-                const matchControl = (doc.nro_control || '').toLowerCase().includes(texto);
-                const matchRif = (doc.cliente_rif || '').toLowerCase().includes(texto);
-                const matchNombre = (doc.cliente_nombre || '').toLowerCase().includes(texto);
-                const coincideTexto = !texto || matchNro || matchControl || matchRif || matchNombre;
-
-                return coincideTipo && coincideTexto;
+                const matchNro = (doc.numero||'').toLowerCase().includes(texto);
+                const matchControl = (doc.nro_control||'').toLowerCase().includes(texto);
+                const matchRif = (doc.cliente_rif||'').toLowerCase().includes(texto);
+                const matchNombre = (doc.cliente_nombre||'').toLowerCase().includes(texto);
+                return coincideTipo && (!texto || matchNro || matchControl || matchRif || matchNombre);
             });
-
             renderizarHistorial(filtrados);
         }
 
         function renderizarHistorial(lista) {
             const tbody = document.getElementById('tablaHistorial');
             tbody.innerHTML = '';
-
             if (lista.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No se encontraron comprobantes.</td></tr>`;
                 return;
             }
-
             lista.forEach(doc => {
                 const fecha = new Date(doc.created_at).toLocaleString();
                 const clienteStr = doc.cliente_nombre ? `${doc.cliente_nombre} (${doc.cliente_rif})` : 'Consumidor Final';
-                
-                let badgeColor = 'text-emerald-400 bg-emerald-900/30 border-emerald-700/50';
-                if (doc.tipoDoc === 'NOTA CREDITO') badgeColor = 'text-amber-400 bg-amber-900/30 border-amber-700/50';
-                if (doc.tipoDoc === 'NOTA DEBITO') badgeColor = 'text-sky-400 bg-sky-900/30 border-sky-700/50';
-
-                let infoExtra = doc.metodo_pago || doc.motivo || 'N/A';
+                let badgeColor = 'text-emerald-400 bg-emerald-900/35 border-emerald-700/50';
+                if (doc.tipoDoc === 'NOTA CREDITO') badgeColor = 'text-amber-400 bg-amber-900/35 border-amber-700/50';
+                if (doc.tipoDoc === 'NOTA DEBITO') badgeColor = 'text-sky-400 bg-sky-900/35 border-sky-700/50';
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50">
@@ -1313,7 +1382,7 @@
                         </td>
                         <td class="p-2.5 font-mono text-slate-300">${doc.nro_control}</td>
                         <td class="p-2.5 text-slate-300">${clienteStr}</td>
-                        <td class="p-2.5 text-slate-300 font-mono text-[11px]">${infoExtra}</td>
+                        <td class="p-2.5 text-slate-300 font-mono text-[11px]">${doc.metodo_pago || doc.motivo || 'N/A'}</td>
                         <td class="p-2.5 text-slate-400">${fecha}</td>
                         <td class="p-2.5 font-mono text-white">Bs. ${doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</td>
                         <td class="p-2.5 text-center space-x-1">
@@ -1355,14 +1424,12 @@
                 const { data: items } = await supabaseClient.from('invoice_items').select('*').eq('invoice_id', doc.id);
                 let itemsHtml = '';
                 let baseGravadaCalculadaBs = 0, montoExentoCalculadoBs = 0;
-
                 if (items) {
                     items.forEach(item => {
                         const subUsd = item.subtotal_usd;
                         const subBs = subUsd * doc.tasa_bcv;
                         if (item.es_exento) montoExentoCalculadoBs += subBs;
                         else baseGravadaCalculadaBs += subBs;
-
                         itemsHtml += `
                             <div class="border-b border-dotted border-slate-300 pb-1 mb-1">
                                 <div class="font-bold">${item.descripcion}</div>
@@ -1381,7 +1448,6 @@
                 document.getElementById('ticketIgtf').innerText = 'Bs. ' + doc.igtf_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
                 document.getElementById('ticketTotal').innerText = 'Bs. ' + doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
                 document.getElementById('ticketLabelTotal').innerText = 'TOTAL A PAGAR:';
-
             } else if (doc.tipoDoc === 'NOTA CREDITO') {
                 tituloTipo.innerText = 'NOTA DE CRÉDITO FISCAL';
                 tituloTipo.className = 'font-bold text-amber-700 mt-1';
@@ -1389,16 +1455,9 @@
                 controlElem.innerText = 'Nro Control: ' + doc.nro_control;
                 metodoElem.innerText = 'Motivo: ' + doc.motivo;
                 bloqueTotales.classList.add('hidden');
-
-                itemsContainer.innerHTML = `
-                    <div class="p-2 bg-amber-50 rounded border border-amber-200 text-amber-900 space-y-1">
-                        <p class="font-bold">Documento de Ajuste (Devolución)</p>
-                        <p>Monto Total Reintegrado: <span class="font-bold font-mono">Bs. ${doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</span></p>
-                    </div>
-                `;
+                itemsContainer.innerHTML = `<div class="p-2 bg-amber-50 rounded border border-amber-200 text-amber-900 space-y-1"><p class="font-bold">Devolución / Ajuste</p><p>Monto Reintegrado: Bs. ${doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</p></div>`;
                 document.getElementById('ticketTotal').innerText = 'Bs. ' + doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
                 document.getElementById('ticketLabelTotal').innerText = 'TOTAL NOTA CRÉDITO:';
-
             } else if (doc.tipoDoc === 'NOTA DEBITO') {
                 tituloTipo.innerText = 'NOTA DE DÉBITO FISCAL';
                 tituloTipo.className = 'font-bold text-sky-700 mt-1';
@@ -1406,13 +1465,7 @@
                 controlElem.innerText = 'Nro Control: ' + doc.nro_control;
                 metodoElem.innerText = 'Motivo: ' + doc.motivo;
                 bloqueTotales.classList.add('hidden');
-
-                itemsContainer.innerHTML = `
-                    <div class="p-2 bg-sky-50 rounded border border-sky-200 text-sky-900 space-y-1">
-                        <p class="font-bold">Documento de Ajuste (Recargo)</p>
-                        <p>Monto Total Incremento: <span class="font-bold font-mono">Bs. ${doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</span></p>
-                    </div>
-                `;
+                itemsContainer.innerHTML = `<div class="p-2 bg-sky-50 rounded border border-sky-200 text-sky-900 space-y-1"><p class="font-bold">Recargo / Ajuste</p><p>Monto Incremento: Bs. ${doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</p></div>`;
                 document.getElementById('ticketTotal').innerText = 'Bs. ' + doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
                 document.getElementById('ticketLabelTotal').innerText = 'TOTAL NOTA DÉBITO:';
             }
@@ -1420,25 +1473,13 @@
             document.getElementById('modalTicket').classList.remove('hidden');
         }
 
-        function cerrarTicket() { 
-            document.getElementById('modalTicket').classList.add('hidden'); 
-            documentoActualTicket = null;
-        }
+        function cerrarTicket() { document.getElementById('modalTicket').classList.add('hidden'); documentoActualTicket = null; }
 
-        // --- ENVIAR POR WHATSAPP ---
         function enviarWhatsApp() {
             if (!documentoActualTicket || !tenantActual) return;
             const doc = documentoActualTicket;
             const fechaHora = new Date(doc.created_at).toLocaleString();
-
-            let mensaje = `*${tenantActual.razon_social}*_%0A*RIF:* ${tenantActual.rif}%0A%0A`;
-            mensaje += `📄 *${doc.tipoDoc}:* ${doc.numero}%0A`;
-            mensaje += `📌 *Control:* ${doc.nro_control}%0A`;
-            mensaje += `📅 *Fecha:* ${fechaHora}%0A`;
-            mensaje += `👤 *Cliente:* ${doc.cliente_nombre || 'Consumidor Final'} (${doc.cliente_rif || 'V-000'})%0A`;
-            mensaje += `💰 *Total:* Bs. ${doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}%0A%0A`;
-            mensaje += `¡Gracias por su compra! Providencia SENIAT Conforme.`;
-
+            let mensaje = `*${tenantActual.razon_social}*_%0A*RIF:* ${tenantActual.rif}%0A%0A📄 *${doc.tipoDoc}:* ${doc.numero}%0A📌 *Control:* ${doc.nro_control}%0A📅 *Fecha:* ${fechaHora}%0A👤 *Cliente:* ${doc.cliente_nombre || 'Consumidor Final'} (${doc.cliente_rif || 'V-000'})%0A💰 *Total:* Bs. ${doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}%0A%0A¡Gracias por su compra! Providencia SENIAT Conforme.`;
             window.open(`https://wa.me/?text=${mensaje}`, '_blank');
         }
     </script>
