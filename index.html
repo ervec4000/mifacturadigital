@@ -3,20 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiFacturaDigital.com.ve - POS, Facturación y Gestión Integral</title>
+    <title>MiFacturaDigital.com.ve - SaaS Multi-tenant & POS Fiscal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-between p-4">
 
-    <div class="w-full max-w-4xl bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-700 my-6">
-        <header class="text-center mb-6">
+    <!-- 1. PANTALLA DE LOGIN / SELECCIÓN DE INQUILINO -->
+    <div id="vistaLogin" class="w-full max-w-md bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-700 my-auto space-y-6">
+        <header class="text-center space-y-2">
             <h1 class="text-2xl font-bold text-emerald-400">MiFacturaDigital</h1>
-            <p class="text-xs text-slate-400">Sistema POS, Facturación y Gestión bajo Providencia SENIAT SNAT/2024/102</p>
+            <p class="text-xs text-slate-400">Plataforma de Facturación Fiscal B2B2C (Providencia SNAT/2024/102)</p>
+        </header>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Seleccionar Comercio (Inquilino)</label>
+                <select id="loginTenantSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-emerald-500">
+                    <option value="">Cargando comercios...</option>
+                </select>
+            </div>
+
+            <button onclick="iniciarSesionTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-lg shadow-emerald-900/20 cursor-pointer text-sm">
+                Acceder al Sistema POS
+            </button>
+
+            <div class="border-t border-slate-700 pt-4 text-center">
+                <p class="text-xs text-slate-400 mb-2">¿Eres un nuevo comercio?</p>
+                <button onclick="mostrarModalNuevoTenant()" class="w-full bg-slate-700 hover:bg-slate-600 text-emerald-300 font-semibold py-2.5 rounded-xl transition duration-200 text-xs border border-slate-600 cursor-pointer">
+                    + Registrar Nuevo Inquilino / Comercio
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. SISTEMA PRINCIPAL (OCULTO HASTA INICIAR SESIÓN) -->
+    <div id="vistaPrincipal" class="hidden w-full max-w-4xl bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-700 my-6 space-y-6">
+        <header class="flex flex-col md:flex-row justify-between items-center border-b border-slate-700 pb-4 gap-3">
+            <div>
+                <h1 class="text-xl font-bold text-emerald-400" id="headerTenantNombre">Comercio Activo</h1>
+                <p class="text-xs text-slate-400" id="headerTenantRif">RIF: J-00000000-0</p>
+            </div>
+            <button onclick="cerrarSesion()" class="bg-rose-900/50 hover:bg-rose-900 text-rose-300 border border-rose-700/50 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition">
+                🚪 Cambiar / Cerrar Sesión
+            </button>
         </header>
 
         <!-- Navegación por pestañas -->
-        <div class="flex flex-wrap justify-center gap-2 mb-6 border-b border-slate-700 pb-4">
+        <div class="flex flex-wrap justify-center gap-2 border-b border-slate-700 pb-4">
             <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer shadow-lg shadow-emerald-900/25">
                 Punto de Venta (POS)
             </button>
@@ -31,7 +65,7 @@
             </button>
         </div>
 
-        <!-- SECCIÓN 1: PUNTO DE VENTA (POS) -->
+        <!-- SECCIÓN 1: POS -->
         <div id="seccionPos" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
                 <div>
@@ -39,7 +73,7 @@
                     <input type="number" id="tasaBcv" step="0.0001" value="887.3020" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500" oninput="recalcularTodo()">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">Seleccionar Cliente del Directorio</label>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Seleccionar Cliente</label>
                     <select id="clienteSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm" onchange="seleccionarClientePredefinido()">
                         <option value="">-- Seleccionar Cliente --</option>
                     </select>
@@ -49,18 +83,18 @@
                     <input type="text" id="clienteRif" placeholder="V-12080468-1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">Razón Social / Nombre del Comprador</label>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Razón Social / Nombre</label>
                     <input type="text" id="clienteNombre" placeholder="EDISON VELIZ" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
                 </div>
             </div>
 
-            <!-- Selección de Productos -->
+            <!-- Productos -->
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-3">
-                <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Agregar Ítems / Materiales a la Factura</h3>
+                <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Agregar Ítems a la Factura</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                     <div class="md:col-span-6">
-                        <label class="block text-xs text-slate-400 mb-1">Producto / Material (Inventario)</label>
+                        <label class="block text-xs text-slate-400 mb-1">Producto / Material</label>
                         <select id="productoSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
                             <option value="">Cargando productos...</option>
                         </select>
@@ -93,7 +127,7 @@
                 </div>
             </div>
 
-            <!-- Resumen Fiscal -->
+            <!-- Resumen -->
             <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 space-y-2 text-sm">
                 <div class="flex justify-between text-slate-300">
                     <span>Base Imponible (Gravado):</span>
@@ -140,21 +174,19 @@
                             <th class="p-2.5 text-center">Acción</th>
                         </tr>
                     </thead>
-                    <tbody id="tablaHistorial" class="divide-y divide-slate-700/50">
-                        <tr><td colspan="6" class="p-4 text-center text-slate-500">Cargando historial...</td></tr>
-                    </tbody>
+                    <tbody id="tablaHistorial" class="divide-y divide-slate-700/50"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- SECCIÓN 3: GESTIÓN DE PRODUCTOS / MATERIALES (CRUD) -->
+        <!-- SECCIÓN 3: GESTIÓN DE PRODUCTOS (CRUD) -->
         <div id="seccionProductos" class="hidden space-y-6">
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
                 <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📦 Registrar Nuevo Material / Producto</h3>
                 <input type="hidden" id="editProductoId">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">Código SKU / Referencia</label>
+                        <label class="block text-xs text-slate-400 mb-1">Código SKU</label>
                         <input type="text" id="prodSku" placeholder="SKU-001" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
                     </div>
                     <div>
@@ -162,7 +194,7 @@
                         <input type="number" id="prodPrecio" step="0.01" placeholder="15.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-xs text-slate-400 mb-1">Descripción del Material / Servicio</label>
+                        <label class="block text-xs text-slate-400 mb-1">Descripción</label>
                         <input type="text" id="prodDescripcion" placeholder="Derclean - Lavacarros 1L" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
                     </div>
                     <div>
@@ -180,7 +212,7 @@
             </div>
 
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-3">
-                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wide">Inventario Actual de Materiales</h3>
+                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wide">Inventario de Materiales (Inquilino Activo)</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs text-slate-300">
                         <thead class="bg-slate-900 text-slate-400 uppercase">
@@ -192,9 +224,7 @@
                                 <th class="p-2 text-center">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody id="tablaProductosGestion" class="divide-y divide-slate-700/50">
-                            <tr><td colspan="5" class="p-4 text-center text-slate-500">Cargando productos...</td></tr>
-                        </tbody>
+                        <tbody id="tablaProductosGestion" class="divide-y divide-slate-700/50"></tbody>
                     </table>
                 </div>
             </div>
@@ -215,7 +245,7 @@
                         <input type="text" id="cliTelefono" placeholder="0414-1234567" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-xs text-slate-400 mb-1">Razón Social / Nombre</label>
+                        <label class="block text-xs text-slate-400 mb-1">Razón Social</label>
                         <input type="text" id="cliRazonSocial" placeholder="Comercio Aliado C.A." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
                     </div>
                     <div class="md:col-span-2">
@@ -242,23 +272,44 @@
                                 <th class="p-2 text-center">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody id="tablaClientesGestion" class="divide-y divide-slate-700/50">
-                            <tr><td colspan="5" class="p-4 text-center text-slate-500">Cargando clientes...</td></tr>
-                        </tbody>
+                        <tbody id="tablaClientesGestion" class="divide-y divide-slate-700/50"></tbody>
                     </table>
                 </div>
             </div>
         </div>
+    </div>
 
+    <!-- MODAL NUEVO INQUILINO -->
+    <div id="modalNuevoTenant" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+            <h3 class="text-base font-bold text-emerald-400">Registrar Nuevo Comercio Inquilino</h3>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">RIF del Comercio</label>
+                    <input type="text" id="nuevoTenantRif" placeholder="J-98765432-1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Razón Social</label>
+                    <input type="text" id="nuevoTenantRazon" placeholder="Mi Nueva Tienda C.A." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Dirección Fiscal</label>
+                    <input type="text" id="nuevoTenantDireccion" placeholder="Yaracuy, Venezuela" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                </div>
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="registrarNuevoTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Registrar y Acceder</button>
+                <button onclick="cerrarModalNuevoTenant()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL TICKET -->
     <div id="modalTicket" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-white text-slate-900 w-full max-w-md rounded-xl p-6 shadow-2xl relative font-mono text-xs space-y-3 max-h-[90vh] overflow-y-auto">
             <div class="text-center border-b border-dashed border-slate-400 pb-3 space-y-1">
-                <h2 class="font-bold text-sm">COMERCIO DE PRUEBA C.A.</h2>
-                <p>RIF: J-12345678-9</p>
-                <p class="text-[10px]">Av. Principal San Felipe, Yaracuy</p>
+                <h2 class="font-bold text-sm" id="ticketComercioNombre">COMERCIO DE PRUEBA C.A.</h2>
+                <p id="ticketComercioRif">RIF: J-12345678-9</p>
                 <p class="font-bold text-emerald-700 mt-1">FACTURA FISCAL DIGITAL</p>
                 <p class="text-[9px] text-slate-600">Providencia Administrativa SNAT/2024/102</p>
             </div>
@@ -305,27 +356,104 @@
     <script>
         const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji'; 
-        const TENANT_ID = 'a0ee93d8-1111-2222-3333-444455556666';
 
         let supabaseClient = null;
+        let tenantActual = null; // { id, razon_social, rif }
         let carritoItems = [];
         let productosCache = [];
         let clientesCache = [];
 
-        window.onload = function() {
+        window.onload = async function() {
             if (window.supabase) {
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                inicializarDatos();
+                await cargarTenantsLogin();
+                verificarSesionGuardada();
             } else {
                 alert('Error al cargar la librería de Supabase.');
             }
         };
 
-        async function inicializarDatos() {
-            await cargarProductosSelect();
-            await cargarClientesSelect();
+        // --- GESTIÓN DE SESIÓN / INQUILINOS ---
+        async function cargarTenantsLogin() {
+            const { data, error } = await supabaseClient.from('tenants').select('*');
+            const select = document.getElementById('loginTenantSelect');
+            select.innerHTML = '<option value="">-- Seleccione su Comercio --</option>';
+            if (data && data.length > 0) {
+                data.forEach(t => {
+                    select.innerHTML += `<option value='${JSON.stringify(t)}'>${t.razon_social} (RIF: ${t.rif})</option>`;
+                });
+            } else {
+                select.innerHTML = '<option value="">No hay comercios registrados</option>';
+            }
         }
 
+        function iniciarSesionTenant() {
+            const val = document.getElementById('loginTenantSelect').value;
+            if (!val) {
+                alert('Por favor seleccione un comercio válido.');
+                return;
+            }
+            tenantActual = JSON.parse(val);
+            localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
+            activarVistaPrincipal();
+        }
+
+        function verificarSesionGuardada() {
+            const guardado = localStorage.getItem('tenant_actual');
+            if (guardado) {
+                tenantActual = JSON.parse(guardado);
+                activarVistaPrincipal();
+            }
+        }
+
+        function activarVistaPrincipal() {
+            document.getElementById('vistaLogin').classList.add('hidden');
+            document.getElementById('vistaPrincipal').classList.remove('hidden');
+            document.getElementById('headerTenantNombre').innerText = tenantActual.razon_social;
+            document.getElementById('headerTenantRif').innerText = `RIF: ${tenantActual.rif}`;
+            cambiarPestana('pos');
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('tenant_actual');
+            tenantActual = null;
+            document.getElementById('vistaPrincipal').classList.add('hidden');
+            document.getElementById('vistaLogin').classList.remove('hidden');
+            cargarTenantsLogin();
+        }
+
+        function mostrarModalNuevoTenant() { document.getElementById('modalNuevoTenant').classList.remove('hidden'); }
+        function cerrarModalNuevoTenant() { document.getElementById('modalNuevoTenant').classList.add('hidden'); }
+
+        async function registrarNuevoTenant() {
+            const rif = document.getElementById('nuevoTenantRif').value.trim();
+            const razon = document.getElementById('nuevoTenantRazon').value.trim();
+            const direccion = document.getElementById('nuevoTenantDireccion').value.trim();
+
+            if (!rif || !razon) {
+                alert('Por favor ingrese el RIF y la Razón Social.');
+                return;
+            }
+
+            const { data, error } = await supabaseClient.from('tenants').insert([{
+                rif: rif,
+                razon_social: razon,
+                direccion: direccion
+            }]).select();
+
+            if (error) {
+                alert('Error al registrar comercio: ' + error.message);
+                return;
+            }
+
+            tenantActual = data[0];
+            localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
+            cerrarModalNuevoTenant();
+            activarVistaPrincipal();
+            alert('¡Comercio registrado con éxito!');
+        }
+
+        // --- NAVEGACIÓN ---
         function cambiarPestana(pestana) {
             const tabs = ['pos', 'historial', 'productos', 'clientes'];
             tabs.forEach(t => {
@@ -349,15 +477,15 @@
             }
         }
 
-        // --- MÓDULO PRODUCTOS / MATERIALES (CRUD) ---
+        // --- MÓDULO PRODUCTOS (CRUD con tenant_id) ---
         async function cargarProductosSelect() {
-            if (!supabaseClient) return;
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', TENANT_ID);
+            if (!supabaseClient || !tenantActual) return;
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             productosCache = data || [];
             const select = document.getElementById('productoSelect');
             select.innerHTML = '';
             if (productosCache.length === 0) {
-                select.innerHTML = '<option value="">No hay productos registrados. ¡Crea uno en la pestaña Productos!</option>';
+                select.innerHTML = '<option value="">No hay productos. ¡Crea uno en Materiales/Productos!</option>';
                 return;
             }
             productosCache.forEach(prod => {
@@ -367,12 +495,12 @@
         }
 
         async function cargarProductosGestion() {
-            if (!supabaseClient) return;
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', TENANT_ID).order('created_at', { ascending: false });
+            if (!supabaseClient || !tenantActual) return;
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
             const tbody = document.getElementById('tablaProductosGestion');
             tbody.innerHTML = '';
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay productos registrados.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay productos registrados para este comercio.</td></tr>`;
                 return;
             }
             data.forEach(prod => {
@@ -404,13 +532,9 @@
             }
 
             if (id) {
-                const { error } = await supabaseClient.from('productos').update({ codigo_sku: sku, descripcion, precio_unitario_usd: precio, es_exento: esExento }).eq('id', id);
-                if (error) alert('Error al actualizar: ' + error.message);
-                else alert('¡Producto actualizado con éxito!');
+                await supabaseClient.from('productos').update({ codigo_sku: sku, descripcion, precio_unitario_usd: precio, es_exento: esExento }).eq('id', id);
             } else {
-                const { error } = await supabaseClient.from('productos').insert([{ tenant_id: TENANT_ID, codigo_sku: sku, descripcion, precio_unitario_usd: precio, es_exento: esExento }]);
-                if (error) alert('Error al registrar: ' + error.message);
-                else alert('¡Producto registrado con éxito!');
+                await supabaseClient.from('productos').insert([{ tenant_id: tenantActual.id, codigo_sku: sku, descripcion, precio_unitario_usd: precio, es_exento: esExento }]);
             }
             limpiarFormProducto();
             cargarProductosGestion();
@@ -422,7 +546,7 @@
             document.getElementById('prodDescripcion').value = descripcion;
             document.getElementById('prodPrecio').value = precio;
             document.getElementById('prodExento').value = esExento.toString();
-            document.getElementById('tituloFormProducto').innerText = '✏️ Editar Material / Producto';
+            document.getElementById('tituloFormProducto').innerText = '✏️ Editar Producto';
             document.getElementById('btnCancelarProd').classList.remove('hidden');
         }
 
@@ -437,17 +561,15 @@
         }
 
         async function eliminarProducto(id) {
-            if (!confirm('¿Está seguro de eliminar este producto?')) return;
-            const { error } = await supabaseClient.from('productos').delete().eq('id', id);
-            if (error) alert('Error al eliminar: ' + error.message);
-            else cargarProductosGestion();
+            if (!confirm('¿Eliminar producto?')) return;
+            await supabaseClient.from('productos').delete().eq('id', id);
+            cargarProductosGestion();
         }
 
-
-        // --- MÓDULO CLIENTES (CRUD) ---
+        // --- MÓDULO CLIENTES (CRUD con tenant_id) ---
         async function cargarClientesSelect() {
-            if (!supabaseClient) return;
-            const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', TENANT_ID);
+            if (!supabaseClient || !tenantActual) return;
+            const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
             clientesCache = data || [];
             const select = document.getElementById('clienteSelect');
             select.innerHTML = '<option value="">-- Seleccionar Cliente --</option>';
@@ -467,8 +589,8 @@
         }
 
         async function cargarClientesGestion() {
-            if (!supabaseClient) return;
-            const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', TENANT_ID).order('created_at', { ascending: false });
+            if (!supabaseClient || !tenantActual) return;
+            const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
             const tbody = document.getElementById('tablaClientesGestion');
             tbody.innerHTML = '';
             if (!data || data.length === 0) {
@@ -499,18 +621,14 @@
             const telefono = document.getElementById('cliTelefono').value.trim();
 
             if (!rif || !razonSocial) {
-                alert('Por favor ingrese el RIF y la Razón Social del cliente.');
+                alert('Ingrese RIF y Razón Social.');
                 return;
             }
 
             if (id) {
-                const { error } = await supabaseClient.from('clientes').update({ rif, razon_social: razonSocial, direccion, telefono }).eq('id', id);
-                if (error) alert('Error al actualizar: ' + error.message);
-                else alert('¡Cliente actualizado con éxito!');
+                await supabaseClient.from('clientes').update({ rif, razon_social: razonSocial, direccion, telefono }).eq('id', id);
             } else {
-                const { error } = await supabaseClient.from('clientes').insert([{ tenant_id: TENANT_ID, rif, razon_social: razonSocial, direccion, telefono }]);
-                if (error) alert('Error al registrar: ' + error.message);
-                else alert('¡Cliente registrado con éxito!');
+                await supabaseClient.from('clientes').insert([{ tenant_id: tenantActual.id, rif, razon_social: razonSocial, direccion, telefono }]);
             }
             limpiarFormCliente();
             cargarClientesGestion();
@@ -537,32 +655,28 @@
         }
 
         async function eliminarCliente(id) {
-            if (!confirm('¿Está seguro de eliminar este cliente?')) return;
-            const { error } = await supabaseClient.from('clientes').delete().eq('id', id);
-            if (error) alert('Error al eliminar: ' + error.message);
-            else cargarClientesGestion();
+            if (!confirm('¿Eliminar cliente?')) return;
+            await supabaseClient.from('clientes').delete().eq('id', id);
+            cargarClientesGestion();
         }
 
-
-        // --- MÓDULO POS Y FACTURACIÓN ---
+        // --- POS Y FACTURACIÓN (Filtrado por tenant_id) ---
         function agregarItem() {
             const select = document.getElementById('productoSelect');
             if (!select.value || productosCache.length === 0) {
-                alert('Seleccione un producto válido.');
+                alert('Seleccione un producto.');
                 return;
             }
-            const prodId = select.value;
             const option = select.options[select.selectedIndex];
             const cantidad = parseFloat(document.getElementById('cantidadItem').value) || 1;
 
             carritoItems.push({
-                productoId: prodId,
+                productoId: select.value,
                 descripcion: option.text.split(' - ')[0],
                 precio: parseFloat(option.getAttribute('data-precio')),
                 esExento: option.getAttribute('data-exento') === 'true',
                 cantidad: cantidad
             });
-
             actualizarTablaYCalculos();
         }
 
@@ -574,11 +688,9 @@
         function actualizarTablaYCalculos() {
             const tbody = document.getElementById('tablaItems');
             tbody.innerHTML = '';
-
             if (carritoItems.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="6" class="p-3 text-center text-slate-500">No hay ítems agregados.</td></tr>`;
             }
-
             carritoItems.forEach((item, index) => {
                 const subUsd = item.precio * item.cantidad;
                 tbody.innerHTML += `
@@ -586,20 +698,18 @@
                         <td class="p-2">${item.descripcion}</td>
                         <td class="p-2">${item.cantidad}</td>
                         <td class="p-2">$ ${item.precio.toFixed(2)}</td>
-                        <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${item.esExento ? 'bg-amber-900/50 text-amber-300 border border-amber-700/50' : 'bg-emerald-900/50 text-emerald-300 border border-emerald-700/50'}">${item.esExento ? 'EXENTO' : 'GRAVADO'}</span></td>
+                        <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${item.esExento ? 'bg-amber-900/50 text-amber-300' : 'bg-emerald-900/50 text-emerald-300'}">${item.esExento ? 'EXENTO' : 'GRAVADO'}</span></td>
                         <td class="p-2 font-mono">$ ${subUsd.toFixed(2)}</td>
-                        <td class="p-2 text-center"><button onclick="eliminarItem(${index})" class="text-rose-400 hover:text-rose-300 font-bold cursor-pointer">×</button></td>
+                        <td class="p-2 text-center"><button onclick="eliminarItem(${index})" class="text-rose-400 font-bold cursor-pointer">×</button></td>
                     </tr>
                 `;
             });
-
             recalcularTodo();
         }
 
         function recalcularTodo() {
             const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
-            let baseGravadaUsd = 0;
-            let montoExentoUsd = 0;
+            let baseGravadaUsd = 0, montoExentoUsd = 0;
 
             carritoItems.forEach(item => {
                 const sub = item.precio * item.cantidad;
@@ -624,22 +734,18 @@
         async function emitirFactura() {
             try {
                 if (carritoItems.length === 0) {
-                    alert('Debe agregar al menos un ítem a la factura.');
+                    alert('Agregue al menos un ítem.');
                     return;
                 }
-
                 const rifCliente = document.getElementById('clienteRif').value.trim();
                 const nombreCliente = document.getElementById('clienteNombre').value.trim();
-
                 if (!rifCliente || !nombreCliente) {
-                    alert('Por favor ingrese o seleccione el RIF y la Razón Social del cliente.');
+                    alert('Ingrese o seleccione el cliente.');
                     return;
                 }
 
                 const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
-
-                let baseGravadaUsd = 0;
-                let montoExentoUsd = 0;
+                let baseGravadaUsd = 0, montoExentoUsd = 0;
                 carritoItems.forEach(item => {
                     const sub = item.precio * item.cantidad;
                     if (item.esExento) montoExentoUsd += sub;
@@ -657,7 +763,7 @@
                 const { data: facturaData, error: facturaError } = await supabaseClient
                     .from('invoices')
                     .insert([{
-                        tenant_id: TENANT_ID,
+                        tenant_id: tenantActual.id,
                         factura_nro: facturaNro,
                         nro_control: nroControl,
                         tasa_bcv: tasa,
@@ -684,40 +790,31 @@
                     descripcion: item.descripcion
                 }));
 
-                const { error: itemsError } = await supabaseClient.from('invoice_items').insert(itemsParaInsertar);
-                if (itemsError) throw itemsError;
+                await supabaseClient.from('invoice_items').insert(itemsParaInsertar);
 
-                alert(`¡Factura ${facturaNro} emitida y guardada con éxito bajo Providencia 102!`);
+                alert(`¡Factura ${facturaNro} emitida con éxito para ${tenantActual.razon_social}!`);
                 carritoItems = [];
                 document.getElementById('clienteRif').value = '';
                 document.getElementById('clienteNombre').value = '';
-                document.getElementById('clienteSelect').value = '';
                 actualizarTablaYCalculos();
                 cambiarPestana('historial');
-
             } catch (err) {
-                alert('Error al procesar la factura: ' + err.message);
+                alert('Error al emitir factura: ' + err.message);
             }
         }
 
         async function cargarHistorial() {
-            if (!supabaseClient) return;
-            const { data, error } = await supabaseClient
+            if (!supabaseClient || !tenantActual) return;
+            const { data } = await supabaseClient
                 .from('invoices')
                 .select('*')
-                .eq('tenant_id', TENANT_ID)
+                .eq('tenant_id', tenantActual.id)
                 .order('created_at', { ascending: false });
-
-            if (error) {
-                alert('Error al cargar historial: ' + error.message);
-                return;
-            }
 
             const tbody = document.getElementById('tablaHistorial');
             tbody.innerHTML = '';
-
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No hay facturas registradas.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No hay facturas registradas para este comercio.</td></tr>`;
                 return;
             }
 
@@ -740,26 +837,21 @@
         }
 
         async function verTicket(inv) {
+            document.getElementById('ticketComercioNombre').innerText = tenantActual.razon_social;
+            document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif}`;
             document.getElementById('ticketNro').innerText = 'Factura: ' + inv.factura_nro;
             document.getElementById('ticketControl').innerText = 'Nro Control: ' + inv.nro_control;
             const fechaHora = new Date(inv.created_at);
             document.getElementById('ticketFecha').innerText = 'Fecha/Hora: ' + fechaHora.toLocaleDateString() + ' ' + fechaHora.toLocaleTimeString();
             document.getElementById('ticketTasa').innerText = inv.tasa_bcv.toFixed(4);
-            
-            const nombreCli = inv.cliente_nombre || 'Consumidor Final';
-            const rifCli = inv.cliente_rif || 'N/A';
-            document.getElementById('ticketCliente').innerText = `Cliente: ${nombreCli} | RIF: ${rifCli}`;
+            document.getElementById('ticketCliente').innerText = `Cliente: ${inv.cliente_nombre} | RIF: ${inv.cliente_rif}`;
 
-            const { data: items } = await supabaseClient
-                .from('invoice_items')
-                .select('*')
-                .eq('invoice_id', inv.id);
+            const { data: items } = await supabaseClient.from('invoice_items').select('*').eq('invoice_id', inv.id);
 
             let itemsHtml = '';
-            let baseGravadaCalculadaBs = 0;
-            let montoExentoCalculadoBs = 0;
+            let baseGravadaCalculadaBs = 0, montoExentoCalculadoBs = 0;
 
-            if (items && items.length > 0) {
+            if (items) {
                 items.forEach(item => {
                     const subUsd = item.subtotal_usd;
                     const subBs = subUsd * inv.tasa_bcv;
@@ -768,7 +860,7 @@
 
                     itemsHtml += `
                         <div class="border-b border-dotted border-slate-300 pb-1 mb-1">
-                            <div class="font-bold">${item.descripcion || 'Material / Producto'}</div>
+                            <div class="font-bold">${item.descripcion}</div>
                             <div class="flex justify-between text-[10px] text-slate-600">
                                 <span>${item.cantidad} x $ ${item.precio_unitario_usd.toFixed(2)} (${item.es_exento ? 'EXENTO' : 'GRAVADO 16%'})</span>
                                 <span class="font-mono font-bold">$ ${subUsd.toFixed(2)} (Bs. ${subBs.toLocaleString('es-VE', {minimumFractionDigits: 2})})</span>
@@ -776,8 +868,6 @@
                         </div>
                     `;
                 });
-            } else {
-                itemsHtml = '<div class="text-slate-500">Sin detalles registrados.</div>';
             }
 
             document.getElementById('ticketItemsContainer').innerHTML = itemsHtml;
@@ -790,9 +880,7 @@
             document.getElementById('modalTicket').classList.remove('hidden');
         }
 
-        function cerrarTicket() {
-            document.getElementById('modalTicket').classList.add('hidden');
-        }
+        function cerrarTicket() { document.getElementById('modalTicket').classList.add('hidden'); }
     </script>
 </body>
 </html>
