@@ -3,49 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiFacturaDigital.com.ve - SaaS Multi-tenant & POS Fiscal</title>
+    <title>MiFacturaDigital.com.ve - SaaS Multi-tenant Seguro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-between p-4">
 
-    <!-- 1. PANTALLA DE LOGIN / SELECCIÓN DE INQUILINO -->
+    <!-- 1. PANTALLA DE LOGIN SEGURO POR CREDENCIALES -->
     <div id="vistaLogin" class="w-full max-w-md bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-700 my-auto space-y-6">
         <header class="text-center space-y-2">
             <h1 class="text-2xl font-bold text-emerald-400">MiFacturaDigital</h1>
-            <p class="text-xs text-slate-400">Plataforma de Facturación Fiscal B2B2C (Providencia SNAT/2024/102)</p>
+            <p class="text-xs text-slate-400">Acceso Privado Inquilinos - Providencia SENIAT SNAT/2024/102</p>
         </header>
 
         <div class="space-y-4">
             <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Seleccionar Comercio (Inquilino)</label>
-                <select id="loginTenantSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-emerald-500">
-                    <option value="">Cargando comercios...</option>
-                </select>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico (Usuario)</label>
+                <input type="email" id="loginEmail" placeholder="comercio@empresa.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-emerald-500">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Contraseña</label>
+                <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
 
             <button onclick="iniciarSesionTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-lg shadow-emerald-900/20 cursor-pointer text-sm">
-                Acceder al Sistema POS
+                Iniciar Sesión
             </button>
 
             <div class="border-t border-slate-700 pt-4 text-center">
-                <p class="text-xs text-slate-400 mb-2">¿Eres un nuevo comercio?</p>
+                <p class="text-xs text-slate-400 mb-2">¿Quieres registrar tu comercio?</p>
                 <button onclick="mostrarModalNuevoTenant()" class="w-full bg-slate-700 hover:bg-slate-600 text-emerald-300 font-semibold py-2.5 rounded-xl transition duration-200 text-xs border border-slate-600 cursor-pointer">
-                    + Registrar Nuevo Inquilino / Comercio
+                    + Registrar Nuevo Inquilino
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 2. SISTEMA PRINCIPAL (OCULTO HASTA INICIAR SESIÓN) -->
+    <!-- 2. SISTEMA PRINCIPAL (AISLADO POR INQUILINO) -->
     <div id="vistaPrincipal" class="hidden w-full max-w-4xl bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-700 my-6 space-y-6">
         <header class="flex flex-col md:flex-row justify-between items-center border-b border-slate-700 pb-4 gap-3">
             <div>
                 <h1 class="text-xl font-bold text-emerald-400" id="headerTenantNombre">Comercio Activo</h1>
-                <p class="text-xs text-slate-400" id="headerTenantRif">RIF: J-00000000-0</p>
+                <p class="text-xs text-slate-400" id="headerTenantRif">RIF: J-00000000-0 | Contacto: <span id="headerTenantContacto">--</span></p>
             </div>
             <button onclick="cerrarSesion()" class="bg-rose-900/50 hover:bg-rose-900 text-rose-300 border border-rose-700/50 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer transition">
-                🚪 Cambiar / Cerrar Sesión
+                🚪 Cerrar Sesión
             </button>
         </header>
 
@@ -279,11 +281,11 @@
         </div>
     </div>
 
-    <!-- MODAL NUEVO INQUILINO -->
+    <!-- MODAL NUEVO INQUILINO (REGISTRO COMPLETO) -->
     <div id="modalNuevoTenant" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-        <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+        <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 class="text-base font-bold text-emerald-400">Registrar Nuevo Comercio Inquilino</h3>
-            <div class="space-y-3 text-xs">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                 <div>
                     <label class="block text-slate-400 mb-1">RIF del Comercio</label>
                     <input type="text" id="nuevoTenantRif" placeholder="J-98765432-1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
@@ -292,13 +294,29 @@
                     <label class="block text-slate-400 mb-1">Razón Social</label>
                     <input type="text" id="nuevoTenantRazon" placeholder="Mi Nueva Tienda C.A." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
                 </div>
-                <div>
+                <div class="md:col-span-2">
                     <label class="block text-slate-400 mb-1">Dirección Fiscal</label>
                     <input type="text" id="nuevoTenantDireccion" placeholder="Yaracuy, Venezuela" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
                 </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Persona de Contacto</label>
+                    <input type="text" id="nuevoTenantContacto" placeholder="Nombre y Apellido" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Teléfono</label>
+                    <input type="text" id="nuevoTenantTelefono" placeholder="0414-1234567" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Correo Electrónico (Usuario)</label>
+                    <input type="email" id="nuevoTenantEmail" placeholder="correo@comercio.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Contraseña</label>
+                    <input type="password" id="nuevoTenantPassword" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                </div>
             </div>
             <div class="flex space-x-2 pt-2">
-                <button onclick="registrarNuevoTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Registrar y Acceder</button>
+                <button onclick="registrarNuevoTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Registrarse</button>
                 <button onclick="cerrarModalNuevoTenant()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
             </div>
         </div>
@@ -358,42 +376,43 @@
         const SUPABASE_ANON_KEY = 'sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji'; 
 
         let supabaseClient = null;
-        let tenantActual = null; // { id, razon_social, rif }
+        let tenantActual = null; 
         let carritoItems = [];
         let productosCache = [];
         let clientesCache = [];
 
-        window.onload = async function() {
+        window.onload = function() {
             if (window.supabase) {
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                await cargarTenantsLogin();
                 verificarSesionGuardada();
             } else {
                 alert('Error al cargar la librería de Supabase.');
             }
         };
 
-        // --- GESTIÓN DE SESIÓN / INQUILINOS ---
-        async function cargarTenantsLogin() {
-            const { data, error } = await supabaseClient.from('tenants').select('*');
-            const select = document.getElementById('loginTenantSelect');
-            select.innerHTML = '<option value="">-- Seleccione su Comercio --</option>';
-            if (data && data.length > 0) {
-                data.forEach(t => {
-                    select.innerHTML += `<option value='${JSON.stringify(t)}'>${t.razon_social} (RIF: ${t.rif})</option>`;
-                });
-            } else {
-                select.innerHTML = '<option value="">No hay comercios registrados</option>';
-            }
-        }
+        // --- AUTENTICACIÓN SEGURA POR CREDENCIALES ---
+        async function iniciarSesionTenant() {
+            const emailInput = document.getElementById('loginEmail').value.trim();
+            const passwordInput = document.getElementById('loginPassword').value.trim();
 
-        function iniciarSesionTenant() {
-            const val = document.getElementById('loginTenantSelect').value;
-            if (!val) {
-                alert('Por favor seleccione un comercio válido.');
+            if (!emailInput || !passwordInput) {
+                alert('Por favor ingrese su correo y contraseña.');
                 return;
             }
-            tenantActual = JSON.parse(val);
+
+            const { data, error } = await supabaseClient
+                .from('tenants')
+                .select('*')
+                .eq('email', emailInput)
+                .eq('password', passwordInput)
+                .single();
+
+            if (error || !data) {
+                alert('Credenciales incorrectas o comercio no registrado.');
+                return;
+            }
+
+            tenantActual = data;
             localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
             activarVistaPrincipal();
         }
@@ -411,6 +430,7 @@
             document.getElementById('vistaPrincipal').classList.remove('hidden');
             document.getElementById('headerTenantNombre').innerText = tenantActual.razon_social;
             document.getElementById('headerTenantRif').innerText = `RIF: ${tenantActual.rif}`;
+            document.getElementById('headerTenantContacto').innerText = tenantActual.contacto || 'No especificado';
             cambiarPestana('pos');
         }
 
@@ -419,7 +439,8 @@
             tenantActual = null;
             document.getElementById('vistaPrincipal').classList.add('hidden');
             document.getElementById('vistaLogin').classList.remove('hidden');
-            cargarTenantsLogin();
+            document.getElementById('loginEmail').value = '';
+            document.getElementById('loginPassword').value = '';
         }
 
         function mostrarModalNuevoTenant() { document.getElementById('modalNuevoTenant').classList.remove('hidden'); }
@@ -429,16 +450,24 @@
             const rif = document.getElementById('nuevoTenantRif').value.trim();
             const razon = document.getElementById('nuevoTenantRazon').value.trim();
             const direccion = document.getElementById('nuevoTenantDireccion').value.trim();
+            const contacto = document.getElementById('nuevoTenantContacto').value.trim();
+            const telefono = document.getElementById('nuevoTenantTelefono').value.trim();
+            const email = document.getElementById('nuevoTenantEmail').value.trim();
+            const password = document.getElementById('nuevoTenantPassword').value.trim();
 
-            if (!rif || !razon) {
-                alert('Por favor ingrese el RIF y la Razón Social.');
+            if (!rif || !razon || !email || !password) {
+                alert('Por favor complete los campos obligatorios (RIF, Razón Social, Email y Contraseña).');
                 return;
             }
 
             const { data, error } = await supabaseClient.from('tenants').insert([{
-                rif: rif,
+                rif,
                 razon_social: razon,
-                direccion: direccion
+                direccion,
+                contacto,
+                telefono,
+                email,
+                password
             }]).select();
 
             if (error) {
@@ -450,7 +479,7 @@
             localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
             cerrarModalNuevoTenant();
             activarVistaPrincipal();
-            alert('¡Comercio registrado con éxito!');
+            alert('¡Comercio registrado e iniciado con éxito!');
         }
 
         // --- NAVEGACIÓN ---
@@ -477,7 +506,7 @@
             }
         }
 
-        // --- MÓDULO PRODUCTOS (CRUD con tenant_id) ---
+        // --- MÓDULO PRODUCTOS (CRUD aislado por tenant) ---
         async function cargarProductosSelect() {
             if (!supabaseClient || !tenantActual) return;
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
@@ -509,7 +538,7 @@
                         <td class="p-2 font-mono text-emerald-400">${prod.codigo_sku || 'S/N'}</td>
                         <td class="p-2">${prod.descripcion}</td>
                         <td class="p-2 font-mono">$ ${prod.precio_unitario_usd.toFixed(2)}</td>
-                        <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${prod.es_exento ? 'bg-amber-900/50 text-amber-300 border border-amber-700/50' : 'bg-emerald-900/50 text-emerald-300 border border-emerald-700/50'}">${prod.es_exento ? 'EXENTO' : 'GRAVADO'}</span></td>
+                        <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${prod.es_exento ? 'bg-amber-900/50 text-amber-300' : 'bg-emerald-900/50 text-emerald-300'}">${prod.es_exento ? 'EXENTO' : 'GRAVADO'}</span></td>
                         <td class="p-2 text-center space-x-2">
                             <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku || ''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento})' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Editar</button>
                             <button onclick='eliminarProducto("${prod.id}")' class="text-rose-400 hover:text-rose-300 font-semibold cursor-pointer">Eliminar</button>
@@ -566,7 +595,7 @@
             cargarProductosGestion();
         }
 
-        // --- MÓDULO CLIENTES (CRUD con tenant_id) ---
+        // --- MÓDULO CLIENTES (CRUD aislado por tenant) ---
         async function cargarClientesSelect() {
             if (!supabaseClient || !tenantActual) return;
             const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
@@ -660,7 +689,7 @@
             cargarClientesGestion();
         }
 
-        // --- POS Y FACTURACIÓN (Filtrado por tenant_id) ---
+        // --- POS Y FACTURACIÓN ---
         function agregarItem() {
             const select = document.getElementById('productoSelect');
             if (!select.value || productosCache.length === 0) {
