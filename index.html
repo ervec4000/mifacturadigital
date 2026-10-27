@@ -80,7 +80,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">Tasa BCV del Día (Bs.)</label>
-                    <input type="number" id="tasaBcv" step="0.0001" value="887.3020" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500" oninput="recalcularTodo()">
+                    <input type="text" id="tasaBcv" value="887.3020" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500 font-mono" oninput="recalcularTodo()">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">Seleccionar Cliente</label>
@@ -246,15 +246,15 @@
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-900 p-4 rounded-lg border border-slate-700 items-end">
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Fecha Desde</label>
-                        <input type="date" id="filtroFechaDesde" class="w-full bg-slate-850 border border-slate-700 rounded p-2 text-white text-xs" onchange="generarReporteZ()">
+                        <input type="date" id="filtroFechaDesde" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white text-xs" onchange="generarReporteZ()">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Fecha Hasta</label>
-                        <input type="date" id="filtroFechaHasta" class="w-full bg-slate-850 border border-slate-700 rounded p-2 text-white text-xs" onchange="generarReporteZ()">
+                        <input type="date" id="filtroFechaHasta" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white text-xs" onchange="generarReporteZ()">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Fondo Inicial en Gaveta (Bs.)</label>
-                        <input type="number" id="fondoCambioBs" step="0.01" value="0.00" class="w-full bg-slate-850 border border-slate-700 rounded p-2 text-white text-xs font-mono" oninput="generarReporteZ()">
+                        <input type="number" id="fondoCambioBs" step="0.01" value="0.00" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white text-xs font-mono" oninput="generarReporteZ()">
                     </div>
                 </div>
 
@@ -563,7 +563,6 @@
             }
 
             tenantActual = data;
-            // Si el tenant no tiene rol definido en BD, asignamos 'admin' por defecto
             if (!tenantActual.rol) tenantActual.rol = 'admin';
 
             localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
@@ -585,7 +584,6 @@
             document.getElementById('headerTenantNombre').innerText = tenantActual.razon_social;
             document.getElementById('headerTenantRol').innerText = tenantActual.rol.toUpperCase();
 
-            // Aplicar restricción de Roles y Permisos (Cajero vs Admin)
             const elementosAdmin = document.querySelectorAll('.tab-admin');
             if (tenantActual.rol === 'cajero') {
                 elementosAdmin.forEach(el => el.classList.add('hidden'));
@@ -606,7 +604,6 @@
         }
 
         function cambiarPestana(pestana) {
-            // Si es cajero y trata de entrar a pestañas admin, bloquear
             if (tenantActual && tenantActual.rol === 'cajero' && ['cierrez', 'productos', 'clientes'].includes(pestana)) {
                 alert('Acceso restringido solo para Administradores.');
                 return;
@@ -628,7 +625,6 @@
 
             if (pestana === 'historial') cargarHistorial();
             if (pestana === 'cierrez') {
-                // Inicializar fechas por defecto (Hoy)
                 const hoy = new Date().toISOString().slice(0,10);
                 if (!document.getElementById('filtroFechaDesde').value) document.getElementById('filtroFechaDesde').value = hoy;
                 if (!document.getElementById('filtroFechaHasta').value) document.getElementById('filtroFechaHasta').value = hoy;
@@ -893,7 +889,8 @@
         }
 
         function recalcularTodo() {
-            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
+            let tasaRaw = document.getElementById('tasaBcv').value.toString().replace(',', '.');
+            const tasa = parseFloat(tasaRaw) || 0;
             let baseGravadaUsd = 0, montoExentoUsd = 0;
 
             carritoItems.forEach(item => {
@@ -919,12 +916,14 @@
         }
 
         function calcularVuelto() {
-            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
+            let tasaRaw = document.getElementById('tasaBcv').value.toString().replace(',', '.');
+            const tasa = parseFloat(tasaRaw) || 1;
+            
             const totalBsStr = document.getElementById('totalBs').innerText.replace('Bs. ', '').replace(/\./g, '').replace(',', '.');
             const totalBs = parseFloat(totalBsStr) || 0;
 
-            const recibidoUsd = parseFloat(document.getElementById('pagoRecibidoUsd').value) || 0;
-            const recibidoBs = parseFloat(document.getElementById('pagoRecibidoBs').value) || 0;
+            const recibidoUsd = parseFloat(document.getElementById('pagoRecibidoUsd')?.value || 0);
+            const recibidoBs = parseFloat(document.getElementById('pagoRecibidoBs')?.value || 0);
 
             const totalRecibidoBs = recibidoBs + (recibidoUsd * tasa);
             const diferenciaBs = totalRecibidoBs - totalBs;
@@ -952,7 +951,8 @@
                 return;
             }
 
-            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
+            let tasaRaw = document.getElementById('tasaBcv').value.toString().replace(',', '.');
+            const tasa = parseFloat(tasaRaw) || 0;
             let baseGravadaUsd = 0, montoExentoUsd = 0;
             carritoItems.forEach(item => {
                 const sub = item.precio * item.cantidad;
@@ -992,7 +992,6 @@
                 }))
             };
 
-            // Intentar enviar a Supabase o guardar Offline si hay fallo de red
             try {
                 const { data: facturaData, error: facturaError } = await supabaseClient
                     .from('invoices')
@@ -1028,7 +1027,6 @@
 
                 alert(`¡Factura ${facturaNro} emitida y stock actualizado con éxito!`);
             } catch (err) {
-                // Modo Offline: Guardar en localStorage
                 let cola = JSON.parse(localStorage.getItem('facturas_offline') || '[]');
                 cola.push(facturaObjeto);
                 localStorage.setItem('facturas_offline', JSON.stringify(cola));
