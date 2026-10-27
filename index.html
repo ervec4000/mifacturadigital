@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiFacturaDigital.com.ve - POS e Historial Fiscal</title>
+    <title>MiFacturaDigital.com.ve - POS y Facturación Fiscal Providencia 102</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-between p-4">
 
     <div class="w-full max-w-3xl bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-700 my-6">
-        <!-- Encabezado y Navegación por pestañas -->
         <header class="text-center mb-6">
             <h1 class="text-2xl font-bold text-emerald-400">MiFacturaDigital</h1>
-            <p class="text-xs text-slate-400">Sistema POS y Facturación Fiscal bajo Providencia SENIAT</p>
+            <p class="text-xs text-slate-400">Sistema POS y Facturación Fiscal bajo Providencia SENIAT SNAT/2024/102</p>
         </header>
 
         <div class="flex justify-center space-x-2 mb-6 border-b border-slate-700 pb-4">
@@ -25,7 +24,7 @@
             </button>
         </div>
 
-        <!-- SECCIÓN 1: PUNTO DE VENTA (POS) -->
+        <!-- SECCIÓN 1: POS -->
         <div id="seccionPos" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
                 <div>
@@ -44,7 +43,7 @@
 
             <!-- Selección de Productos -->
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-3">
-                <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Agregar Ítems a la Factura</h3>
+                <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Agregar Ítems / Materiales a la Factura</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                     <div class="md:col-span-5">
@@ -67,7 +66,6 @@
                     </div>
                 </div>
 
-                <!-- Tabla de Ítems -->
                 <div class="overflow-x-auto mt-3">
                     <table class="w-full text-left text-xs text-slate-300">
                         <thead class="bg-slate-900 text-slate-400 uppercase">
@@ -80,9 +78,7 @@
                                 <th class="p-2 text-center">Acción</th>
                             </tr>
                         </thead>
-                        <tbody id="tablaItems" class="divide-y divide-slate-700/50">
-                            <!-- Dinámico -->
-                        </tbody>
+                        <tbody id="tablaItems" class="divide-y divide-slate-700/50"></tbody>
                     </table>
                 </div>
             </div>
@@ -116,7 +112,7 @@
             </button>
         </div>
 
-        <!-- SECCIÓN 2: HISTORIAL DE FACTURAS -->
+        <!-- SECCIÓN 2: HISTORIAL -->
         <div id="seccionHistorial" class="hidden space-y-4">
             <div class="flex justify-between items-center">
                 <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Comprobantes Fiscales Emitidos</h3>
@@ -129,53 +125,49 @@
                         <tr>
                             <th class="p-2.5">Factura Nro</th>
                             <th class="p-2.5">Nro Control</th>
+                            <th class="p-2.5">Cliente</th>
                             <th class="p-2.5">Fecha</th>
                             <th class="p-2.5">Total Bs.</th>
                             <th class="p-2.5 text-center">Acción</th>
                         </tr>
                     </thead>
                     <tbody id="tablaHistorial" class="divide-y divide-slate-700/50">
-                        <tr><td colspan="5" class="p-4 text-center text-slate-500">Cargando historial...</td></tr>
+                        <tr><td colspan="6" class="p-4 text-center text-slate-500">Cargando historial...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- MODAL / VISTA DE TICKET FISCAL -->
+    <!-- MODAL / TICKET FISCAL PROV. 102 -->
     <div id="modalTicket" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
-        <div class="bg-white text-slate-900 w-full max-w-md rounded-xl p-6 shadow-2xl relative font-mono text-xs space-y-3">
+        <div class="bg-white text-slate-900 w-full max-w-md rounded-xl p-6 shadow-2xl relative font-mono text-xs space-y-3 max-h-[90vh] overflow-y-auto">
             <div class="text-center border-b border-dashed border-slate-400 pb-3 space-y-1">
                 <h2 class="font-bold text-sm">COMERCIO DE PRUEBA C.A.</h2>
                 <p>RIF: J-12345678-9</p>
                 <p class="text-[10px]">Av. Principal San Felipe, Yaracuy</p>
-                <p class="font-bold text-emerald-700 mt-2">FACTURA FISCAL DIGITAL</p>
+                <p class="font-bold text-emerald-700 mt-1">FACTURA FISCAL DIGITAL</p>
+                <p class="text-[9px] text-slate-600">Providencia Administrativa SNAT/2024/102</p>
             </div>
 
-            <div class="space-y-1 border-b border-dashed border-slate-400 pb-3">
+            <div class="space-y-1 border-b border-dashed border-slate-400 pb-3 text-[11px]">
                 <div class="flex justify-between"><span id="ticketNro">Factura: FAC-0000</span><span id="ticketFecha">Fecha: --/--/----</span></div>
                 <div class="flex justify-between"><span id="ticketControl">Nro Control: 00-000000</span><span>Tasa BCV: <span id="ticketTasa">0.00</span></span></div>
-                <div id="ticketCliente" class="pt-1 font-sans text-slate-700">Cliente: --</div>
+                <div id="ticketCliente" class="pt-1 font-bold text-slate-800">Cliente: --</div>
             </div>
 
-            <div class="border-b border-dashed border-slate-400 pb-3">
-                <div class="font-bold mb-1">DESCRIPCIÓN / MONTOS</div>
-                <div class="flex justify-between font-bold border-t border-slate-200 pt-1">
-                    <span>Monto Divisas ($):</span>
-                    <span id="ticketUsd">$ 0.00</span>
+            <div class="border-b border-dashed border-slate-400 pb-3 space-y-1">
+                <div class="font-bold mb-1 text-[11px]">DETALLE DE ÍTEMS / MATERIALES</div>
+                <div id="ticketItemsContainer" class="space-y-1">
+                    <!-- Dinámico -->
                 </div>
-                <div class="flex justify-between">
-                    <span>Subtotal Bs:</span>
-                    <span id="ticketSubtotal">Bs. 0,00</span>
-                </div>
-                <div class="flex justify-between">
-                    <span>IVA (16%):</span>
-                    <span id="ticketIva">Bs. 0,00</span>
-                </div>
-                <div class="flex justify-between">
-                    <span>IGTF (3%):</span>
-                    <span id="ticketIgtf">Bs. 0,00</span>
-                </div>
+            </div>
+
+            <div class="border-b border-dashed border-slate-400 pb-2 space-y-1 text-[11px]">
+                <div class="flex justify-between"><span>Base Imponible Gravada:</span><span id="ticketBaseGravada">Bs. 0,00</span></div>
+                <div class="flex justify-between"><span>Monto Exento:</span><span id="ticketExento">Bs. 0,00</span></div>
+                <div class="flex justify-between font-bold"><span>IVA (16%):</span><span id="ticketIva">Bs. 0,00</span></div>
+                <div class="flex justify-between font-bold"><span>IGTF (3% Divisas):</span><span id="ticketIgtf">Bs. 0,00</span></div>
             </div>
 
             <div class="flex justify-between font-bold text-sm border-t border-slate-900 pt-2">
@@ -329,13 +321,6 @@
                 const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
 
-                await client.from('clientes').insert([{
-                    tenant_id: 'a0ee93d8-1111-2222-3333-444455556666',
-                    rif: rifCliente,
-                    razon_social: nombreCliente,
-                    direccion: 'San Felipe, Yaracuy'
-                }]);
-
                 let baseGravadaUsd = 0;
                 let montoExentoUsd = 0;
                 carritoItems.forEach(item => {
@@ -352,6 +337,7 @@
                 const facturaNro = 'FAC-' + Math.floor(1000 + Math.random() * 9000);
                 const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
 
+                // Insertar Factura Principal con datos del cliente
                 const { data: facturaData, error: facturaError } = await client
                     .from('invoices')
                     .insert([{
@@ -364,12 +350,31 @@
                         iva_bs: ivaBs,
                         igtf_bs: igtfBs,
                         total_bs: totalBs,
+                        cliente_rif: rifCliente,
+                        cliente_nombre: nombreCliente,
                         metodo_pago: 'DIVISAS / EFECTIVO'
                     }]).select();
 
                 if (facturaError) throw facturaError;
+                const invoiceId = facturaData[0].id;
 
-                alert(`¡Factura ${facturaNro} emitida y guardada en Supabase con éxito!`);
+                // Insertar Líneas de Detalle con sus descripciones
+                const itemsParaInsertar = carritoItems.map(item => ({
+                    invoice_id: invoiceId,
+                    cantidad: item.cantidad,
+                    precio_unitario_usd: item.precio,
+                    es_exento: item.esExento,
+                    subtotal_usd: item.precio * item.cantidad,
+                    descripcion: item.descripcion
+                }));
+
+                const { error: itemsError } = await client
+                    .from('invoice_items')
+                    .insert(itemsParaInsertar);
+
+                if (itemsError) throw itemsError;
+
+                alert(`¡Factura ${facturaNro} emitida y guardada con éxito bajo Providencia 102!`);
                 carritoItems = [];
                 document.getElementById('clienteRif').value = '';
                 document.getElementById('clienteNombre').value = '';
@@ -398,16 +403,18 @@
                 tbody.innerHTML = '';
 
                 if (!data || data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay facturas registradas.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No hay facturas registradas.</td></tr>`;
                     return;
                 }
 
                 data.forEach(inv => {
                     const fecha = new Date(inv.created_at).toLocaleString();
+                    const clienteStr = inv.cliente_nombre ? `${inv.cliente_nombre} (${inv.cliente_rif})` : 'Consumidor Final';
                     tbody.innerHTML += `
                         <tr class="hover:bg-slate-800/50">
                             <td class="p-2.5 font-semibold text-emerald-400">${inv.factura_nro}</td>
                             <td class="p-2.5 font-mono text-slate-300">${inv.nro_control}</td>
+                            <td class="p-2.5 text-slate-300">${clienteStr}</td>
                             <td class="p-2.5 text-slate-400">${fecha}</td>
                             <td class="p-2.5 font-mono text-white">Bs. ${inv.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</td>
                             <td class="p-2.5 text-center">
@@ -421,14 +428,58 @@
             }
         }
 
-        function verTicket(inv) {
+        async function verTicket(inv) {
             document.getElementById('ticketNro').innerText = 'Factura: ' + inv.factura_nro;
             document.getElementById('ticketControl').innerText = 'Nro Control: ' + inv.nro_control;
-            document.getElementById('ticketFecha').innerText = 'Fecha: ' + new Date(inv.created_at).toLocaleDateString();
+            const fechaHora = new Date(inv.created_at);
+            document.getElementById('ticketFecha').innerText = 'Fecha/Hora: ' + fechaHora.toLocaleDateString() + ' ' + fechaHora.toLocaleTimeString();
             document.getElementById('ticketTasa').innerText = inv.tasa_bcv.toFixed(4);
-            document.getElementById('ticketCliente').innerText = 'Cliente / RIF: Comprador General';
-            document.getElementById('ticketUsd').innerText = '$ ' + inv.monto_usd.toFixed(2);
-            document.getElementById('ticketSubtotal').innerText = 'Bs. ' + inv.subtotal_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            
+            const nombreCli = inv.cliente_nombre || 'Consumidor Final';
+            const rifCli = inv.cliente_rif || 'N/A';
+            document.getElementById('ticketCliente').innerText = `Cliente: ${nombreCli} | RIF: ${rifCli}`;
+
+            // Consultar ítems de la factura en Supabase
+            const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
+            const SUPABASE_ANON_KEY = 'sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji'; 
+            const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+            const { data: items } = await client
+                .from('invoice_items')
+                .select('*')
+                .eq('invoice_id', inv.id);
+
+            let itemsHtml = '';
+            let baseGravadaCalculadaBs = 0;
+            let montoExentoCalculadoBs = 0;
+
+            if (items && items.length > 0) {
+                items.forEach(item => {
+                    const subUsd = item.subtotal_usd;
+                    const subBs = subUsd * inv.tasa_bcv;
+                    if (item.es_exento) {
+                        montoExentoCalculadoBs += subBs;
+                    } else {
+                        baseGravadaCalculadaBs += subBs;
+                    }
+
+                    itemsHtml += `
+                        <div class="border-b border-dotted border-slate-300 pb-1 mb-1">
+                            <div class="font-bold">${item.descripcion || 'Material / Producto'}</div>
+                            <div class="flex justify-between text-[10px] text-slate-600">
+                                <span>${item.cantidad} x $ ${item.precio_unitario_usd.toFixed(2)} (${item.es_exento ? 'EXENTO' : 'GRAVADO 16%'})</span>
+                                <span class="font-mono font-bold">$ ${subUsd.toFixed(2)} (Bs. ${subBs.toLocaleString('es-VE', {minimumFractionDigits: 2})})</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else {
+                itemsHtml = '<div class="text-slate-500">Sin detalles registrados.</div>';
+            }
+
+            document.getElementById('ticketItemsContainer').innerHTML = itemsHtml;
+            document.getElementById('ticketBaseGravada').innerText = 'Bs. ' + baseGravadaCalculadaBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('ticketExento').innerText = 'Bs. ' + montoExentoCalculadoBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('ticketIva').innerText = 'Bs. ' + inv.iva_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('ticketIgtf').innerText = 'Bs. ' + inv.igtf_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('ticketTotal').innerText = 'Bs. ' + inv.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
