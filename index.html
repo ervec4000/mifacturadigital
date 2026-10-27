@@ -21,7 +21,7 @@
     <div id="vistaLogin" class="w-full max-w-md bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-700 my-auto space-y-6">
         <header class="text-center space-y-2">
             <h1 class="text-2xl font-bold text-emerald-400">MiFacturaDigital</h1>
-            <p class="text-xs text-slate-400">Acceso Privado Inquilinos - Providencia SENIAT SNAT/2026/00093</p>
+            <p class="text-xs text-slate-400">Acceso Privado Inquilinos - Sistema Fiscal Integrado</p>
         </header>
 
         <div class="space-y-4">
@@ -408,7 +408,6 @@
                 <h2 class="font-bold text-sm" id="ticketComercioNombre">COMERCIO C.A.</h2>
                 <p id="ticketComercioRif">RIF: J-12345678-9</p>
                 <p class="font-bold text-emerald-700 mt-1" id="ticketTipoTitulo">FACTURA FISCAL DIGITAL</p>
-                <p class="text-[9px] text-slate-600">Providencia Administrativa SENIAT SNAT/2026/00093</p>
             </div>
 
             <div class="space-y-1 border-b border-dashed border-slate-400 pb-3 text-[11px]">
@@ -438,7 +437,7 @@
 
             <div class="text-center text-[10px] text-slate-500 pt-2 border-t border-dashed border-slate-300">
                 <p>¡Providencia SENIAT Conforme!</p>
-                <p>MiFacturaDigital.com.ve</p>
+                <p>MiFacturaDigital.com.ve - Copia sin derecho a crédito fiscal</p>
             </div>
 
             <div class="space-y-2 pt-2 no-print">
@@ -455,13 +454,13 @@
     <!-- MODAL NOTA DE CRÉDITO -->
     <div id="modalNotaCredito" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-base font-bold text-amber-400">📄 Emitir Nota de Crédito (Multimoneda)</h3>
+            <h3 class="text-base font-bold text-amber-400">📄 Emitir Nota de Crédito Fiscal</h3>
             <div class="text-xs space-y-2 bg-slate-900 p-3 rounded-lg border border-slate-700">
                 <p class="text-slate-300">Factura Ref: <span id="ncFacturaRef" class="font-bold text-white">--</span></p>
                 <p class="text-slate-300">Cliente: <span id="ncClienteRef" class="text-white">--</span></p>
             </div>
             <div>
-                <label class="block text-xs text-slate-400 mb-1">Motivo</label>
+                <label class="block text-xs text-slate-400 mb-1">Motivo (Devolución / Anulación / Ajuste)</label>
                 <input type="text" id="ncMotivo" placeholder="Ej. Devolución de mercancía" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
             </div>
             <div class="space-y-2">
@@ -481,14 +480,14 @@
     <!-- MODAL NOTA DE DÉBITO -->
     <div id="modalNotaDebito" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-base font-bold text-sky-400">📄 Emitir Nota de Débito (Multimoneda)</h3>
+            <h3 class="text-base font-bold text-sky-400">📄 Emitir Nota de Débito Fiscal</h3>
             <div class="text-xs space-y-2 bg-slate-900 p-3 rounded-lg border border-slate-700">
                 <p class="text-slate-300">Factura Ref: <span id="ndFacturaRef" class="font-bold text-white">--</span></p>
                 <p class="text-slate-300">Cliente: <span id="ndClienteRef" class="text-white">--</span></p>
             </div>
             <div>
-                <label class="block text-xs text-slate-400 mb-1">Motivo</label>
-                <input type="text" id="ndMotivo" placeholder="Ej. Recargo por diferencia de precio" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                <label class="block text-xs text-slate-400 mb-1">Motivo (Diferencial Cambiario / Recargo)</label>
+                <input type="text" id="ndMotivo" placeholder="Ej. Ajuste por diferencial cambiario" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
             </div>
             <div class="grid grid-cols-2 gap-2">
                 <div>
@@ -508,7 +507,7 @@
     </div>
 
     <footer class="text-xs text-slate-500 text-center mt-4">
-        MiFacturaDigital.com.ve &copy; 2026 - Providencia SENIAT SNAT/2026/00093
+        MiFacturaDigital.com.ve &copy; 2026 - Sistema Fiscal Integrado
     </footer>
 
     <script>
@@ -535,6 +534,17 @@
                 alert('Error al cargar Supabase.');
             }
         };
+
+        function formatearFecha8Digitos(isoString) {
+            const d = new Date(isoString);
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const aaaa = d.getFullYear();
+            const hh = String(d.getHours()).padStart(2, '0');
+            const min = String(d.getMinutes()).padStart(2, '0');
+            const ss = String(d.getSeconds()).padStart(2, '0');
+            return `${dd}/${mm}/${AAAA} ${hh}:${min}:${ss}`;
+        }
 
         async function iniciarSesionTenant() {
             const emailInput = document.getElementById('loginEmail').value.trim();
@@ -641,7 +651,7 @@
             productosCache.forEach(prod => {
                 const unidad = prod.unidad_medida || 'Und';
                 const stock = prod.stock !== undefined && prod.stock !== null ? prod.stock : 0;
-                const tipoTexto = prod.es_exento ? 'EXENTO' : 'GRAVADO 16%';
+                const tipoTexto = prod.es_exento ? 'EXENTO (E)' : 'GRAVADO 16%';
                 select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${unidad}" data-stock="${stock}">${prod.descripcion} (${unidad}) [Stock: ${stock}] - $${prod.precio_unitario_usd.toFixed(2)} (${tipoTexto})</option>`;
             });
         }
@@ -661,7 +671,7 @@
                         <td class="p-2 text-slate-300">${prod.unidad_medida || 'Und'}</td>
                         <td class="p-2 font-bold ${stock <= 5 ? 'text-rose-400' : 'text-emerald-400'}">${stock}</td>
                         <td class="p-2 font-mono">$ ${prod.precio_unitario_usd.toFixed(2)}</td>
-                        <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${prod.es_exento ? 'bg-amber-900/50 text-amber-300' : 'bg-emerald-900/50 text-emerald-300'}">${prod.es_exento ? 'EXENTO' : 'GRAVADO'}</span></td>
+                        <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${prod.es_exento ? 'bg-amber-900/50 text-amber-300' : 'bg-emerald-900/50 text-emerald-300'}">${prod.es_exento ? 'EXENTO (E)' : 'GRAVADO'}</span></td>
                         <td class="p-2 text-center space-x-2">
                             <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku || ''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento}, "${prod.unidad_medida || 'Und'}", ${stock})' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Editar</button>
                             <button onclick='eliminarProducto("${prod.id}")' class="text-rose-400 hover:text-rose-300 font-semibold cursor-pointer">Eliminar</button>
@@ -809,7 +819,7 @@
             cargarClientesGestion();
         }
 
-        // --- VERIFICACIÓN DE IGTF SEGÚN MÉTODO DE PAGO ---
+        // --- VERIFICACIÓN DE IGTF ---
         function verificarAplicacionIgtf() {
             const metodo = document.getElementById('metodoPagoSelect').value;
             const aplicaSelect = document.getElementById('aplicaIgtfSelect');
@@ -821,7 +831,7 @@
             recalcularTodo();
         }
 
-        // --- POS Y CÁLCULOS MULTIMONEDA CON 2 DECIMALES ESTRICTOS ---
+        // --- POS Y CÁLCULOS MULTIMONEDA ---
         function agregarItem() {
             const select = document.getElementById('productoSelect');
             if (!select.value || productosCache.length === 0) { alert('Seleccione un producto.'); return; }
@@ -862,13 +872,14 @@
             carritoItems.forEach((item, index) => {
                 const subUsd = item.precio * item.cantidad;
                 const subBs = subUsd * tasa;
+                const etiquetaExento = item.esExento ? ' (E)' : '';
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50">
-                        <td class="p-2">${item.descripcion}</td>
+                        <td class="p-2">${item.descripcion}${etiquetaExento}</td>
                         <td class="p-2">${item.cantidad}</td>
                         <td class="p-2 text-slate-300">${item.unidad}</td>
                         <td class="p-2 font-mono">$ ${item.precio.toFixed(2)} | Bs. ${(item.precio * tasa).toFixed(2)}</td>
-                        <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${item.esExento ? 'bg-amber-900/50 text-amber-300' : 'bg-emerald-900/50 text-emerald-300'}">${item.esExento ? 'EXENTO' : 'GRAVADO'}</span></td>
+                        <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${item.esExento ? 'bg-amber-900/50 text-amber-300' : 'bg-emerald-900/50 text-emerald-300'}">${item.esExento ? 'EXENTO (E)' : 'GRAVADO'}</span></td>
                         <td class="p-2 font-mono text-emerald-300">$ ${subUsd.toFixed(2)} | Bs. ${subBs.toFixed(2)}</td>
                         <td class="p-2 text-center"><button onclick="eliminarItem(${index})" class="text-rose-400 font-bold cursor-pointer">×</button></td>
                     </tr>
@@ -976,7 +987,6 @@
                 cliente_rif: rifCliente,
                 cliente_nombre: nombreCliente,
                 metodo_pago: metodoPago,
-                aplica_igtf: aplicaIgtf ? 'SÍ' : 'NO',
                 created_at: new Date().toISOString(),
                 items: carritoItems.map(item => ({
                     producto_id: item.productoId,
@@ -984,7 +994,7 @@
                     precio_unitario_usd: item.precio,
                     es_exento: item.esExento,
                     subtotal_usd: item.precio * item.cantidad,
-                    descripcion: `${item.descripcion} (${item.unidad})`
+                    descripcion: `${item.descripcion}${item.esExento ? ' (E)' : ''} (${item.unidad})`
                 }))
             };
 
@@ -1094,7 +1104,7 @@
                 comandos += `FACTURA FISCAL DIGITAL\n--------------------------------\n`;
                 comandos += `Nro: ${doc.factura_nro || doc.nota_nro} | Ctrl: ${doc.nro_control}\n`;
                 comandos += `Total: $ ${(doc.total_bs / doc.tasa_bcv).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}\n`;
-                comandos += `Providencia SENIAT Conforme\n\n\n`;
+                comandos += `Copia sin derecho a credito fiscal\n\n\n`;
 
                 await characteristic.writeValue(encoder.encode(comandos));
                 alert('¡Impresión térmica enviada con éxito!');
@@ -1145,7 +1155,7 @@
                         if (prodData) await supabaseClient.from('productos').update({ stock: (prodData.stock || 0) + item.cantidad }).eq('id', item.producto_id);
                     }
                 }
-                alert(`¡Nota de Crédito ${notaNro} emitida con éxito!`);
+                alert(`¡Nota de Crédito ${notaNro} emitida con éxito haciendo referencia a la factura ${inv.factura_nro}!`);
                 cerrarModalNotaCredito();
                 cargarHistorial();
             } catch (err) { alert('Error: ' + err.message); }
@@ -1186,7 +1196,7 @@
                 const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
 
                 await supabaseClient.from('notas_debito').insert([{ tenant_id: tenantActual.id, invoice_id: inv.id, nota_nro: notaNro, nro_control: nroControl, motivo: motivo, total_bs: montoBs, tasa_bcv: inv.tasa_bcv }]);
-                alert(`¡Nota de Débito ${notaNro} emitida con éxito!`);
+                alert(`¡Nota de Débito ${notaNro} emitida con éxito haciendo referencia a la factura ${inv.factura_nro}!`);
                 cerrarModalNotaDebito();
                 cargarHistorial();
             } catch (err) { alert('Error: ' + err.message); }
@@ -1240,10 +1250,10 @@
             const fechaHasta = document.getElementById('filtroFechaHasta').value;
 
             const { data: facturas } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
-            const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
-            const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
+            const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*, invoices(cliente_nombre, cliente_rif, factura_nro)').eq('tenant_id', tenantActual.id);
+            const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*, invoices(cliente_nombre, cliente_rif, factura_nro)').eq('tenant_id', tenantActual.id);
 
-            let csvContent = "\uFEFFsep=;\nFecha;Tipo Documento;Nro Documento;Nro Control;RIF Cliente;Razon Social;Metodo Pago;Tasa BCV;Subtotal ($/Bs);IVA ($/Bs);IGTF ($/Bs);Total ($/Bs)\n";
+            let csvContent = "\uFEFFsep=;\nFecha;Tipo Documento;Nro Documento;Nro Control;Doc Afectado;RIF Cliente;Razon Social;Metodo Pago;Tasa BCV;Subtotal ($/Bs);IVA ($/Bs);IGTF ($/Bs);Total ($/Bs)\n";
 
             if (facturas) {
                 facturas.forEach(f => {
@@ -1251,7 +1261,7 @@
                     if ((fechaDesde && fechaInv < fechaDesde) || (fechaHasta && fechaInv > fechaHasta)) return;
                     const d = new Date(f.created_at);
                     const t = f.tasa_bcv;
-                    csvContent += `"${d.toLocaleDateString()} ${d.toLocaleTimeString()}";"FACTURA";"${f.factura_nro}";"${f.nro_control}";"${f.cliente_rif}";"${(f.cliente_nombre||'').replace(/"/g,'""')}";"${f.metodo_pago}";${t};$ ${(f.subtotal_bs/t).toFixed(2)} / Bs. ${f.subtotal_bs.toFixed(2)};$ ${(f.iva_bs/t).toFixed(2)} / Bs. ${f.iva_bs.toFixed(2)};$ ${(f.igtf_bs/t).toFixed(2)} / Bs. ${f.igtf_bs.toFixed(2)};$ ${(f.total_bs/t).toFixed(2)} / Bs. ${f.total_bs.toFixed(2)}\n`;
+                    csvContent += `"${formatearFecha8Digitos(f.created_at)}";"FACTURA";"${f.factura_nro}";"${f.nro_control}";"N/A";"${f.cliente_rif}";"${(f.cliente_nombre||'').replace(/"/g,'""')}";"${f.metodo_pago}";${t};$ ${(f.subtotal_bs/t).toFixed(2)} / Bs. ${f.subtotal_bs.toFixed(2)};$ ${(f.iva_bs/t).toFixed(2)} / Bs. ${f.iva_bs.toFixed(2)};$ ${(f.igtf_bs/t).toFixed(2)} / Bs. ${f.igtf_bs.toFixed(2)};$ ${(f.total_bs/t).toFixed(2)} / Bs. ${f.total_bs.toFixed(2)}\n`;
                 });
             }
             if (notasCredito) {
@@ -1260,7 +1270,7 @@
                     if ((fechaDesde && fechaInv < fechaDesde) || (fechaHasta && fechaInv > fechaHasta)) return;
                     const d = new Date(nc.created_at);
                     const t = nc.tasa_bcv;
-                    csvContent += `"${d.toLocaleDateString()} ${d.toLocaleTimeString()}";"NOTA CREDITO";"${nc.nota_nro}";"${nc.nro_control}";"${nc.invoices?.cliente_rif||'V-000'}";"${(nc.invoices?.cliente_nombre||'').replace(/"/g,'""')}";"${nc.motivo}";${t};0.00;0.00;0.00;$ ${(nc.total_bs/t).toFixed(2)} / Bs. ${nc.total_bs.toFixed(2)}\n`;
+                    csvContent += `"${formatearFecha8Digitos(nc.created_at)}";"NOTA CREDITO";"${nc.nota_nro}";"${nc.nro_control}";"${nc.invoices?.factura_nro||'N/A'}";"${nc.invoices?.cliente_rif||'V-000'}";"${(nc.invoices?.cliente_nombre||'').replace(/"/g,'""')}";"${nc.motivo}";${t};0.00;0.00;0.00;$ ${(nc.total_bs/t).toFixed(2)} / Bs. ${nc.total_bs.toFixed(2)}\n`;
                 });
             }
             if (notasDebito) {
@@ -1269,7 +1279,7 @@
                     if ((fechaDesde && fechaInv < fechaDesde) || (fechaHasta && fechaInv > fechaHasta)) return;
                     const d = new Date(nd.created_at);
                     const t = nd.tasa_bcv;
-                    csvContent += `"${d.toLocaleDateString()} ${d.toLocaleTimeString()}";"NOTA DEBITO";"${nd.nota_nro}";"${nd.nro_control}";"${nd.invoices?.cliente_rif||'V-000'}";"${(nd.invoices?.cliente_nombre||'').replace(/"/g,'""')}";"${nd.motivo}";${t};0.00;0.00;0.00;$ ${(nd.total_bs/t).toFixed(2)} / Bs. ${nd.total_bs.toFixed(2)}\n`;
+                    csvContent += `"${formatearFecha8Digitos(nd.created_at)}";"NOTA DEBITO";"${nd.nota_nro}";"${nd.nro_control}";"${nd.invoices?.factura_nro||'N/A'}";"${nd.invoices?.cliente_rif||'V-000'}";"${(nd.invoices?.cliente_nombre||'').replace(/"/g,'""')}";"${nd.motivo}";${t};0.00;0.00;0.00;$ ${(nd.total_bs/t).toFixed(2)} / Bs. ${nd.total_bs.toFixed(2)}\n`;
                 });
             }
 
@@ -1286,13 +1296,13 @@
         async function cargarHistorial() {
             if (!supabaseClient || !tenantActual) return;
             const { data: facturas } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
-            const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
-            const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
+            const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*, invoices(cliente_nombre, cliente_rif, factura_nro)').eq('tenant_id', tenantActual.id);
+            const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*, invoices(cliente_nombre, cliente_rif, factura_nro)').eq('tenant_id', tenantActual.id);
 
             documentosHistorialCache = [];
             if (facturas) facturas.forEach(f => documentosHistorialCache.push({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
-            if (notasCredito) notasCredito.forEach(nc => documentosHistorialCache.push({...nc, tipoDoc: 'NOTA CREDITO', numero: nc.nota_nro, cliente_nombre: nc.invoices?.cliente_nombre||'Cliente', cliente_rif: nc.invoices?.cliente_rif||'V-000'}));
-            if (notasDebito) notasDebito.forEach(nd => documentosHistorialCache.push({...nd, tipoDoc: 'NOTA DEBITO', numero: nd.nota_nro, cliente_nombre: nd.invoices?.cliente_nombre||'Cliente', cliente_rif: nd.invoices?.cliente_rif||'V-000'}));
+            if (notasCredito) notasCredito.forEach(nc => documentosHistorialCache.push({...nc, tipoDoc: 'NOTA CREDITO', numero: nc.nota_nro, factura_afectada: nc.invoices?.factura_nro, cliente_nombre: nc.invoices?.cliente_nombre||'Cliente', cliente_rif: nc.invoices?.cliente_rif||'V-000'}));
+            if (notasDebito) notasDebito.forEach(nd => documentosHistorialCache.push({...nd, tipoDoc: 'NOTA DEBITO', numero: nd.nota_nro, factura_afectada: nd.invoices?.factura_nro, cliente_nombre: nd.invoices?.cliente_nombre||'Cliente', cliente_rif: nd.invoices?.cliente_rif||'V-000'}));
 
             documentosHistorialCache.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             renderizarHistorial(documentosHistorialCache);
@@ -1320,18 +1330,19 @@
                 return;
             }
             lista.forEach(doc => {
-                const fecha = new Date(doc.created_at).toLocaleString();
+                const fecha = formatearFecha8Digitos(doc.created_at);
                 const clienteStr = doc.cliente_nombre ? `${doc.cliente_nombre} (${doc.cliente_rif})` : 'Consumidor Final';
                 let badgeColor = 'text-emerald-400 bg-emerald-900/35 border-emerald-700/50';
                 if (doc.tipoDoc === 'NOTA CREDITO') badgeColor = 'text-amber-400 bg-amber-900/35 border-amber-700/50';
                 if (doc.tipoDoc === 'NOTA DEBITO') badgeColor = 'text-sky-400 bg-sky-900/35 border-sky-700/50';
                 const totalUsd = (doc.total_bs / doc.tasa_bcv).toFixed(2);
+                const refInfo = doc.factura_afectada ? `<br><span class="text-[10px] text-slate-400">Ref. Factura: ${doc.factura_afectada}</span>` : '';
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50">
                         <td class="p-2.5 font-semibold">
                             <span class="px-2 py-0.5 rounded text-[10px] border ${badgeColor}">${doc.tipoDoc}</span><br>
-                            <span class="text-white mt-1 inline-block">${doc.numero}</span>
+                            <span class="text-white mt-1 inline-block">${doc.numero}</span>${refInfo}
                         </td>
                         <td class="p-2.5 font-mono text-slate-300">${doc.nro_control}</td>
                         <td class="p-2.5 text-slate-300">${clienteStr}</td>
@@ -1354,8 +1365,7 @@
             documentoActualTicket = doc;
             document.getElementById('ticketComercioNombre').innerText = tenantActual.razon_social;
             document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif}`;
-            const fechaHora = new Date(doc.created_at);
-            document.getElementById('ticketFecha').innerText = 'Fecha/Hora: ' + fechaHora.toLocaleDateString() + ' ' + fechaHora.toLocaleTimeString();
+            document.getElementById('ticketFecha').innerText = 'Fecha/Hora: ' + formatearFecha8Digitos(doc.created_at);
             document.getElementById('ticketTasa').innerText = doc.tasa_bcv.toFixed(2);
             document.getElementById('ticketCliente').innerText = `Cliente: ${doc.cliente_nombre || 'Consumidor Final'} | RIF: ${doc.cliente_rif || 'V-000'}`;
             document.getElementById('ticketAplicaIgtf').innerText = `IGTF (3%): SÍ / NO`;
@@ -1413,7 +1423,7 @@
                 controlElem.innerText = 'Control: ' + doc.nro_control;
                 metodoElem.innerText = 'Motivo: ' + doc.motivo;
                 bloqueTotales.classList.add('hidden');
-                itemsContainer.innerHTML = `<div class="p-2 bg-amber-50 rounded border border-amber-200 text-amber-900 space-y-1"><p class="font-bold">Devolución / Ajuste</p><p>Monto Reintegrado: $ ${(doc.total_bs/doc.tasa_bcv).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}</p></div>`;
+                itemsContainer.innerHTML = `<div class="p-2 bg-amber-50 rounded border border-amber-200 text-amber-900 space-y-1"><p class="font-bold">Ajuste / Devolución</p><p class="text-[10px]">Ref. Factura Original: ${doc.factura_afectada || 'N/A'}</p><p>Monto Reintegrado: $ ${(doc.total_bs/doc.tasa_bcv).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}</p></div>`;
                 document.getElementById('ticketTotal').innerText = `$ ${(doc.total_bs/doc.tasa_bcv).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}`;
                 document.getElementById('ticketLabelTotal').innerText = 'TOTAL NOTA CRÉDITO:';
             } else if (doc.tipoDoc === 'NOTA DEBITO') {
@@ -1423,7 +1433,7 @@
                 controlElem.innerText = 'Control: ' + doc.nro_control;
                 metodoElem.innerText = 'Motivo: ' + doc.motivo;
                 bloqueTotales.classList.add('hidden');
-                itemsContainer.innerHTML = `<div class="p-2 bg-sky-50 rounded border border-sky-200 text-sky-900 space-y-1"><p class="font-bold">Recargo / Ajuste</p><p>Monto Recargo: $ ${(doc.total_bs/doc.tasa_bcv).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}</p></div>`;
+                itemsContainer.innerHTML = `<div class="p-2 bg-sky-50 rounded border border-sky-200 text-sky-900 space-y-1"><p class="font-bold">Recargo / Ajuste</p><p class="text-[10px]">Ref. Factura Original: ${doc.factura_afectada || 'N/A'}</p><p>Monto Recargo: $ ${(doc.total_bs/doc.tasa_bcv).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}</p></div>`;
                 document.getElementById('ticketTotal').innerText = `$ ${(doc.total_bs/doc.tasa_bcv).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}`;
                 document.getElementById('ticketLabelTotal').innerText = 'TOTAL NOTA DÉBITO:';
             }
@@ -1436,8 +1446,8 @@
         function enviarWhatsApp() {
             if (!documentoActualTicket || !tenantActual) return;
             const doc = documentoActualTicket;
-            const fechaHora = new Date(doc.created_at).toLocaleString();
-            let mensaje = `*${tenantActual.razon_social}*_%0A*RIF:* ${tenantActual.rif}%0A%0A📄 *${doc.tipoDoc}:* ${doc.numero}%0A📌 *Control:* ${doc.nro_control}%0A📅 *Fecha:* ${fechaHora}%0A👤 *Cliente:* ${doc.cliente_nombre || 'Consumidor Final'} (${doc.cliente_rif || 'V-000'})%0A💰 *Total:* $ ${(doc.total_bs/doc.tasa_bcv).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}%0A%0A¡Gracias por su compra! Providencia SENIAT Conforme.`;
+            const fechaHora = formatearFecha8Digitos(doc.created_at);
+            let mensaje = `*${tenantActual.razon_social}*_%0A*RIF:* ${tenantActual.rif}%0A%0A📄 *${doc.tipoDoc}:* ${doc.numero}%0A📌 *Control:* ${doc.nro_control}%0A📅 *Fecha:* ${fechaHora}%0A👤 *Cliente:* ${doc.cliente_nombre || 'Consumidor Final'} (${doc.cliente_rif || 'V-000'})%0A💰 *Total:* $ ${(doc.total_bs/doc.tasa_bcv).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}%0A%0A¡Gracias por su compra! Copia sin derecho a crédito fiscal.`;
             window.open(`https://wa.me/?text=${mensaje}`, '_blank');
         }
     </script>
