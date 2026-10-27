@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiFacturaDigital.com.ve - POS, Arqueo, Reporte Z, Notas y Libro de Ventas</title>
+    <title>MiFacturaDigital.com.ve - Sistema Fiscal Integrado SENIAT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -200,7 +200,7 @@
                     </div>
                     <div class="flex gap-2">
                         <button onclick="generarReporteZ()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-2 rounded-lg font-semibold cursor-pointer">🔄 Recalcular</button>
-                        <button onclick="exportarLibroVentasCSV()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer shadow-lg shadow-sky-900/20">📥 Descargar Libro de Ventas (CSV)</button>
+                        <button onclick="exportarLibroVentasCSV()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer shadow-lg shadow-sky-900/20">📥 Descargar Libro de Ventas (CSV Excel)</button>
                     </div>
                 </div>
 
@@ -1130,7 +1130,7 @@
             document.getElementById('zTotalVentas').innerText = 'Bs. ' + totalVentas.toLocaleString('es-VE', {minimumFractionDigits: 2});
         }
 
-        // --- EXPORTAR LIBRO DE VENTAS EN CSV (EXCEL) ---
+        // --- EXPORTAR LIBRO DE VENTAS 100% COMPATIBLE CON EXCEL (FORZANDO SEP=;) ---
         async function exportarLibroVentasCSV() {
             if (!supabaseClient || !tenantActual) return;
 
@@ -1138,38 +1138,47 @@
             const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
             const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
 
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // UTF-8 BOM para Excel
-            csvContent += "Fecha,Tipo Documento,Nro Documento,Nro Control,RIF Cliente,Razon Social,Metodo Pago / Motivo,Tasa BCV,Subtotal Bs,IVA Bs,IGTF Bs,Total Bs\n";
+            // \uFEFF para UTF-8 y sep=;\n para forzar a Excel a separar por punto y coma de inmediato
+            let csvContent = "\uFEFFsep=;\n";
+            csvContent += "Fecha;Tipo Documento;Nro Documento;Nro Control;RIF Cliente;Razon Social;Metodo Pago / Motivo;Tasa BCV;Subtotal Bs;IVA Bs;IGTF Bs;Total Bs\n";
 
             if (facturas) {
                 facturas.forEach(f => {
-                    const fecha = new Date(f.created_at).toLocaleString();
+                    const d = new Date(f.created_at);
+                    const fechaFmt = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
                     const sub = f.subtotal_bs || 0;
-                    csvContent += `"${fecha}","FACTURA","${f.factura_nro}","${f.nro_control}","${f.cliente_rif}","${f.cliente_nombre}","${f.metodo_pago || ''}",${f.tasa_bcv},${sub.toFixed(2)},${f.iva_bs.toFixed(2)},${f.igtf_bs.toFixed(2)},${f.total_bs.toFixed(2)}\n`;
+                    const rRazon = (f.cliente_nombre || '').replace(/"/g, '""');
+                    const rMetodo = (f.metodo_pago || '').replace(/"/g, '""');
+                    csvContent += `"${fechaFmt}";"FACTURA";"${f.factura_nro}";"${f.nro_control}";"${f.cliente_rif}";"${rRazon}";"${rMetodo}";${f.tasa_bcv};${sub.toFixed(2)};${f.iva_bs.toFixed(2)};${f.igtf_bs.toFixed(2)};${f.total_bs.toFixed(2)}\n`;
                 });
             }
 
             if (notasCredito) {
                 notasCredito.forEach(nc => {
-                    const fecha = new Date(nc.created_at).toLocaleString();
-                    const cliNombre = nc.invoices?.cliente_nombre || 'Cliente';
+                    const d = new Date(nc.created_at);
+                    const fechaFmt = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+                    const cliNombre = (nc.invoices?.cliente_nombre || 'Cliente').replace(/"/g, '""');
                     const cliRif = nc.invoices?.cliente_rif || 'V-000';
-                    csvContent += `"${fecha}","NOTA CREDITO","${nc.nota_nro}","${nc.nro_control}","${cliRif}","${cliNombre}","${nc.motivo}",${nc.tasa_bcv},0.00,0.00,0.00,${nc.total_bs.toFixed(2)}\n`;
+                    const rMotivo = (nc.motivo || '').replace(/"/g, '""');
+                    csvContent += `"${fechaFmt}";"NOTA CREDITO";"${nc.nota_nro}";"${nc.nro_control}";"${cliRif}";"${cliNombre}";"${rMotivo}";${nc.tasa_bcv};0.00;0.00;0.00;${nc.total_bs.toFixed(2)}\n`;
                 });
             }
 
             if (notasDebito) {
                 notasDebito.forEach(nd => {
-                    const fecha = new Date(nd.created_at).toLocaleString();
-                    const cliNombre = nd.invoices?.cliente_nombre || 'Cliente';
+                    const d = new Date(nd.created_at);
+                    const fechaFmt = d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+                    const cliNombre = (nd.invoices?.cliente_nombre || 'Cliente').replace(/"/g, '""');
                     const cliRif = nd.invoices?.cliente_rif || 'V-000';
-                    csvContent += `"${fecha}","NOTA DEBITO","${nd.nota_nro}","${nd.nro_control}","${cliRif}","${cliNombre}","${nd.motivo}",${nd.tasa_bcv},0.00,0.00,0.00,${nd.total_bs.toFixed(2)}\n`;
+                    const rMotivo = (nd.motivo || '').replace(/"/g, '""');
+                    csvContent += `"${fechaFmt}";"NOTA DEBITO";"${nd.nota_nro}";"${nd.nro_control}";"${cliRif}";"${cliNombre}";"${rMotivo}";${nd.tasa_bcv};0.00;0.00;0.00;${nd.total_bs.toFixed(2)}\n`;
                 });
             }
 
-            const encodedUri = encodeURI(csvContent);
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
+            link.setAttribute("href", url);
             link.setAttribute("download", `Libro_Ventas_${tenantActual.rif}_${new Date().toISOString().slice(0,10)}.csv`);
             document.body.appendChild(link);
             link.click();
@@ -1336,7 +1345,7 @@
                     </div>
                 `;
                 document.getElementById('ticketTotal').innerText = 'Bs. ' + doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
-                document.getElementById('ticketLabelTotal').innerText = 'TOTAL NOTN DÉBITO:';
+                document.getElementById('ticketLabelTotal').innerText = 'TOTAL NOTA DÉBITO:';
             }
 
             document.getElementById('modalTicket').classList.remove('hidden');
