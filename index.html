@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiFacturaDigital.com.ve - Acceso Privado</title>
+    <title>MiFacturaDigital.com.ve - POS y Cierre Fiscal Z</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -52,8 +52,11 @@
             <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 Historial Facturas
             </button>
+            <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
+                📊 Reporte Z (Cierre Diario)
+            </button>
             <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                📦 Materiales / Productos
+                📦 Materiales / Stock
             </button>
             <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 👥 Clientes
@@ -175,12 +178,49 @@
             </div>
         </div>
 
-        <!-- SECCIÓN 3: GESTIÓN DE PRODUCTOS (CRUD) -->
+        <!-- SECCIÓN 3: REPORTE Z (CIERRE DIARIO) -->
+        <div id="seccionCierrez" class="hidden space-y-6">
+            <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📊 Reporte Z - Cierre Fiscal Diario</h3>
+                        <p class="text-xs text-slate-400">Consolidado de ventas del día según Providencia SENIAT</p>
+                    </div>
+                    <button onclick="generarReporteZ()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer">🔄 Calcular Cierre de Hoy</button>
+                </div>
+
+                <div id="resultadoReporteZ" class="space-y-4 border-t border-slate-700 pt-4 font-mono text-xs">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900 p-4 rounded-lg border border-slate-700">
+                        <div class="space-y-1">
+                            <p class="text-slate-400">Fecha del Cierre: <span id="zFecha" class="text-white font-bold">--</span></p>
+                            <p class="text-slate-400">Total Facturas Emitidas: <span id="zTotalFacturas" class="text-emerald-400 font-bold">0</span></p>
+                        </div>
+                        <div class="space-y-1 text-right">
+                            <p class="text-slate-400">Primer Nro: <span id="zPrimerFactura" class="text-white">--</span></p>
+                            <p class="text-slate-400">Última Nro: <span id="zUltimaFactura" class="text-white">--</span></p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 bg-slate-900/60 p-4 rounded-lg border border-slate-700 text-sm">
+                        <div class="flex justify-between text-slate-300"><span>Subtotal / Base Ventas:</span><span id="zBaseGravada">Bs. 0,00</span></div>
+                        <div class="flex justify-between text-slate-300"><span>Total IVA Recaudado (16%):</span><span id="zIva">Bs. 0,00</span></div>
+                        <div class="flex justify-between text-slate-300"><span>Total IGTF Percibido (3%):</span><span id="zIgtf">Bs. 0,00</span></div>
+                        <div class="border-t border-slate-700 pt-2 flex justify-between font-bold text-emerald-400 text-base">
+                            <span>TOTAL RECAUDACIÓN DIARIA:</span>
+                            <span id="zTotalVentas">Bs. 0,00</span>
+                        </div>
+                    </div>
+                    <button onclick="window.print()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-sans font-semibold py-2 rounded-lg cursor-pointer text-xs">🖨️ Imprimir Reporte Z</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 4: GESTIÓN DE PRODUCTOS / STOCK (CRUD) -->
         <div id="seccionProductos" class="hidden space-y-6">
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
                 <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📦 Registrar Nuevo Material / Producto</h3>
                 <input type="hidden" id="editProductoId">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Código SKU</label>
                         <input type="text" id="prodSku" placeholder="SKU-001" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
@@ -198,10 +238,14 @@
                         </select>
                     </div>
                     <div>
+                        <label class="block text-xs text-slate-400 mb-1">Stock / Cantidad</label>
+                        <input type="number" id="prodStock" step="1" value="100" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                    </div>
+                    <div>
                         <label class="block text-xs text-slate-400 mb-1">Precio Unitario ($ USD)</label>
                         <input type="number" id="prodPrecio" step="0.01" placeholder="15.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
                     </div>
-                    <div class="md:col-span-2">
+                    <div class="md:col-span-3">
                         <label class="block text-xs text-slate-400 mb-1">Descripción</label>
                         <input type="text" id="prodDescripcion" placeholder="Derclean - Lavacarros 1L" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
                     </div>
@@ -220,7 +264,7 @@
             </div>
 
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-3">
-                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wide">Inventario de Materiales (Inquilino Activo)</h3>
+                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wide">Inventario y Stock (Inquilino Activo)</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs text-slate-300">
                         <thead class="bg-slate-900 text-slate-400 uppercase">
@@ -228,6 +272,7 @@
                                 <th class="p-2">SKU</th>
                                 <th class="p-2">Descripción</th>
                                 <th class="p-2">Unidad</th>
+                                <th class="p-2">Stock</th>
                                 <th class="p-2">Precio ($)</th>
                                 <th class="p-2">Tipo</th>
                                 <th class="p-2 text-center">Acciones</th>
@@ -239,7 +284,7 @@
             </div>
         </div>
 
-        <!-- SECCIÓN 4: GESTIÓN DE CLIENTES (CRUD) -->
+        <!-- SECCIÓN 5: GESTIÓN DE CLIENTES (CRUD) -->
         <div id="seccionClientes" class="hidden space-y-6">
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
                 <h3 id="tituloFormCliente" class="text-sm font-bold text-emerald-400 uppercase tracking-wide">👥 Registrar Nuevo Cliente</h3>
@@ -409,7 +454,7 @@
         }
 
         function cambiarPestana(pestana) {
-            const tabs = ['pos', 'historial', 'productos', 'clientes'];
+            const tabs = ['pos', 'historial', 'cierrez', 'productos', 'clientes'];
             tabs.forEach(t => {
                 const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
                 const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -423,6 +468,7 @@
             });
 
             if (pestana === 'historial') cargarHistorial();
+            if (pestana === 'cierrez') generarReporteZ();
             if (pestana === 'productos') cargarProductosGestion();
             if (pestana === 'clientes') cargarClientesGestion();
             if (pestana === 'pos') {
@@ -431,7 +477,7 @@
             }
         }
 
-        // --- MÓDULO PRODUCTOS (Con Unidad de Medida) ---
+        // --- MÓDULO PRODUCTOS / STOCK ---
         async function cargarProductosSelect() {
             if (!supabaseClient || !tenantActual) return;
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
@@ -439,13 +485,14 @@
             const select = document.getElementById('productoSelect');
             select.innerHTML = '';
             if (productosCache.length === 0) {
-                select.innerHTML = '<option value="">No hay productos. ¡Crea uno en Materiales/Productos!</option>';
+                select.innerHTML = '<option value="">No hay productos. ¡Crea uno en Materiales/Stock!</option>';
                 return;
             }
             productosCache.forEach(prod => {
                 const unidad = prod.unidad_medida || 'Und';
+                const stock = prod.stock !== undefined && prod.stock !== null ? prod.stock : 0;
                 const tipoTexto = prod.es_exento ? 'EXENTO' : 'GRAVADO 16%';
-                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${unidad}">${prod.descripcion} (${unidad}) - $${prod.precio_unitario_usd.toFixed(2)} (${tipoTexto})</option>`;
+                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${unidad}" data-stock="${stock}">${prod.descripcion} (${unidad}) [Stock: ${stock}] - $${prod.precio_unitario_usd.toFixed(2)} (${tipoTexto})</option>`;
             });
         }
 
@@ -455,20 +502,22 @@
             const tbody = document.getElementById('tablaProductosGestion');
             tbody.innerHTML = '';
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No hay productos registrados.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No hay productos registrados.</td></tr>`;
                 return;
             }
             data.forEach(prod => {
                 const unidad = prod.unidad_medida || 'Und';
+                const stock = prod.stock !== undefined && prod.stock !== null ? prod.stock : 0;
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50">
                         <td class="p-2 font-mono text-emerald-400">${prod.codigo_sku || 'S/N'}</td>
                         <td class="p-2">${prod.descripcion}</td>
                         <td class="p-2 text-slate-300">${unidad}</td>
+                        <td class="p-2 font-bold ${stock <= 5 ? 'text-rose-400' : 'text-emerald-400'}">${stock}</td>
                         <td class="p-2 font-mono">$ ${prod.precio_unitario_usd.toFixed(2)}</td>
                         <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${prod.es_exento ? 'bg-amber-900/50 text-amber-300' : 'bg-emerald-900/50 text-emerald-300'}">${prod.es_exento ? 'EXENTO' : 'GRAVADO'}</span></td>
                         <td class="p-2 text-center space-x-2">
-                            <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku || ''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento}, "${unidad}")' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Editar</button>
+                            <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku || ''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento}, "${unidad}", ${stock})' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Editar</button>
                             <button onclick='eliminarProducto("${prod.id}")' class="text-rose-400 hover:text-rose-300 font-semibold cursor-pointer">Eliminar</button>
                         </td>
                     </tr>
@@ -481,6 +530,7 @@
             const sku = document.getElementById('prodSku').value.trim();
             const descripcion = document.getElementById('prodDescripcion').value.trim();
             const unidad = document.getElementById('prodUnidad').value;
+            const stock = parseFloat(document.getElementById('prodStock').value) || 0;
             const precio = parseFloat(document.getElementById('prodPrecio').value);
             const esExento = document.getElementById('prodExento').value === 'true';
 
@@ -490,19 +540,20 @@
             }
 
             if (id) {
-                await supabaseClient.from('productos').update({ codigo_sku: sku, descripcion, unidad_medida: unidad, precio_unitario_usd: precio, es_exento: esExento }).eq('id', id);
+                await supabaseClient.from('productos').update({ codigo_sku: sku, descripcion, unidad_medida: unidad, stock, precio_unitario_usd: precio, es_exento: esExento }).eq('id', id);
             } else {
-                await supabaseClient.from('productos').insert([{ tenant_id: tenantActual.id, codigo_sku: sku, descripcion, unidad_medida: unidad, precio_unitario_usd: precio, es_exento: esExento }]);
+                await supabaseClient.from('productos').insert([{ tenant_id: tenantActual.id, codigo_sku: sku, descripcion, unidad_medida: unidad, stock, precio_unitario_usd: precio, es_exento: esExento }]);
             }
             limpiarFormProducto();
             cargarProductosGestion();
         }
 
-        function editarProducto(id, sku, descripcion, precio, esExento, unidad) {
+        function editarProducto(id, sku, descripcion, precio, esExento, unidad, stock) {
             document.getElementById('editProductoId').value = id;
             document.getElementById('prodSku').value = sku;
             document.getElementById('prodDescripcion').value = descripcion;
             document.getElementById('prodUnidad').value = unidad || 'Und';
+            document.getElementById('prodStock').value = stock;
             document.getElementById('prodPrecio').value = precio;
             document.getElementById('prodExento').value = esExento.toString();
             document.getElementById('tituloFormProducto').innerText = '✏️ Editar Producto';
@@ -514,6 +565,7 @@
             document.getElementById('prodSku').value = '';
             document.getElementById('prodDescripcion').value = '';
             document.getElementById('prodUnidad').value = 'Und';
+            document.getElementById('prodStock').value = '100';
             document.getElementById('prodPrecio').value = '';
             document.getElementById('prodExento').value = 'false';
             document.getElementById('tituloFormProducto').innerText = '📦 Registrar Nuevo Material / Producto';
@@ -620,7 +672,7 @@
             cargarClientesGestion();
         }
 
-        // --- POS Y FACTURACIÓN ---
+        // --- POS Y FACTURACIÓN CON DESCUENTO DE STOCK ---
         function agregarItem() {
             const select = document.getElementById('productoSelect');
             if (!select.value || productosCache.length === 0) {
@@ -629,6 +681,12 @@
             }
             const option = select.options[select.selectedIndex];
             const cantidad = parseFloat(document.getElementById('cantidadItem').value) || 1;
+            const stockDisponible = parseFloat(option.getAttribute('data-stock')) || 0;
+
+            if (cantidad > stockDisponible) {
+                alert(`Stock insuficiente. Solo quedan ${stockDisponible} unidades disponibles.`);
+                return;
+            }
 
             carritoItems.push({
                 productoId: select.value,
@@ -754,7 +812,17 @@
 
                 await supabaseClient.from('invoice_items').insert(itemsParaInsertar);
 
-                alert(`¡Factura ${facturaNro} emitida con éxito para ${tenantActual.razon_social}!`);
+                // Descontar Stock en Supabase
+                for (const item of carritoItems) {
+                    const prodOriginal = productosCache.find(p => p.id === item.productoId);
+                    if (prodOriginal) {
+                        const stockActual = prodOriginal.stock !== undefined && prodOriginal.stock !== null ? prodOriginal.stock : 100;
+                        const nuevoStock = Math.max(0, stockActual - item.cantidad);
+                        await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.productoId);
+                    }
+                }
+
+                alert(`¡Factura ${facturaNro} emitida y stock actualizado con éxito!`);
                 carritoItems = [];
                 document.getElementById('clienteRif').value = '';
                 document.getElementById('clienteNombre').value = '';
@@ -762,6 +830,55 @@
                 cambiarPestana('historial');
             } catch (err) {
                 alert('Error al emitir factura: ' + err.message);
+            }
+        }
+
+        // --- MÓDULO REPORTE Z (CIERRE DIARIO CORREGIDO POR HORA LOCAL) ---
+        async function generarReporteZ() {
+            if (!supabaseClient || !tenantActual) return;
+
+            const { data, error } = await supabaseClient
+                .from('invoices')
+                .select('*')
+                .eq('tenant_id', tenantActual.id)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                alert('Error al generar Reporte Z: ' + error.message);
+                return;
+            }
+
+            // Filtrar usando la fecha local del navegador para evitar desfases de zona horaria (UTC vs Local)
+            const hoyLocalStr = new Date().toLocaleDateString();
+            const facturasHoy = data.filter(inv => new Date(inv.created_at).toLocaleDateString() === hoyLocalStr);
+
+            document.getElementById('zFecha').innerText = hoyLocalStr;
+            document.getElementById('zTotalFacturas').innerText = facturasHoy.length;
+
+            if (facturasHoy.length === 0) {
+                document.getElementById('zPrimerFactura').innerText = 'Ninguna';
+                document.getElementById('zUltimaFactura').innerText = 'Ninguna';
+                document.getElementById('zBaseGravada').innerText = 'Bs. 0,00';
+                document.getElementById('zIva').innerText = 'Bs. 0,00';
+                document.getElementById('zIgtf').innerText = 'Bs. 0,00';
+                document.getElementById('zTotalVentas').innerText = 'Bs. 0,00';
+            } else {
+                const ordenadas = [...facturasHoy].reverse();
+                document.getElementById('zPrimerFactura').innerText = ordenadas[0].factura_nro;
+                document.getElementById('zUltimaFactura').innerText = ordenadas[ordenadas.length - 1].factura_nro;
+
+                let totalSubtotal = 0, totalIva = 0, totalIgtf = 0, totalVentas = 0;
+                facturasHoy.forEach(inv => {
+                    totalSubtotal += (inv.subtotal_bs || 0);
+                    totalIva += inv.iva_bs;
+                    totalIgtf += inv.igtf_bs;
+                    totalVentas += inv.total_bs;
+                });
+
+                document.getElementById('zBaseGravada').innerText = 'Bs. ' + totalSubtotal.toLocaleString('es-VE', {minimumFractionDigits: 2});
+                document.getElementById('zIva').innerText = 'Bs. ' + totalIva.toLocaleString('es-VE', {minimumFractionDigits: 2});
+                document.getElementById('zIgtf').innerText = 'Bs. ' + totalIgtf.toLocaleString('es-VE', {minimumFractionDigits: 2});
+                document.getElementById('zTotalVentas').innerText = 'Bs. ' + totalVentas.toLocaleString('es-VE', {minimumFractionDigits: 2});
             }
         }
 
