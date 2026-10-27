@@ -90,6 +90,8 @@
                         <option value="EFECTIVO DIVISAS">Efectivo Divisas ($ USD)</option>
                         <option value="ZELLE">Zelle / Divisas Digitales</option>
                         <option value="PAGO MOVIL">Pago Móvil / Transferencia (Bs.)</option>
+                        <option value="TARJETA DEBITO">Tarjeta de Débito - POS (Bs.)</option>
+                        <option value="TARJETA CREDITO">Tarjeta de Crédito - POS (Bs.)</option>
                         <option value="EFECTIVO BS">Efectivo Bolívares (Bs.)</option>
                     </select>
                 </div>
@@ -214,9 +216,11 @@
                     <!-- ARQUEO DE CAJA POR MÉTODO DE PAGO -->
                     <div class="space-y-2 bg-slate-900/80 p-4 rounded-lg border border-emerald-500/30 text-sm">
                         <h4 class="font-bold text-emerald-400 uppercase text-xs mb-3">💵 Arqueo de Caja (Desglose por Método de Pago)</h4>
-                        <div class="flex justify-between text-slate-300"><span>Efectivo Divisas ($):</span><span id="arqEfectivoUsd" class="font-bold">$ 0.00</span></div>
-                        <div class="flex justify-between text-slate-300"><span>Zelle / Digital ($):</span><span id="arqZelle" class="font-bold">$ 0.00</span></div>
+                        <div class="flex justify-between text-slate-300"><span>Efectivo Divisas ($):</span><span id="arqEfectivoUsd" class="font-bold">Bs. 0,00</span></div>
+                        <div class="flex justify-between text-slate-300"><span>Zelle / Digital ($):</span><span id="arqZelle" class="font-bold">Bs. 0,00</span></div>
                         <div class="flex justify-between text-slate-300"><span>Pago Móvil / Transf. (Bs.):</span><span id="arqPagoMovil" class="font-bold">Bs. 0,00</span></div>
+                        <div class="flex justify-between text-slate-300"><span>Tarjeta de Débito - POS (Bs.):</span><span id="arqDebito" class="font-bold">Bs. 0,00</span></div>
+                        <div class="flex justify-between text-slate-300"><span>Tarjeta de Crédito - POS (Bs.):</span><span id="arqCredito" class="font-bold">Bs. 0,00</span></div>
                         <div class="flex justify-between text-slate-300"><span>Efectivo Bolívares (Bs.):</span><span id="arqEfectivoBs" class="font-bold">Bs. 0,00</span></div>
                     </div>
 
@@ -877,7 +881,7 @@
             document.getElementById('zFecha').innerText = hoyLocalStr;
             document.getElementById('zTotalFacturas').innerText = facturasHoy.length;
 
-            let efectivousd = 0, zelle = 0, pagomovil = 0, efectivobs = 0;
+            let efectivousd = 0, zelle = 0, pagomovil = 0, debitobs = 0, creditobs = 0, efectivobs = 0;
             let totalSubtotal = 0, totalIva = 0, totalIgtf = 0, totalVentas = 0;
 
             if (facturasHoy.length === 0) {
@@ -896,17 +900,21 @@
 
                     // Desglose por método de pago (Arqueo de caja)
                     const metodo = inv.metodo_pago || 'EFECTIVO DIVISAS';
-                    if (metodo === 'EFECTIVO DIVISAS') efectivousd += inv.total_bs; // Se puede totalizar en Bs o mostrar en USD
+                    if (metodo === 'EFECTIVO DIVISAS') efectivousd += inv.total_bs;
                     else if (metodo === 'ZELLE') zelle += inv.total_bs;
                     else if (metodo === 'PAGO MOVIL') pagomovil += inv.total_bs;
+                    else if (metodo === 'TARJETA DEBITO') debitobs += inv.total_bs;
+                    else if (metodo === 'TARJETA CREDITO') creditobs += inv.total_bs;
                     else if (metodo === 'EFECTIVO BS') efectivobs += inv.total_bs;
                 });
             }
 
-            // Mostrar Arqueo de Caja (convertido referencialmente o agrupado)
+            // Mostrar Arqueo de Caja
             document.getElementById('arqEfectivoUsd').innerText = 'Bs. ' + efectivousd.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('arqZelle').innerText = 'Bs. ' + zelle.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('arqPagoMovil').innerText = 'Bs. ' + pagomovil.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('arqDebito').innerText = 'Bs. ' + debitobs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('arqCredito').innerText = 'Bs. ' + creditobs.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('arqEfectivoBs').innerText = 'Bs. ' + efectivobs.toLocaleString('es-VE', {minimumFractionDigits: 2});
 
             // Resumen Fiscal
