@@ -3,28 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiFacturaDigital.com.ve - POS y Facturación Fiscal Providencia 102</title>
+    <title>MiFacturaDigital.com.ve - POS, Facturación y Gestión Integral</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-between p-4">
 
-    <div class="w-full max-w-3xl bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-700 my-6">
+    <div class="w-full max-w-4xl bg-slate-800 rounded-2xl shadow-xl p-6 border border-slate-700 my-6">
         <header class="text-center mb-6">
             <h1 class="text-2xl font-bold text-emerald-400">MiFacturaDigital</h1>
-            <p class="text-xs text-slate-400">Sistema POS y Facturación Fiscal bajo Providencia SENIAT SNAT/2024/102</p>
+            <p class="text-xs text-slate-400">Sistema POS, Facturación y Gestión bajo Providencia SENIAT SNAT/2024/102</p>
         </header>
 
-        <div class="flex justify-center space-x-2 mb-6 border-b border-slate-700 pb-4">
-            <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer shadow-lg shadow-emerald-900/20">
+        <!-- Navegación por pestañas -->
+        <div class="flex flex-wrap justify-center gap-2 mb-6 border-b border-slate-700 pb-4">
+            <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer shadow-lg shadow-emerald-900/25">
                 Punto de Venta (POS)
             </button>
-            <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                Historial de Facturas
+            <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
+                Historial Facturas
+            </button>
+            <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
+                📦 Materiales / Productos
+            </button>
+            <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
+                👥 Clientes
             </button>
         </div>
 
-        <!-- SECCIÓN 1: POS -->
+        <!-- SECCIÓN 1: PUNTO DE VENTA (POS) -->
         <div id="seccionPos" class="space-y-6">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
                 <div>
@@ -32,10 +39,16 @@
                     <input type="number" id="tasaBcv" step="0.0001" value="887.3020" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500" oninput="recalcularTodo()">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-300 mb-1">RIF / Cédula del Cliente Final</label>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Seleccionar Cliente del Directorio</label>
+                    <select id="clienteSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm" onchange="seleccionarClientePredefinido()">
+                        <option value="">-- Seleccionar Cliente --</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">RIF / Cédula del Cliente</label>
                     <input type="text" id="clienteRif" placeholder="V-12080468-1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
                 </div>
-                <div class="md:col-span-2">
+                <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">Razón Social / Nombre del Comprador</label>
                     <input type="text" id="clienteNombre" placeholder="EDISON VELIZ" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
                 </div>
@@ -46,16 +59,13 @@
                 <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Agregar Ítems / Materiales a la Factura</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                    <div class="md:col-span-5">
-                        <label class="block text-xs text-slate-400 mb-1">Producto / Material</label>
+                    <div class="md:col-span-6">
+                        <label class="block text-xs text-slate-400 mb-1">Producto / Material (Inventario)</label>
                         <select id="productoSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
-                            <option value="prod-1" data-precio="15.00" data-exento="false">Derclean - Lavacarros 1L (Gravado)</option>
-                            <option value="prod-2" data-precio="8.50" data-exento="false">Desengrasante Industrial 5L (Gravado)</option>
-                            <option value="prod-3" data-precio="5.00" data-exento="true">Cloro Doméstico 1L (Exento)</option>
-                            <option value="prod-4" data-precio="12.00" data-exento="true">Semilla Certificada Maíz 1kg (Exento)</option>
+                            <option value="">Cargando productos...</option>
                         </select>
                     </div>
-                    <div class="md:col-span-3">
+                    <div class="md:col-span-2">
                         <label class="block text-xs text-slate-400 mb-1">Cantidad</label>
                         <input type="number" id="cantidadItem" min="1" value="1" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
                     </div>
@@ -118,7 +128,6 @@
                 <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Comprobantes Fiscales Emitidos</h3>
                 <button onclick="cargarHistorial()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded-lg text-slate-200 cursor-pointer">🔄 Actualizar</button>
             </div>
-
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-slate-300">
                     <thead class="bg-slate-900 text-slate-400 uppercase">
@@ -137,9 +146,113 @@
                 </table>
             </div>
         </div>
+
+        <!-- SECCIÓN 3: GESTIÓN DE PRODUCTOS / MATERIALES (CRUD) -->
+        <div id="seccionProductos" class="hidden space-y-6">
+            <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
+                <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📦 Registrar Nuevo Material / Producto</h3>
+                <input type="hidden" id="editProductoId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Código SKU / Referencia</label>
+                        <input type="text" id="prodSku" placeholder="SKU-001" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Precio Unitario ($ USD)</label>
+                        <input type="number" id="prodPrecio" step="0.01" placeholder="15.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-slate-400 mb-1">Descripción del Material / Servicio</label>
+                        <input type="text" id="prodDescripcion" placeholder="Derclean - Lavacarros 1L" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Estatus Fiscal</label>
+                        <select id="prodExento" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                            <option value="false">Gravado (16% IVA)</option>
+                            <option value="true">Exento de IVA</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex space-x-2 pt-2">
+                    <button onclick="guardarProducto()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2 rounded-lg text-xs cursor-pointer">Guardar Producto</button>
+                    <button onclick="limpiarFormProducto()" id="btnCancelarProd" class="hidden bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded-lg text-xs cursor-pointer">Cancelar Edición</button>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-3">
+                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wide">Inventario Actual de Materiales</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900 text-slate-400 uppercase">
+                            <tr>
+                                <th class="p-2">SKU</th>
+                                <th class="p-2">Descripción</th>
+                                <th class="p-2">Precio ($)</th>
+                                <th class="p-2">Tipo</th>
+                                <th class="p-2 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaProductosGestion" class="divide-y divide-slate-700/50">
+                            <tr><td colspan="5" class="p-4 text-center text-slate-500">Cargando productos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 4: GESTIÓN DE CLIENTES (CRUD) -->
+        <div id="seccionClientes" class="hidden space-y-6">
+            <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
+                <h3 id="tituloFormCliente" class="text-sm font-bold text-emerald-400 uppercase tracking-wide">👥 Registrar Nuevo Cliente</h3>
+                <input type="hidden" id="editClienteId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">RIF / Cédula</label>
+                        <input type="text" id="cliRif" placeholder="J-12345678-9" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Teléfono</label>
+                        <input type="text" id="cliTelefono" placeholder="0414-1234567" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-slate-400 mb-1">Razón Social / Nombre</label>
+                        <input type="text" id="cliRazonSocial" placeholder="Comercio Aliado C.A." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-slate-400 mb-1">Dirección Fiscal</label>
+                        <input type="text" id="cliDireccion" placeholder="San Felipe, Yaracuy" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                    </div>
+                </div>
+                <div class="flex space-x-2 pt-2">
+                    <button onclick="guardarCliente()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-4 py-2 rounded-lg text-xs cursor-pointer">Guardar Cliente</button>
+                    <button onclick="limpiarFormCliente()" id="btnCancelarCli" class="hidden bg-slate-700 hover:bg-slate-600 text-slate-200 px-4 py-2 rounded-lg text-xs cursor-pointer">Cancelar Edición</button>
+                </div>
+            </div>
+
+            <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-3">
+                <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wide">Directorio de Clientes</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900 text-slate-400 uppercase">
+                            <tr>
+                                <th class="p-2">RIF / Cédula</th>
+                                <th class="p-2">Razón Social</th>
+                                <th class="p-2">Dirección</th>
+                                <th class="p-2">Teléfono</th>
+                                <th class="p-2 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaClientesGestion" class="divide-y divide-slate-700/50">
+                            <tr><td colspan="5" class="p-4 text-center text-slate-500">Cargando clientes...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- MODAL / TICKET FISCAL PROV. 102 -->
+    <!-- MODAL TICKET -->
     <div id="modalTicket" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-white text-slate-900 w-full max-w-md rounded-xl p-6 shadow-2xl relative font-mono text-xs space-y-3 max-h-[90vh] overflow-y-auto">
             <div class="text-center border-b border-dashed border-slate-400 pb-3 space-y-1">
@@ -158,9 +271,7 @@
 
             <div class="border-b border-dashed border-slate-400 pb-3 space-y-1">
                 <div class="font-bold mb-1 text-[11px]">DETALLE DE ÍTEMS / MATERIALES</div>
-                <div id="ticketItemsContainer" class="space-y-1">
-                    <!-- Dinámico -->
-                </div>
+                <div id="ticketItemsContainer" class="space-y-1"></div>
             </div>
 
             <div class="border-b border-dashed border-slate-400 pb-2 space-y-1 text-[11px]">
@@ -192,51 +303,261 @@
     </footer>
 
     <script>
+        const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji'; 
+        const TENANT_ID = 'a0ee93d8-1111-2222-3333-444455556666';
+
+        let supabaseClient = null;
         let carritoItems = [];
+        let productosCache = [];
+        let clientesCache = [];
 
         window.onload = function() {
-            agregarItemPorDefecto();
+            if (window.supabase) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                inicializarDatos();
+            } else {
+                alert('Error al cargar la librería de Supabase.');
+            }
         };
 
-        function cambiarPestana(pestana) {
-            const btnPos = document.getElementById('btnTabPos');
-            const btnHistorial = document.getElementById('btnTabHistorial');
-            const secPos = document.getElementById('seccionPos');
-            const secHistorial = document.getElementById('seccionHistorial');
+        async function inicializarDatos() {
+            await cargarProductosSelect();
+            await cargarClientesSelect();
+        }
 
+        function cambiarPestana(pestana) {
+            const tabs = ['pos', 'historial', 'productos', 'clientes'];
+            tabs.forEach(t => {
+                const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
+                const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
+                if (t === pestana) {
+                    btn.className = "bg-emerald-600 text-white px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer shadow-lg shadow-emerald-900/25";
+                    sec.classList.remove('hidden');
+                } else {
+                    btn.className = "bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer";
+                    sec.classList.add('hidden');
+                }
+            });
+
+            if (pestana === 'historial') cargarHistorial();
+            if (pestana === 'productos') cargarProductosGestion();
+            if (pestana === 'clientes') cargarClientesGestion();
             if (pestana === 'pos') {
-                btnPos.className = "bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer shadow-lg shadow-emerald-900/20";
-                btnHistorial.className = "bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer";
-                secPos.classList.remove('hidden');
-                secHistorial.classList.add('hidden');
-            } else {
-                btnHistorial.className = "bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer shadow-lg shadow-emerald-900/20";
-                btnPos.className = "bg-slate-700 hover:bg-slate-600 text-slate-300 px-4 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer";
-                secHistorial.classList.remove('hidden');
-                secPos.classList.add('hidden');
-                cargarHistorial();
+                cargarProductosSelect();
+                cargarClientesSelect();
             }
         }
 
-        function agregarItemPorDefecto() {
+        // --- MÓDULO PRODUCTOS / MATERIALES (CRUD) ---
+        async function cargarProductosSelect() {
+            if (!supabaseClient) return;
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', TENANT_ID);
+            productosCache = data || [];
             const select = document.getElementById('productoSelect');
-            const option = select.options[0];
-            carritoItems.push({
-                descripcion: option.text,
-                precio: parseFloat(option.getAttribute('data-precio')),
-                esExento: option.getAttribute('data-exento') === 'true',
-                cantidad: 1
+            select.innerHTML = '';
+            if (productosCache.length === 0) {
+                select.innerHTML = '<option value="">No hay productos registrados. ¡Crea uno en la pestaña Productos!</option>';
+                return;
+            }
+            productosCache.forEach(prod => {
+                const tipoTexto = prod.es_exento ? 'EXENTO' : 'GRAVADO 16%';
+                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}">${prod.descripcion} - $${prod.precio_unitario_usd.toFixed(2)} (${tipoTexto})</option>`;
             });
-            actualizarTablaYCalculos();
         }
 
+        async function cargarProductosGestion() {
+            if (!supabaseClient) return;
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', TENANT_ID).order('created_at', { ascending: false });
+            const tbody = document.getElementById('tablaProductosGestion');
+            tbody.innerHTML = '';
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay productos registrados.</td></tr>`;
+                return;
+            }
+            data.forEach(prod => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/50">
+                        <td class="p-2 font-mono text-emerald-400">${prod.codigo_sku || 'S/N'}</td>
+                        <td class="p-2">${prod.descripcion}</td>
+                        <td class="p-2 font-mono">$ ${prod.precio_unitario_usd.toFixed(2)}</td>
+                        <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${prod.es_exento ? 'bg-amber-900/50 text-amber-300 border border-amber-700/50' : 'bg-emerald-900/50 text-emerald-300 border border-emerald-700/50'}">${prod.es_exento ? 'EXENTO' : 'GRAVADO'}</span></td>
+                        <td class="p-2 text-center space-x-2">
+                            <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku || ''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento})' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Editar</button>
+                            <button onclick='eliminarProducto("${prod.id}")' class="text-rose-400 hover:text-rose-300 font-semibold cursor-pointer">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function guardarProducto() {
+            const id = document.getElementById('editProductoId').value;
+            const sku = document.getElementById('prodSku').value.trim();
+            const descripcion = document.getElementById('prodDescripcion').value.trim();
+            const precio = parseFloat(document.getElementById('prodPrecio').value);
+            const esExento = document.getElementById('prodExento').value === 'true';
+
+            if (!descripcion || isNaN(precio)) {
+                alert('Por favor ingrese la descripción y un precio válido.');
+                return;
+            }
+
+            if (id) {
+                const { error } = await supabaseClient.from('productos').update({ codigo_sku: sku, descripcion, precio_unitario_usd: precio, es_exento: esExento }).eq('id', id);
+                if (error) alert('Error al actualizar: ' + error.message);
+                else alert('¡Producto actualizado con éxito!');
+            } else {
+                const { error } = await supabaseClient.from('productos').insert([{ tenant_id: TENANT_ID, codigo_sku: sku, descripcion, precio_unitario_usd: precio, es_exento: esExento }]);
+                if (error) alert('Error al registrar: ' + error.message);
+                else alert('¡Producto registrado con éxito!');
+            }
+            limpiarFormProducto();
+            cargarProductosGestion();
+        }
+
+        function editarProducto(id, sku, descripcion, precio, esExento) {
+            document.getElementById('editProductoId').value = id;
+            document.getElementById('prodSku').value = sku;
+            document.getElementById('prodDescripcion').value = descripcion;
+            document.getElementById('prodPrecio').value = precio;
+            document.getElementById('prodExento').value = esExento.toString();
+            document.getElementById('tituloFormProducto').innerText = '✏️ Editar Material / Producto';
+            document.getElementById('btnCancelarProd').classList.remove('hidden');
+        }
+
+        function limpiarFormProducto() {
+            document.getElementById('editProductoId').value = '';
+            document.getElementById('prodSku').value = '';
+            document.getElementById('prodDescripcion').value = '';
+            document.getElementById('prodPrecio').value = '';
+            document.getElementById('prodExento').value = 'false';
+            document.getElementById('tituloFormProducto').innerText = '📦 Registrar Nuevo Material / Producto';
+            document.getElementById('btnCancelarProd').classList.add('hidden');
+        }
+
+        async function eliminarProducto(id) {
+            if (!confirm('¿Está seguro de eliminar este producto?')) return;
+            const { error } = await supabaseClient.from('productos').delete().eq('id', id);
+            if (error) alert('Error al eliminar: ' + error.message);
+            else cargarProductosGestion();
+        }
+
+
+        // --- MÓDULO CLIENTES (CRUD) ---
+        async function cargarClientesSelect() {
+            if (!supabaseClient) return;
+            const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', TENANT_ID);
+            clientesCache = data || [];
+            const select = document.getElementById('clienteSelect');
+            select.innerHTML = '<option value="">-- Seleccionar Cliente --</option>';
+            clientesCache.forEach(cli => {
+                select.innerHTML += `<option value="${cli.id}">${cli.razon_social} (${cli.rif})</option>`;
+            });
+        }
+
+        function seleccionarClientePredefinido() {
+            const selectId = document.getElementById('clienteSelect').value;
+            if (!selectId) return;
+            const cli = clientesCache.find(c => c.id === selectId);
+            if (cli) {
+                document.getElementById('clienteRif').value = cli.rif || '';
+                document.getElementById('clienteNombre').value = cli.razon_social || '';
+            }
+        }
+
+        async function cargarClientesGestion() {
+            if (!supabaseClient) return;
+            const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', TENANT_ID).order('created_at', { ascending: false });
+            const tbody = document.getElementById('tablaClientesGestion');
+            tbody.innerHTML = '';
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay clientes registrados.</td></tr>`;
+                return;
+            }
+            data.forEach(cli => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/50">
+                        <td class="p-2 font-mono text-emerald-400">${cli.rif}</td>
+                        <td class="p-2 font-semibold">${cli.razon_social}</td>
+                        <td class="p-2 text-slate-400">${cli.direccion || 'N/A'}</td>
+                        <td class="p-2 text-slate-300">${cli.telefono || 'N/A'}</td>
+                        <td class="p-2 text-center space-x-2">
+                            <button onclick='editarCliente("${cli.id}", "${cli.rif}", "${cli.razon_social}", "${cli.direccion || ''}", "${cli.telefono || ''}")' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Editar</button>
+                            <button onclick='eliminarCliente("${cli.id}")' class="text-rose-400 hover:text-rose-300 font-semibold cursor-pointer">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function guardarCliente() {
+            const id = document.getElementById('editClienteId').value;
+            const rif = document.getElementById('cliRif').value.trim();
+            const razonSocial = document.getElementById('cliRazonSocial').value.trim();
+            const direccion = document.getElementById('cliDireccion').value.trim();
+            const telefono = document.getElementById('cliTelefono').value.trim();
+
+            if (!rif || !razonSocial) {
+                alert('Por favor ingrese el RIF y la Razón Social del cliente.');
+                return;
+            }
+
+            if (id) {
+                const { error } = await supabaseClient.from('clientes').update({ rif, razon_social: razonSocial, direccion, telefono }).eq('id', id);
+                if (error) alert('Error al actualizar: ' + error.message);
+                else alert('¡Cliente actualizado con éxito!');
+            } else {
+                const { error } = await supabaseClient.from('clientes').insert([{ tenant_id: TENANT_ID, rif, razon_social: razonSocial, direccion, telefono }]);
+                if (error) alert('Error al registrar: ' + error.message);
+                else alert('¡Cliente registrado con éxito!');
+            }
+            limpiarFormCliente();
+            cargarClientesGestion();
+        }
+
+        function editarCliente(id, rif, razonSocial, direccion, telefono) {
+            document.getElementById('editClienteId').value = id;
+            document.getElementById('cliRif').value = rif;
+            document.getElementById('cliRazonSocial').value = razonSocial;
+            document.getElementById('cliDireccion').value = direccion;
+            document.getElementById('cliTelefono').value = telefono;
+            document.getElementById('tituloFormCliente').innerText = '✏️ Editar Cliente';
+            document.getElementById('btnCancelarCli').classList.remove('hidden');
+        }
+
+        function limpiarFormCliente() {
+            document.getElementById('editClienteId').value = '';
+            document.getElementById('cliRif').value = '';
+            document.getElementById('cliRazonSocial').value = '';
+            document.getElementById('cliDireccion').value = '';
+            document.getElementById('cliTelefono').value = '';
+            document.getElementById('tituloFormCliente').innerText = '👥 Registrar Nuevo Cliente';
+            document.getElementById('btnCancelarCli').classList.add('hidden');
+        }
+
+        async function eliminarCliente(id) {
+            if (!confirm('¿Está seguro de eliminar este cliente?')) return;
+            const { error } = await supabaseClient.from('clientes').delete().eq('id', id);
+            if (error) alert('Error al eliminar: ' + error.message);
+            else cargarClientesGestion();
+        }
+
+
+        // --- MÓDULO POS Y FACTURACIÓN ---
         function agregarItem() {
             const select = document.getElementById('productoSelect');
+            if (!select.value || productosCache.length === 0) {
+                alert('Seleccione un producto válido.');
+                return;
+            }
+            const prodId = select.value;
             const option = select.options[select.selectedIndex];
             const cantidad = parseFloat(document.getElementById('cantidadItem').value) || 1;
 
             carritoItems.push({
-                descripcion: option.text,
+                productoId: prodId,
+                descripcion: option.text.split(' - ')[0],
                 precio: parseFloat(option.getAttribute('data-precio')),
                 esExento: option.getAttribute('data-exento') === 'true',
                 cantidad: cantidad
@@ -277,7 +598,6 @@
 
         function recalcularTodo() {
             const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
-            
             let baseGravadaUsd = 0;
             let montoExentoUsd = 0;
 
@@ -312,13 +632,10 @@
                 const nombreCliente = document.getElementById('clienteNombre').value.trim();
 
                 if (!rifCliente || !nombreCliente) {
-                    alert('Por favor ingrese el RIF y la Razón Social del cliente.');
+                    alert('Por favor ingrese o seleccione el RIF y la Razón Social del cliente.');
                     return;
                 }
 
-                const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
-                const SUPABASE_ANON_KEY = 'sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji'; 
-                const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 const tasa = parseFloat(document.getElementById('tasaBcv').value) || 0;
 
                 let baseGravadaUsd = 0;
@@ -337,11 +654,10 @@
                 const facturaNro = 'FAC-' + Math.floor(1000 + Math.random() * 9000);
                 const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
 
-                // Insertar Factura Principal con datos del cliente
-                const { data: facturaData, error: facturaError } = await client
+                const { data: facturaData, error: facturaError } = await supabaseClient
                     .from('invoices')
                     .insert([{
-                        tenant_id: 'a0ee93d8-1111-2222-3333-444455556666',
+                        tenant_id: TENANT_ID,
                         factura_nro: facturaNro,
                         nro_control: nroControl,
                         tasa_bcv: tasa,
@@ -358,9 +674,9 @@
                 if (facturaError) throw facturaError;
                 const invoiceId = facturaData[0].id;
 
-                // Insertar Líneas de Detalle con sus descripciones
                 const itemsParaInsertar = carritoItems.map(item => ({
                     invoice_id: invoiceId,
+                    producto_id: item.productoId,
                     cantidad: item.cantidad,
                     precio_unitario_usd: item.precio,
                     es_exento: item.esExento,
@@ -368,16 +684,14 @@
                     descripcion: item.descripcion
                 }));
 
-                const { error: itemsError } = await client
-                    .from('invoice_items')
-                    .insert(itemsParaInsertar);
-
+                const { error: itemsError } = await supabaseClient.from('invoice_items').insert(itemsParaInsertar);
                 if (itemsError) throw itemsError;
 
                 alert(`¡Factura ${facturaNro} emitida y guardada con éxito bajo Providencia 102!`);
                 carritoItems = [];
                 document.getElementById('clienteRif').value = '';
                 document.getElementById('clienteNombre').value = '';
+                document.getElementById('clienteSelect').value = '';
                 actualizarTablaYCalculos();
                 cambiarPestana('historial');
 
@@ -387,45 +701,42 @@
         }
 
         async function cargarHistorial() {
-            try {
-                const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
-                const SUPABASE_ANON_KEY = 'sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji'; 
-                const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            if (!supabaseClient) return;
+            const { data, error } = await supabaseClient
+                .from('invoices')
+                .select('*')
+                .eq('tenant_id', TENANT_ID)
+                .order('created_at', { ascending: false });
 
-                const { data, error } = await client
-                    .from('invoices')
-                    .select('*')
-                    .order('created_at', { ascending: false });
-
-                if (error) throw error;
-
-                const tbody = document.getElementById('tablaHistorial');
-                tbody.innerHTML = '';
-
-                if (!data || data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No hay facturas registradas.</td></tr>`;
-                    return;
-                }
-
-                data.forEach(inv => {
-                    const fecha = new Date(inv.created_at).toLocaleString();
-                    const clienteStr = inv.cliente_nombre ? `${inv.cliente_nombre} (${inv.cliente_rif})` : 'Consumidor Final';
-                    tbody.innerHTML += `
-                        <tr class="hover:bg-slate-800/50">
-                            <td class="p-2.5 font-semibold text-emerald-400">${inv.factura_nro}</td>
-                            <td class="p-2.5 font-mono text-slate-300">${inv.nro_control}</td>
-                            <td class="p-2.5 text-slate-300">${clienteStr}</td>
-                            <td class="p-2.5 text-slate-400">${fecha}</td>
-                            <td class="p-2.5 font-mono text-white">Bs. ${inv.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</td>
-                            <td class="p-2.5 text-center">
-                                <button onclick='verTicket(${JSON.stringify(inv)})' class="bg-slate-700 hover:bg-slate-600 text-emerald-300 px-3 py-1 rounded text-xs cursor-pointer">Ver Ticket</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-            } catch (err) {
-                alert('Error al cargar historial: ' + err.message);
+            if (error) {
+                alert('Error al cargar historial: ' + error.message);
+                return;
             }
+
+            const tbody = document.getElementById('tablaHistorial');
+            tbody.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No hay facturas registradas.</td></tr>`;
+                return;
+            }
+
+            data.forEach(inv => {
+                const fecha = new Date(inv.created_at).toLocaleString();
+                const clienteStr = inv.cliente_nombre ? `${inv.cliente_nombre} (${inv.cliente_rif})` : 'Consumidor Final';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/50">
+                        <td class="p-2.5 font-semibold text-emerald-400">${inv.factura_nro}</td>
+                        <td class="p-2.5 font-mono text-slate-300">${inv.nro_control}</td>
+                        <td class="p-2.5 text-slate-300">${clienteStr}</td>
+                        <td class="p-2.5 text-slate-400">${fecha}</td>
+                        <td class="p-2.5 font-mono text-white">Bs. ${inv.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</td>
+                        <td class="p-2.5 text-center">
+                            <button onclick='verTicket(${JSON.stringify(inv)})' class="bg-slate-700 hover:bg-slate-600 text-emerald-300 px-3 py-1 rounded text-xs cursor-pointer">Ver Ticket</button>
+                        </td>
+                    </tr>
+                `;
+            });
         }
 
         async function verTicket(inv) {
@@ -439,12 +750,7 @@
             const rifCli = inv.cliente_rif || 'N/A';
             document.getElementById('ticketCliente').innerText = `Cliente: ${nombreCli} | RIF: ${rifCli}`;
 
-            // Consultar ítems de la factura en Supabase
-            const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
-            const SUPABASE_ANON_KEY = 'sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji'; 
-            const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-            const { data: items } = await client
+            const { data: items } = await supabaseClient
                 .from('invoice_items')
                 .select('*')
                 .eq('invoice_id', inv.id);
@@ -457,11 +763,8 @@
                 items.forEach(item => {
                     const subUsd = item.subtotal_usd;
                     const subBs = subUsd * inv.tasa_bcv;
-                    if (item.es_exento) {
-                        montoExentoCalculadoBs += subBs;
-                    } else {
-                        baseGravadaCalculadaBs += subBs;
-                    }
+                    if (item.es_exento) montoExentoCalculadoBs += subBs;
+                    else baseGravadaCalculadaBs += subBs;
 
                     itemsHtml += `
                         <div class="border-b border-dotted border-slate-300 pb-1 mb-1">
