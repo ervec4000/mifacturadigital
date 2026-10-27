@@ -6,6 +6,14 @@
     <title>MiFacturaDigital.com.ve - Sistema Fiscal Integrado SENIAT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @media print {
+            body * { visibility: hidden; }
+            #modalTicket, #modalTicket * { visibility: visible; }
+            #modalTicket { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+            .no-print { display: none !important; }
+        }
+    </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-between p-4">
 
@@ -53,7 +61,7 @@
                 Historial Comprobantes
             </button>
             <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                📊 Reporte Z y Libro de Ventas
+                📊 Reporte Z y Caja
             </button>
             <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 📦 Materiales / Stock
@@ -166,12 +174,30 @@
             </button>
         </div>
 
-        <!-- SECCIÓN 2: HISTORIAL Y NOTAS UNIFICADAS -->
+        <!-- SECCIÓN 2: HISTORIAL Y NOTAS UNIFICADAS CON FILTROS -->
         <div id="seccionHistorial" class="hidden space-y-6">
-            <div class="flex justify-between items-center">
-                <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Comprobantes Fiscales y Notas (Crédito / Débito)</h3>
+            <div class="flex flex-col md:flex-row justify-between items-center gap-3">
+                <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Comprobantes Fiscales y Notas</h3>
                 <button onclick="cargarHistorial()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded-lg text-slate-200 cursor-pointer">🔄 Actualizar</button>
             </div>
+
+            <!-- Filtros de Búsqueda Avanzada -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Buscar por Nro Documento o RIF / Cliente</label>
+                    <input type="text" id="filtroTexto" placeholder="Ej. FAC-5142 o V-12080468" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs" oninput="filtrarHistorial()">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Filtrar por Tipo de Documento</label>
+                    <select id="filtroTipo" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs" onchange="filtrarHistorial()">
+                        <option value="TODOS">Todos los Comprobantes</option>
+                        <option value="FACTURA">Facturas</option>
+                        <option value="NOTA CREDITO">Notas de Crédito</option>
+                        <option value="NOTA DEBITO">Notas de Débito</option>
+                    </select>
+                </div>
+            </div>
+
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-slate-300">
                     <thead class="bg-slate-900 text-slate-400 uppercase">
@@ -190,17 +216,29 @@
             </div>
         </div>
 
-        <!-- SECCIÓN 3: REPORTE Z, ARQUEO Y LIBRO DE VENTAS -->
+        <!-- SECCIÓN 3: REPORTE Z, FONDO DE CAMBIO Y LIBRO DE VENTAS -->
         <div id="seccionCierrez" class="hidden space-y-6">
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                     <div>
-                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📊 Reporte Z, Arqueo y Libro de Ventas</h3>
-                        <p class="text-xs text-slate-400">Consolidado fiscal diario y exportación contable para el SENIAT</p>
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📊 Reporte Z, Fondo de Caja y Libro de Ventas</h3>
+                        <p class="text-xs text-slate-400">Arqueo diario, control de efectivo en gaveta y exportación contable</p>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="generarReporteZ()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-2 rounded-lg font-semibold cursor-pointer">🔄 Recalcular</button>
-                        <button onclick="exportarLibroVentasCSV()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer shadow-lg shadow-sky-900/20">📥 Descargar Libro de Ventas (CSV Excel)</button>
+                        <button onclick="exportarLibroVentasCSV()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer shadow-lg shadow-sky-900/20">📥 Descargar Libro de Ventas (Excel)</button>
+                    </div>
+                </div>
+
+                <!-- Fondo de Cambio Inicial -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900 p-4 rounded-lg border border-slate-700 items-center">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Fondo de Cambio Inicial en Caja (Bs.)</label>
+                        <input type="number" id="fondoCambioBs" step="0.01" value="0.00" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white text-xs font-mono" oninput="generarReporteZ()">
+                    </div>
+                    <div class="text-right space-y-1">
+                        <p class="text-xs text-slate-400">Total Efectivo Esperado en Gaveta (Ventas Bs + Fondo):</p>
+                        <p id="totalGavetaEfectivo" class="text-emerald-400 font-bold font-mono text-base">Bs. 0,00</p>
                     </div>
                 </div>
 
@@ -360,7 +398,7 @@
         </div>
     </div>
 
-    <!-- MODAL TICKET / COMPROBANTE UNIFICADO -->
+    <!-- MODAL TICKET / COMPROBANTE UNIFICADO CON WHATSAPP Y PDF -->
     <div id="modalTicket" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-white text-slate-900 w-full max-w-md rounded-xl p-6 shadow-2xl relative font-mono text-xs space-y-3 max-h-[90vh] overflow-y-auto">
             <div class="text-center border-b border-dashed border-slate-400 pb-3 space-y-1">
@@ -399,9 +437,12 @@
                 <p>Zero-Migration Architecture - MiFacturaDigital</p>
             </div>
 
-            <div class="flex space-x-2 pt-2">
-                <button onclick="window.print()" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2 rounded font-sans font-semibold cursor-pointer">🖨️ Imprimir Comprobante</button>
-                <button onclick="cerrarTicket()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 py-2 rounded font-sans font-semibold cursor-pointer">Cerrar</button>
+            <div class="space-y-2 pt-2 no-print">
+                <div class="flex space-x-2">
+                    <button onclick="window.print()" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2 rounded font-sans font-semibold cursor-pointer text-xs">🖨️ Imprimir / Guardar PDF</button>
+                    <button onclick="enviarWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded font-sans font-semibold cursor-pointer text-xs">📱 Enviar por WhatsApp</button>
+                </div>
+                <button onclick="cerrarTicket()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 py-2 rounded font-sans font-semibold cursor-pointer text-xs">Cerrar</button>
             </div>
         </div>
     </div>
@@ -477,9 +518,11 @@
         let carritoItems = [];
         let productosCache = [];
         let clientesCache = [];
+        let documentosHistorialCache = [];
         let facturaSeleccionadaParaNC = null;
         let facturaItemsParaNC = [];
         let facturaSeleccionadaParaND = null;
+        let documentoActualTicket = null;
 
         window.onload = function() {
             if (window.supabase) {
@@ -1069,7 +1112,7 @@
             }
         }
 
-        // --- MÓDULO REPORTE Z Y ARQUEO DE CAJA ---
+        // --- MÓDULO REPORTE Z Y ARQUEO CON FONDO DE CAMBIO ---
         async function generarReporteZ() {
             if (!supabaseClient || !tenantActual) return;
 
@@ -1128,9 +1171,14 @@
             document.getElementById('zIva').innerText = 'Bs. ' + totalIva.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('zIgtf').innerText = 'Bs. ' + totalIgtf.toLocaleString('es-VE', {minimumFractionDigits: 2});
             document.getElementById('zTotalVentas').innerText = 'Bs. ' + totalVentas.toLocaleString('es-VE', {minimumFractionDigits: 2});
+
+            // Cálculo del fondo de gaveta (Efectivo Divisas + Efectivo Bs + Fondo Inicial)
+            const fondoInicial = parseFloat(document.getElementById('fondoCambioBs').value) || 0;
+            const totalGaveta = efectivousd + efectivobs + fondoInicial;
+            document.getElementById('totalGavetaEfectivo').innerText = 'Bs. ' + totalGaveta.toLocaleString('es-VE', {minimumFractionDigits: 2});
         }
 
-        // --- EXPORTAR LIBRO DE VENTAS 100% COMPATIBLE CON EXCEL (FORZANDO SEP=;) ---
+        // --- EXPORTAR LIBRO DE VENTAS 100% COMPATIBLE CON EXCEL ---
         async function exportarLibroVentasCSV() {
             if (!supabaseClient || !tenantActual) return;
 
@@ -1138,7 +1186,6 @@
             const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
             const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
 
-            // \uFEFF para UTF-8 y sep=;\n para forzar a Excel a separar por punto y coma de inmediato
             let csvContent = "\uFEFFsep=;\n";
             csvContent += "Fecha;Tipo Documento;Nro Documento;Nro Control;RIF Cliente;Razon Social;Metodo Pago / Motivo;Tasa BCV;Subtotal Bs;IVA Bs;IGTF Bs;Total Bs\n";
 
@@ -1185,7 +1232,7 @@
             document.body.removeChild(link);
         }
 
-        // --- CARGAR HISTORIAL UNIFICADO (FACTURAS, NC Y ND) ---
+        // --- CARGAR HISTORIAL Y FILTROS AVANZADOS ---
         async function cargarHistorial() {
             if (!supabaseClient || !tenantActual) return;
 
@@ -1193,16 +1240,13 @@
             const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
             const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
 
-            const tbody = document.getElementById('tablaHistorial');
-            tbody.innerHTML = '';
-
-            let documentos = [];
+            documentosHistorialCache = [];
 
             if (facturas) {
-                facturas.forEach(f => documentos.push({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
+                facturas.forEach(f => documentosHistorialCache.push({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
             }
             if (notasCredito) {
-                notasCredito.forEach(nc => documentos.push({
+                notasCredito.forEach(nc => documentosHistorialCache.push({
                     ...nc, 
                     tipoDoc: 'NOTA CREDITO', 
                     numero: nc.nota_nro, 
@@ -1211,7 +1255,7 @@
                 }));
             }
             if (notasDebito) {
-                notasDebito.forEach(nd => documentos.push({
+                notasDebito.forEach(nd => documentosHistorialCache.push({
                     ...nd, 
                     tipoDoc: 'NOTA DEBITO', 
                     numero: nd.nota_nro, 
@@ -1220,14 +1264,38 @@
                 }));
             }
 
-            documentos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            documentosHistorialCache.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            renderizarHistorial(documentosHistorialCache);
+        }
 
-            if (documentos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No hay comprobantes registrados.</td></tr>`;
+        function filtrarHistorial() {
+            const texto = document.getElementById('filtroTexto').value.toLowerCase().trim();
+            const tipo = document.getElementById('filtroTipo').value;
+
+            const filtrados = documentosHistorialCache.filter(doc => {
+                const coincideTipo = (tipo === 'TODOS' || doc.tipoDoc === tipo);
+                const matchNro = (doc.numero || '').toLowerCase().includes(texto);
+                const matchControl = (doc.nro_control || '').toLowerCase().includes(texto);
+                const matchRif = (doc.cliente_rif || '').toLowerCase().includes(texto);
+                const matchNombre = (doc.cliente_nombre || '').toLowerCase().includes(texto);
+                const coincideTexto = !texto || matchNro || matchControl || matchRif || matchNombre;
+
+                return coincideTipo && coincideTexto;
+            });
+
+            renderizarHistorial(filtrados);
+        }
+
+        function renderizarHistorial(lista) {
+            const tbody = document.getElementById('tablaHistorial');
+            tbody.innerHTML = '';
+
+            if (lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No se encontraron comprobantes.</td></tr>`;
                 return;
             }
 
-            documentos.forEach(doc => {
+            lista.forEach(doc => {
                 const fecha = new Date(doc.created_at).toLocaleString();
                 const clienteStr = doc.cliente_nombre ? `${doc.cliente_nombre} (${doc.cliente_rif})` : 'Consumidor Final';
                 
@@ -1261,6 +1329,7 @@
         }
 
         async function verComprobanteUnificado(doc) {
+            documentoActualTicket = doc;
             document.getElementById('ticketComercioNombre').innerText = tenantActual.razon_social;
             document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif}`;
             const fechaHora = new Date(doc.created_at);
@@ -1351,7 +1420,27 @@
             document.getElementById('modalTicket').classList.remove('hidden');
         }
 
-        function cerrarTicket() { document.getElementById('modalTicket').classList.add('hidden'); }
+        function cerrarTicket() { 
+            document.getElementById('modalTicket').classList.add('hidden'); 
+            documentoActualTicket = null;
+        }
+
+        // --- ENVIAR POR WHATSAPP ---
+        function enviarWhatsApp() {
+            if (!documentoActualTicket || !tenantActual) return;
+            const doc = documentoActualTicket;
+            const fechaHora = new Date(doc.created_at).toLocaleString();
+
+            let mensaje = `*${tenantActual.razon_social}*_%0A*RIF:* ${tenantActual.rif}%0A%0A`;
+            mensaje += `📄 *${doc.tipoDoc}:* ${doc.numero}%0A`;
+            mensaje += `📌 *Control:* ${doc.nro_control}%0A`;
+            mensaje += `📅 *Fecha:* ${fechaHora}%0A`;
+            mensaje += `👤 *Cliente:* ${doc.cliente_nombre || 'Consumidor Final'} (${doc.cliente_rif || 'V-000'})%0A`;
+            mensaje += `💰 *Total:* Bs. ${doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}%0A%0A`;
+            mensaje += `¡Gracias por su compra! Providencia SENIAT Conforme.`;
+
+            window.open(`https://wa.me/?text=${mensaje}`, '_blank');
+        }
     </script>
 </body>
 </html>
