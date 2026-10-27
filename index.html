@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiFacturaDigital.com.ve - POS y Cierre Fiscal Z</title>
+    <title>MiFacturaDigital.com.ve - POS, Arqueo de Caja y Reporte Z</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -53,7 +53,7 @@
                 Historial Facturas
             </button>
             <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                📊 Reporte Z (Cierre Diario)
+                📊 Reporte Z y Arqueo
             </button>
             <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 📦 Materiales / Stock
@@ -83,6 +83,15 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 mb-1">Razón Social / Nombre</label>
                     <input type="text" id="clienteNombre" placeholder="EDISON VELIZ" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-emerald-500">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Método de Pago (Arqueo de Caja)</label>
+                    <select id="metodoPagoSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                        <option value="EFECTIVO DIVISAS">Efectivo Divisas ($ USD)</option>
+                        <option value="ZELLE">Zelle / Divisas Digitales</option>
+                        <option value="PAGO MOVIL">Pago Móvil / Transferencia (Bs.)</option>
+                        <option value="EFECTIVO BS">Efectivo Bolívares (Bs.)</option>
+                    </select>
                 </div>
             </div>
 
@@ -168,6 +177,7 @@
                             <th class="p-2.5">Factura Nro</th>
                             <th class="p-2.5">Nro Control</th>
                             <th class="p-2.5">Cliente</th>
+                            <th class="p-2.5">Método Pago</th>
                             <th class="p-2.5">Fecha</th>
                             <th class="p-2.5">Total Bs.</th>
                             <th class="p-2.5 text-center">Acción</th>
@@ -178,22 +188,22 @@
             </div>
         </div>
 
-        <!-- SECCIÓN 3: REPORTE Z (CIERRE DIARIO) -->
+        <!-- SECCIÓN 3: REPORTE Z Y ARQUEO DE CAJA -->
         <div id="seccionCierrez" class="hidden space-y-6">
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
                 <div class="flex justify-between items-center">
                     <div>
-                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📊 Reporte Z - Cierre Fiscal Diario</h3>
-                        <p class="text-xs text-slate-400">Consolidado de ventas del día según Providencia SENIAT</p>
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📊 Reporte Z y Arqueo de Caja Diario</h3>
+                        <p class="text-xs text-slate-400">Consolidado fiscal y desglose por canal de pago de la jornada</p>
                     </div>
-                    <button onclick="generarReporteZ()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer">🔄 Calcular Cierre de Hoy</button>
+                    <button onclick="generarReporteZ()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer">🔄 Calcular Cierre</button>
                 </div>
 
                 <div id="resultadoReporteZ" class="space-y-4 border-t border-slate-700 pt-4 font-mono text-xs">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900 p-4 rounded-lg border border-slate-700">
                         <div class="space-y-1">
                             <p class="text-slate-400">Fecha del Cierre: <span id="zFecha" class="text-white font-bold">--</span></p>
-                            <p class="text-slate-400">Total Facturas Emitidas: <span id="zTotalFacturas" class="text-emerald-400 font-bold">0</span></p>
+                            <p class="text-slate-400">Total Facturas: <span id="zTotalFacturas" class="text-emerald-400 font-bold">0</span></p>
                         </div>
                         <div class="space-y-1 text-right">
                             <p class="text-slate-400">Primer Nro: <span id="zPrimerFactura" class="text-white">--</span></p>
@@ -201,8 +211,18 @@
                         </div>
                     </div>
 
+                    <!-- ARQUEO DE CAJA POR MÉTODO DE PAGO -->
+                    <div class="space-y-2 bg-slate-900/80 p-4 rounded-lg border border-emerald-500/30 text-sm">
+                        <h4 class="font-bold text-emerald-400 uppercase text-xs mb-3">💵 Arqueo de Caja (Desglose por Método de Pago)</h4>
+                        <div class="flex justify-between text-slate-300"><span>Efectivo Divisas ($):</span><span id="arqEfectivoUsd" class="font-bold">$ 0.00</span></div>
+                        <div class="flex justify-between text-slate-300"><span>Zelle / Digital ($):</span><span id="arqZelle" class="font-bold">$ 0.00</span></div>
+                        <div class="flex justify-between text-slate-300"><span>Pago Móvil / Transf. (Bs.):</span><span id="arqPagoMovil" class="font-bold">Bs. 0,00</span></div>
+                        <div class="flex justify-between text-slate-300"><span>Efectivo Bolívares (Bs.):</span><span id="arqEfectivoBs" class="font-bold">Bs. 0,00</span></div>
+                    </div>
+
                     <div class="space-y-2 bg-slate-900/60 p-4 rounded-lg border border-slate-700 text-sm">
-                        <div class="flex justify-between text-slate-300"><span>Subtotal / Base Ventas:</span><span id="zBaseGravada">Bs. 0,00</span></div>
+                        <h4 class="font-bold text-slate-400 uppercase text-xs mb-2">📋 Resumen Fiscal Consolidado</h4>
+                        <div class="flex justify-between text-slate-300"><span>Subtotal Ventas:</span><span id="zBaseGravada">Bs. 0,00</span></div>
                         <div class="flex justify-between text-slate-300"><span>Total IVA Recaudado (16%):</span><span id="zIva">Bs. 0,00</span></div>
                         <div class="flex justify-between text-slate-300"><span>Total IGTF Percibido (3%):</span><span id="zIgtf">Bs. 0,00</span></div>
                         <div class="border-t border-slate-700 pt-2 flex justify-between font-bold text-emerald-400 text-base">
@@ -347,6 +367,7 @@
                 <div class="flex justify-between"><span id="ticketNro">Factura: FAC-0000</span><span id="ticketFecha">Fecha: --/--/----</span></div>
                 <div class="flex justify-between"><span id="ticketControl">Nro Control: 00-000000</span><span>Tasa BCV: <span id="ticketTasa">0.00</span></span></div>
                 <div id="ticketCliente" class="pt-1 font-bold text-slate-800">Cliente: --</div>
+                <div id="ticketMetodoPago" class="text-slate-700 font-bold">Método de Pago: --</div>
             </div>
 
             <div class="border-b border-dashed border-slate-400 pb-3 space-y-1">
@@ -672,7 +693,7 @@
             cargarClientesGestion();
         }
 
-        // --- POS Y FACTURACIÓN CON DESCUENTO DE STOCK ---
+        // --- POS Y FACTURACIÓN CON MÉTODOS DE PAGO Y STOCK ---
         function agregarItem() {
             const select = document.getElementById('productoSelect');
             if (!select.value || productosCache.length === 0) {
@@ -759,6 +780,8 @@
                 }
                 const rifCliente = document.getElementById('clienteRif').value.trim();
                 const nombreCliente = document.getElementById('clienteNombre').value.trim();
+                const metodoPago = document.getElementById('metodoPagoSelect').value;
+
                 if (!rifCliente || !nombreCliente) {
                     alert('Ingrese o seleccione el cliente.');
                     return;
@@ -794,7 +817,7 @@
                         total_bs: totalBs,
                         cliente_rif: rifCliente,
                         cliente_nombre: nombreCliente,
-                        metodo_pago: 'DIVISAS / EFECTIVO'
+                        metodo_pago: metodoPago
                     }]).select();
 
                 if (facturaError) throw facturaError;
@@ -833,7 +856,7 @@
             }
         }
 
-        // --- MÓDULO REPORTE Z (CIERRE DIARIO CORREGIDO POR HORA LOCAL) ---
+        // --- MÓDULO REPORTE Z Y ARQUEO DE CAJA ---
         async function generarReporteZ() {
             if (!supabaseClient || !tenantActual) return;
 
@@ -848,38 +871,49 @@
                 return;
             }
 
-            // Filtrar usando la fecha local del navegador para evitar desfases de zona horaria (UTC vs Local)
             const hoyLocalStr = new Date().toLocaleDateString();
             const facturasHoy = data.filter(inv => new Date(inv.created_at).toLocaleDateString() === hoyLocalStr);
 
             document.getElementById('zFecha').innerText = hoyLocalStr;
             document.getElementById('zTotalFacturas').innerText = facturasHoy.length;
 
+            let efectivousd = 0, zelle = 0, pagomovil = 0, efectivobs = 0;
+            let totalSubtotal = 0, totalIva = 0, totalIgtf = 0, totalVentas = 0;
+
             if (facturasHoy.length === 0) {
                 document.getElementById('zPrimerFactura').innerText = 'Ninguna';
                 document.getElementById('zUltimaFactura').innerText = 'Ninguna';
-                document.getElementById('zBaseGravada').innerText = 'Bs. 0,00';
-                document.getElementById('zIva').innerText = 'Bs. 0,00';
-                document.getElementById('zIgtf').innerText = 'Bs. 0,00';
-                document.getElementById('zTotalVentas').innerText = 'Bs. 0,00';
             } else {
                 const ordenadas = [...facturasHoy].reverse();
                 document.getElementById('zPrimerFactura').innerText = ordenadas[0].factura_nro;
                 document.getElementById('zUltimaFactura').innerText = ordenadas[ordenadas.length - 1].factura_nro;
 
-                let totalSubtotal = 0, totalIva = 0, totalIgtf = 0, totalVentas = 0;
                 facturasHoy.forEach(inv => {
                     totalSubtotal += (inv.subtotal_bs || 0);
                     totalIva += inv.iva_bs;
                     totalIgtf += inv.igtf_bs;
                     totalVentas += inv.total_bs;
-                });
 
-                document.getElementById('zBaseGravada').innerText = 'Bs. ' + totalSubtotal.toLocaleString('es-VE', {minimumFractionDigits: 2});
-                document.getElementById('zIva').innerText = 'Bs. ' + totalIva.toLocaleString('es-VE', {minimumFractionDigits: 2});
-                document.getElementById('zIgtf').innerText = 'Bs. ' + totalIgtf.toLocaleString('es-VE', {minimumFractionDigits: 2});
-                document.getElementById('zTotalVentas').innerText = 'Bs. ' + totalVentas.toLocaleString('es-VE', {minimumFractionDigits: 2});
+                    // Desglose por método de pago (Arqueo de caja)
+                    const metodo = inv.metodo_pago || 'EFECTIVO DIVISAS';
+                    if (metodo === 'EFECTIVO DIVISAS') efectivousd += inv.total_bs; // Se puede totalizar en Bs o mostrar en USD
+                    else if (metodo === 'ZELLE') zelle += inv.total_bs;
+                    else if (metodo === 'PAGO MOVIL') pagomovil += inv.total_bs;
+                    else if (metodo === 'EFECTIVO BS') efectivobs += inv.total_bs;
+                });
             }
+
+            // Mostrar Arqueo de Caja (convertido referencialmente o agrupado)
+            document.getElementById('arqEfectivoUsd').innerText = 'Bs. ' + efectivousd.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('arqZelle').innerText = 'Bs. ' + zelle.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('arqPagoMovil').innerText = 'Bs. ' + pagomovil.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('arqEfectivoBs').innerText = 'Bs. ' + efectivobs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+
+            // Resumen Fiscal
+            document.getElementById('zBaseGravada').innerText = 'Bs. ' + totalSubtotal.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('zIva').innerText = 'Bs. ' + totalIva.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('zIgtf').innerText = 'Bs. ' + totalIgtf.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            document.getElementById('zTotalVentas').innerText = 'Bs. ' + totalVentas.toLocaleString('es-VE', {minimumFractionDigits: 2});
         }
 
         async function cargarHistorial() {
@@ -893,18 +927,20 @@
             const tbody = document.getElementById('tablaHistorial');
             tbody.innerHTML = '';
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No hay facturas registradas.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No hay facturas registradas.</td></tr>`;
                 return;
             }
 
             data.forEach(inv => {
                 const fecha = new Date(inv.created_at).toLocaleString();
                 const clienteStr = inv.cliente_nombre ? `${inv.cliente_nombre} (${inv.cliente_rif})` : 'Consumidor Final';
+                const metodoStr = inv.metodo_pago || 'EFECTIVO DIVISAS';
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50">
                         <td class="p-2.5 font-semibold text-emerald-400">${inv.factura_nro}</td>
                         <td class="p-2.5 font-mono text-slate-300">${inv.nro_control}</td>
                         <td class="p-2.5 text-slate-300">${clienteStr}</td>
+                        <td class="p-2.5 text-slate-300 font-mono text-[11px]">${metodoStr}</td>
                         <td class="p-2.5 text-slate-400">${fecha}</td>
                         <td class="p-2.5 font-mono text-white">Bs. ${inv.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</td>
                         <td class="p-2.5 text-center">
@@ -924,6 +960,7 @@
             document.getElementById('ticketFecha').innerText = 'Fecha/Hora: ' + fechaHora.toLocaleDateString() + ' ' + fechaHora.toLocaleTimeString();
             document.getElementById('ticketTasa').innerText = inv.tasa_bcv.toFixed(4);
             document.getElementById('ticketCliente').innerText = `Cliente: ${inv.cliente_nombre} | RIF: ${inv.cliente_rif}`;
+            document.getElementById('ticketMetodoPago').innerText = `Método de Pago: ${inv.metodo_pago || 'EFECTIVO DIVISAS'}`;
 
             const { data: items } = await supabaseClient.from('invoice_items').select('*').eq('invoice_id', inv.id);
 
