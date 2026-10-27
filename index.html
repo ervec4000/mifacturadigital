@@ -56,6 +56,21 @@
             </div>
         </header>
 
+        <!-- Barra de Perfil Rápido e Identidad -->
+        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50 flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-emerald-600/30 border border-emerald-500 flex items-center justify-center text-emerald-400 font-bold text-xs" id="avatarUserInitials">EV</div>
+                <div>
+                    <h4 class="text-xs font-bold text-white" id="lblPerfilNombre">Usuario Activo</h4>
+                    <p class="text-[10px] text-slate-400">Permisos corporativos verificados</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="abrirModalPerfil()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg font-semibold border border-slate-700 cursor-pointer">⚙️ Mi Perfil</button>
+                <button onclick="abrirModalGestionUsuarios()" id="btnMenuAdminUsuarios" class="hidden bg-sky-900/50 hover:bg-sky-900 text-sky-300 text-xs px-3 py-1.5 rounded-lg font-semibold border border-sky-700/50 cursor-pointer">👥 Usuarios</button>
+            </div>
+        </div>
+
         <!-- Navegación por pestañas -->
         <div class="flex flex-wrap justify-center gap-2 border-b border-slate-700 pb-4">
             <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer shadow-lg shadow-emerald-900/25">
@@ -68,13 +83,16 @@
                 📊 Reporte Z y Libro
             </button>
             <button onclick="cambiarPestana('referidos')" id="btnTabReferidos" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                🤝 Referidos & Comisiones
+                🤝 Referidos
             </button>
             <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 📦 Stock
             </button>
             <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 👥 Clientes
+            </button>
+            <button onclick="cambiarPestana('inquilinosMaster')" id="btnTabInquilinosMaster" class="tab-master bg-amber-600 hover:bg-amber-500 text-white px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
+                🏢 Master Inquilinos
             </button>
         </div>
 
@@ -402,6 +420,36 @@
                 </div>
             </div>
         </div>
+
+        <!-- SECCIÓN 7: GESTIÓN MAESTRA DE INQUILINOS (MASTER) -->
+        <div id="seccionInquilinosMaster" class="hidden tab-master space-y-6">
+            <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">🏢 Directorio de Inquilinos / Comercios Afiliados</h3>
+                        <p class="text-xs text-slate-400">Control maestro de accesos, planes y estatus fiscal de cada negocio en la PWA</p>
+                    </div>
+                    <button onclick="abrirModalNuevoTenant()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-2 rounded-lg font-semibold cursor-pointer">
+                        + Nuevo Inquilino
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900 text-slate-400 uppercase">
+                            <tr>
+                                <th class="p-2.5">RIF</th>
+                                <th class="p-2.5">Razón Social / Comercio</th>
+                                <th class="p-2.5">Correo Admin</th>
+                                <th class="p-2.5">Estatus</th>
+                                <th class="p-2.5 text-center">Acciones Maestras</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaInquilinosMaster" class="divide-y divide-slate-700/50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- MODAL TICKET / COMPROBANTE MULTIMONEDA -->
@@ -450,6 +498,130 @@
                     <button onclick="imprimirBluetooth()" class="bg-sky-600 hover:bg-sky-500 text-white py-2 rounded font-sans font-semibold cursor-pointer text-[10px]">📶 BT Térmica</button>
                 </div>
                 <button onclick="cerrarTicket()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 py-1.5 rounded font-sans font-semibold cursor-pointer text-xs">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: GESTIÓN DE PERFIL Y CAMBIO DE CONTRASEÑA -->
+    <div id="modalPerfilUsuario" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+            <h3 class="text-base font-bold text-emerald-400">👤 Perfil de Usuario y Seguridad</h3>
+            
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Correo Electrónico (Identificador)</label>
+                    <input type="email" id="perfilEmail" readonly class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-slate-400 font-mono cursor-not-allowed">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Razón Social / Nombre Comercial</label>
+                    <input type="text" id="perfilRazonSocial" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
+                </div>
+                <div class="border-t border-slate-700 pt-3 space-y-2">
+                    <h4 class="font-bold text-amber-400 uppercase text-[11px]">🔑 Cambiar Contraseña Segura</h4>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Contraseña Actual</label>
+                        <input type="password" id="passActual" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Nueva Contraseña (Mín. 8 caracteres)</label>
+                        <input type="password" id="passNueva" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex space-x-2 pt-2">
+                <button onclick="guardarCambiosPerfil()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Actualizar Datos</button>
+                <button onclick="cerrarModalPerfil()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ADMINISTRACIÓN DE USUARIOS Y ROLES -->
+    <div id="modalGestionUsuarios" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-2xl rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+                <h3 class="text-base font-bold text-sky-400">🛡️ Control de Usuarios y Permisos</h3>
+                <button onclick="cerrarModalGestionUsuarios()" class="text-slate-400 hover:text-white font-bold">✕</button>
+            </div>
+
+            <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-700/50 space-y-3 text-xs">
+                <h4 class="font-bold text-emerald-400 uppercase text-[11px]">Registrar o Asignar Nuevo Usuario</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Correo Electrónico</label>
+                        <input type="email" id="nuevoUserEmail" placeholder="cajero@empresa.com" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Contraseña Temporal</label>
+                        <input type="password" id="nuevoUserPass" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Razón Social / Nombre</label>
+                        <input type="text" id="nuevoUserRazon" placeholder="Sucursal Principal" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Rol y Permisos del Sistema</label>
+                        <select id="nuevoUserRol" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-amber-400 font-semibold">
+                            <option value="admin">Administrador (Acceso Total)</option>
+                            <option value="supervisor">Supervisor (Auditoría, Reportes Z, Stock)</option>
+                            <option value="cajero">Cajero (Solo POS)</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="registrarNuevoUsuarioTenant()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-semibold cursor-pointer">Crear Usuario Autorizado</button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-slate-900 text-slate-400 uppercase">
+                        <tr>
+                            <th class="p-2.5">Usuario / Correo</th>
+                            <th class="p-2.5">Nombre / Razón Social</th>
+                            <th class="p-2.5">Rol Asignado</th>
+                            <th class="p-2.5 text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaUsuariosTenant" class="divide-y divide-slate-700/50"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MASTER: NUEVO / EDITAR INQUILINO -->
+    <div id="modalTenantMaster" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
+            <h3 class="text-base font-bold text-emerald-400" id="tituloTenantModal">🏢 Registrar Nuevo Inquilino / Comercio</h3>
+            <input type="hidden" id="masterTenantId">
+            
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">RIF del Comercio</label>
+                    <input type="text" id="masterRif" placeholder="J-12345678-9" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Razón Social</label>
+                    <input type="text" id="masterRazonSocial" placeholder="Distribidora Autorizada C.A." class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Correo de Acceso (Usuario Principal)</label>
+                    <input type="email" id="masterEmail" placeholder="comercio@dominio.com" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Contraseña Inicial</label>
+                    <input type="password" id="masterPassword" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Estatus de Suscripción / Servicio</label>
+                    <select id="masterEstatus" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-emerald-400 font-semibold">
+                        <option value="activo">Activo (Acceso Completo)</option>
+                        <option value="suspendido">Suspendido (Moroso)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex space-x-2 pt-2">
+                <button onclick="guardarInquilinoMaster()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Guardar Inquilino</button>
+                <button onclick="cerrarModalTenantMaster()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
             </div>
         </div>
     </div>
@@ -558,10 +730,9 @@
                     const tasaOficial = json.monitors.usd.price;
                     document.getElementById('tasaBcv').value = tasaOficial.toFixed(2);
                     recalcularTodo();
-                    alert(`¡Tasa BCV oficial actualizada desde API: ${tasaOficial.toFixed(2)} Bs.!`);
                 }
             } catch (e) {
-                console.warn('No se pudo conectar con la API de BCV automática. Se mantiene la tasa actual.', e);
+                console.warn('No se pudo conectar con la API de BCV automática.', e);
             }
         }
 
@@ -574,6 +745,7 @@
                 .from('tenants').select('*').eq('email', emailInput).eq('password', passwordInput).single();
 
             if (error || !data) { alert('Credenciales incorrectas.'); return; }
+            if (data.estatus === 'suspendido') { alert('Su cuenta se encuentra suspendida. Contacte al administrador.'); return; }
 
             tenantActual = data;
             if (!tenantActual.rol) tenantActual.rol = 'admin';
@@ -595,18 +767,42 @@
             document.getElementById('vistaPrincipal').classList.remove('hidden');
             document.getElementById('headerTenantNombre').innerText = tenantActual.razon_social;
             document.getElementById('headerTenantRif').innerText = tenantActual.rif;
-            document.getElementById('headerTenantRol').innerText = tenantActual.rol.toUpperCase();
+            document.getElementById('headerTenantRol').innerText = (tenantActual.rol || 'admin').toUpperCase();
             
+            document.getElementById('lblPerfilNombre').innerText = tenantActual.razon_social || tenantActual.email;
+            const initials = (tenantActual.razon_social || 'EU').slice(0, 2).toUpperCase();
+            document.getElementById('avatarUserInitials').innerText = initials;
+
             const refCode = 'REF-' + tenantActual.rif.replace(/[^a-zA-Z0-9]/g, '');
             document.getElementById('headerTenantRefCode').innerText = refCode;
             document.getElementById('miCodigoRef').value = `https://mifacturadigital.com.ve/?ref=${refCode}`;
 
             const elementosAdmin = document.querySelectorAll('.tab-admin');
+            const elementosMaster = document.querySelectorAll('.tab-master');
+            
+            const btnAdminUsuarios = document.getElementById('btnMenuAdminUsuarios');
+
             if (tenantActual.rol === 'cajero') {
                 elementosAdmin.forEach(el => el.classList.add('hidden'));
+                elementosMaster.forEach(el => el.classList.add('hidden'));
+                btnAdminUsuarios.classList.add('hidden');
+                cambiarPestana('pos');
+            } else if (tenantActual.rol === 'supervisor') {
+                elementosAdmin.forEach(el => el.classList.remove('hidden'));
+                elementosMaster.forEach(el => el.classList.add('hidden'));
+                btnAdminUsuarios.classList.add('hidden');
                 cambiarPestana('pos');
             } else {
+                // Admin / Master
                 elementosAdmin.forEach(el => el.classList.remove('hidden'));
+                btnAdminUsuarios.classList.remove('hidden');
+                
+                // Si es un correo master global (ej. soporte@mifacturadigital.com.ve) habilita la pestaña master
+                if (tenantActual.email.includes('admin') || tenantActual.email.includes('master') || tenantActual.rif.includes('MASTER')) {
+                    elementosMaster.forEach(el => el.classList.remove('hidden'));
+                } else {
+                    elementosMaster.forEach(el => el.classList.add('hidden'));
+                }
                 cambiarPestana('pos');
             }
         }
@@ -621,12 +817,12 @@
         }
 
         function cambiarPestana(pestana) {
-            if (tenantActual && tenantActual.rol === 'cajero' && ['cierrez', 'referidos', 'productos', 'clientes'].includes(pestana)) {
-                alert('Acceso restringido para Administradores.');
+            if (tenantActual && tenantActual.rol === 'cajero' && ['cierrez', 'referidos', 'productos', 'clientes', 'inquilinosMaster'].includes(pestana)) {
+                alert('Acceso restringido.');
                 return;
             }
 
-            const tabs = ['pos', 'historial', 'cierrez', 'referidos', 'productos', 'clientes'];
+            const tabs = ['pos', 'historial', 'cierrez', 'referidos', 'productos', 'clientes', 'inquilinosMaster'];
             tabs.forEach(t => {
                 const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
                 const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -649,6 +845,7 @@
             }
             if (pestana === 'productos') cargarProductosGestion();
             if (pestana === 'clientes') cargarClientesGestion();
+            if (pestana === 'inquilinosMaster') cargarInquilinosMaster();
             if (pestana === 'pos') { 
                 consultarTasaBcvApi();
                 cargarProductosSelect(); 
@@ -661,6 +858,158 @@
             inputRef.select();
             navigator.clipboard.writeText(inputRef.value);
             alert('¡Enlace de referido copiado!');
+        }
+
+        // --- PERFIL Y USUARIOS TENANT ---
+        function abrirModalPerfil() {
+            document.getElementById('perfilEmail').value = tenantActual.email || '';
+            document.getElementById('perfilRazonSocial').value = tenantActual.razon_social || '';
+            document.getElementById('passActual').value = '';
+            document.getElementById('passNueva').value = '';
+            document.getElementById('modalPerfilUsuario').classList.remove('hidden');
+        }
+
+        function cerrarModalPerfil() { document.getElementById('modalPerfilUsuario').classList.add('hidden'); }
+
+        async function guardarCambiosPerfil() {
+            const nuevaRazon = document.getElementById('perfilRazonSocial').value.trim();
+            const passNueva = document.getElementById('passNueva').value;
+            if (!nuevaRazon) { alert('La razón social no puede estar vacía.'); return; }
+            try {
+                let updatePayload = { razon_social: nuevaRazon };
+                if (passNueva) {
+                    if (passNueva.length < 8) { alert('Mínimo 8 caracteres para la contraseña.'); return; }
+                    updatePayload.password = passNueva;
+                }
+                const { error } = await supabaseClient.from('tenants').update(updatePayload).eq('id', tenantActual.id);
+                if (error) throw error;
+                tenantActual.razon_social = nuevaRazon;
+                localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
+                alert('¡Perfil actualizado con éxito!');
+                cerrarModalPerfil();
+                activarVistaPrincipal();
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+
+        async function abrirModalGestionUsuarios() {
+            document.getElementById('modalGestionUsuarios').classList.remove('hidden');
+            await cargarUsuariosTenant();
+        }
+
+        function cerrarModalGestionUsuarios() { document.getElementById('modalGestionUsuarios').classList.add('hidden'); }
+
+        async function cargarUsuariosTenant() {
+            if (!supabaseClient || !tenantActual) return;
+            const { data } = await supabaseClient.from('tenants').select('id, email, razon_social, rol, created_at').eq('id', tenantActual.id);
+            const tbody = document.getElementById('tablaUsuariosTenant');
+            tbody.innerHTML = '';
+            if (!data) return;
+            data.forEach(user => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/50">
+                        <td class="p-2.5 font-mono text-emerald-400">${user.email}</td>
+                        <td class="p-2.5 font-semibold text-white">${user.razon_social}</td>
+                        <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-900/50 text-amber-300 font-bold uppercase">${user.rol || 'admin'}</span></td>
+                        <td class="p-2.5 text-center"><span class="text-xs text-slate-400">Activo</span></td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function registrarNuevoUsuarioTenant() {
+            const email = document.getElementById('nuevoUserEmail').value.trim();
+            const password = document.getElementById('nuevoUserPass').value.trim();
+            const razonSocial = document.getElementById('nuevoUserRazon').value.trim();
+            const rol = document.getElementById('nuevoUserRol').value;
+            if (!email || !password || !razonSocial) { alert('Complete todos los campos.'); return; }
+            try {
+                const { error } = await supabaseClient.from('tenants').insert([{ email, password, razon_social: razonSocial, rol, rif: tenantActual.rif }]);
+                if (error) throw error;
+                alert('¡Usuario creado con éxito!');
+                document.getElementById('nuevoUserEmail').value = '';
+                document.getElementById('nuevoUserPass').value = '';
+                document.getElementById('nuevoUserRazon').value = '';
+                cargarUsuariosTenant();
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+
+        // --- GESTIÓN MAESTRA DE INQUILINOS ---
+        async function cargarInquilinosMaster() {
+            if (!supabaseClient) return;
+            const { data } = await supabaseClient.from('tenants').select('*').order('created_at', { ascending: false });
+            const tbody = document.getElementById('tablaInquilinosMaster');
+            tbody.innerHTML = '';
+            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay inquilinos.</td></tr>`; return; }
+            data.forEach(t => {
+                const estatusBadge = t.estatus === 'suspendido' ? '<span class="px-2 py-0.5 rounded text-[10px] bg-rose-900/50 text-rose-300 font-bold">SUSPENDIDO</span>' : '<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-900/50 text-emerald-300 font-bold">ACTIVO</span>';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/50">
+                        <td class="p-2.5 font-mono text-emerald-400">${t.rif}</td>
+                        <td class="p-2.5 font-semibold text-white">${t.razon_social}</td>
+                        <td class="p-2.5 text-slate-300">${t.email}</td>
+                        <td class="p-2.5">${estatusBadge}</td>
+                        <td class="p-2.5 text-center space-x-2">
+                            <button onclick='editarInquilinoMaster("${t.id}", "${t.rif}", "${t.razon_social}", "${t.email}", "${t.estatus || 'activo'}")' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Configurar</button>
+                            <button onclick='cambiarEstatusTenant("${t.id}", "${t.estatus === 'suspendido' ? 'activo' : 'suspendido'}")' class="text-amber-400 hover:text-amber-300 font-semibold cursor-pointer">${t.estatus === 'suspendido' ? 'Activar' : 'Suspender'}</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function abrirModalNuevoTenant() {
+            document.getElementById('masterTenantId').value = '';
+            document.getElementById('masterRif').value = '';
+            document.getElementById('masterRazonSocial').value = '';
+            document.getElementById('masterEmail').value = '';
+            document.getElementById('masterPassword').value = '';
+            document.getElementById('masterEstatus').value = 'activo';
+            document.getElementById('tituloTenantModal').innerText = '🏢 Registrar Nuevo Inquilino';
+            document.getElementById('modalTenantMaster').classList.remove('hidden');
+        }
+
+        function editarInquilinoMaster(id, rif, razon, email, estatus) {
+            document.getElementById('masterTenantId').value = id;
+            document.getElementById('masterRif').value = rif;
+            document.getElementById('masterRazonSocial').value = razon;
+            document.getElementById('masterEmail').value = email;
+            document.getElementById('masterPassword').value = '';
+            document.getElementById('masterEstatus').value = estatus;
+            document.getElementById('tituloTenantModal').innerText = '⚙️ Configurar Inquilino';
+            document.getElementById('modalTenantMaster').classList.remove('hidden');
+        }
+
+        function cerrarModalTenantMaster() { document.getElementById('modalTenantMaster').classList.add('hidden'); }
+
+        async function guardarInquilinoMaster() {
+            const id = document.getElementById('masterTenantId').value;
+            const rif = document.getElementById('masterRif').value.trim();
+            const razon_social = document.getElementById('masterRazonSocial').value.trim();
+            const email = document.getElementById('masterEmail').value.trim();
+            const password = document.getElementById('masterPassword').value.trim();
+            const estatus = document.getElementById('masterEstatus').value;
+            if (!rif || !razon_social || !email) { alert('Complete RIF, Razón Social y Correo.'); return; }
+            try {
+                let payload = { rif, razon_social, email, estatus };
+                if (password) payload.password = password;
+                if (id) {
+                    await supabaseClient.from('tenants').update(payload).eq('id', id);
+                } else {
+                    if (!password) { alert('Asigne contraseña inicial.'); return; }
+                    payload.rol = 'admin';
+                    await supabaseClient.from('tenants').insert([payload]);
+                }
+                alert('¡Inquilino guardado con éxito!');
+                cerrarModalTenantMaster();
+                cargarInquilinosMaster();
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+
+        async function cambiarEstatusTenant(id, nuevoEstatus) {
+            try {
+                await supabaseClient.from('tenants').update({ estatus: nuevoEstatus }).eq('id', id);
+                cargarInquilinosMaster();
+            } catch (err) { alert('Error: ' + err.message); }
         }
 
         // --- PRODUCTOS / STOCK ---
@@ -712,9 +1061,7 @@
             const stock = parseFloat(document.getElementById('prodStock').value) || 0;
             const precio = parseFloat(document.getElementById('prodPrecio').value);
             const esExento = document.getElementById('prodExento').value === 'true';
-
             if (!descripcion || isNaN(precio)) { alert('Ingrese descripción y precio.'); return; }
-
             if (id) {
                 await supabaseClient.from('productos').update({ codigo_sku: sku, descripcion, unidad_medida: unidad, stock, precio_unitario_usd: precio, es_exento: esExento }).eq('id', id);
             } else {
@@ -761,9 +1108,7 @@
             clientesCache = data || [];
             const select = document.getElementById('clienteSelect');
             select.innerHTML = '<option value="">-- Seleccionar Cliente --</option>';
-            clientesCache.forEach(cli => {
-                select.innerHTML += `<option value="${cli.id}">${cli.razon_social} (${cli.rif})</option>`;
-            });
+            clientesCache.forEach(cli => { select.innerHTML += `<option value="${cli.id}">${cli.razon_social} (${cli.rif})</option>`; });
         }
 
         function seleccionarClientePredefinido() {
@@ -804,9 +1149,7 @@
             const razonSocial = document.getElementById('cliRazonSocial').value.trim();
             const direccion = document.getElementById('cliDireccion').value.trim();
             const telefono = document.getElementById('cliTelefono').value.trim();
-
             if (!rif || !razonSocial) { alert('Ingrese RIF y Razón Social.'); return; }
-
             if (id) {
                 await supabaseClient.from('clientes').update({ rif, razon_social: razonSocial, direccion, telefono }).eq('id', id);
             } else {
@@ -842,7 +1185,7 @@
             cargarClientesGestion();
         }
 
-        // --- VERIFICACIÓN DE IGTF ---
+        // --- IGTF Y POS ---
         function verificarAplicacionIgtf() {
             const metodo = document.getElementById('metodoPagoSelect').value;
             const aplicaSelect = document.getElementById('aplicaIgtfSelect');
@@ -854,18 +1197,13 @@
             recalcularTodo();
         }
 
-        // --- POS Y CÁLCULOS MULTIMONEDA ---
         function agregarItem() {
             const select = document.getElementById('productoSelect');
             if (!select.value || productosCache.length === 0) { alert('Seleccione un producto.'); return; }
             const option = select.options[select.selectedIndex];
             const cantidad = parseFloat(document.getElementById('cantidadItem').value) || 1;
             const stockDisponible = parseFloat(option.getAttribute('data-stock')) || 0;
-
-            if (cantidad > stockDisponible) {
-                alert(`Stock insuficiente. Quedan ${stockDisponible} unidades.`);
-                return;
-            }
+            if (cantidad > stockDisponible) { alert(`Stock insuficiente. Quedan ${stockDisponible} unidades.`); return; }
 
             carritoItems.push({
                 productoId: select.value,
@@ -886,7 +1224,6 @@
         function actualizarTablaYCalculos() {
             let tasaRaw = document.getElementById('tasaBcv').value.toString().replace(',', '.');
             const tasa = parseFloat(tasaRaw) || 1;
-
             const tbody = document.getElementById('tablaItems');
             tbody.innerHTML = '';
             if (carritoItems.length === 0) {
@@ -915,7 +1252,6 @@
             let tasaRaw = document.getElementById('tasaBcv').value.toString().replace(',', '.');
             const tasa = parseFloat(tasaRaw) || 1;
             let baseGravadaUsd = 0, montoExentoUsd = 0;
-
             carritoItems.forEach(item => {
                 const sub = item.precio * item.cantidad;
                 if (item.esExento) montoExentoUsd += sub;
@@ -926,14 +1262,12 @@
             const montoExentoBs = montoExentoUsd * tasa;
             const ivaUsd = baseGravadaUsd * 0.16;
             const ivaBs = baseGravadaBs * 0.16;
-            
             const totalSubtotalUsd = baseGravadaUsd + montoExentoUsd + ivaUsd;
             const totalSubtotalBs = baseGravadaBs + montoExentoBs + ivaBs;
 
             const aplicaIgtf = document.getElementById('aplicaIgtfSelect').value === 'SI';
             const igtfUsd = aplicaIgtf ? totalSubtotalUsd * 0.03 : 0;
             const igtfBs = aplicaIgtf ? totalSubtotalBs * 0.03 : 0;
-
             const totalUsd = totalSubtotalUsd + igtfUsd;
             const totalBs = totalSubtotalBs + igtfBs;
 
@@ -942,21 +1276,17 @@
             document.getElementById('ivaBs').innerText = `$ ${ivaUsd.toFixed(2)} | Bs. ${ivaBs.toFixed(2)}`;
             document.getElementById('igtfBs').innerText = `$ ${igtfUsd.toFixed(2)} | Bs. ${igtfBs.toFixed(2)}`;
             document.getElementById('totalBs').innerText = `$ ${totalUsd.toFixed(2)} | Bs. ${totalBs.toFixed(2)}`;
-            
             calcularVuelto();
         }
 
         function calcularVuelto() {
             let tasaRaw = document.getElementById('tasaBcv').value.toString().replace(',', '.');
             const tasa = parseFloat(tasaRaw) || 1;
-            
             const totalText = document.getElementById('totalBs').innerText;
             const totalBsStr = totalText.split('| Bs. ')[1] || '0';
             const totalBs = parseFloat(totalBsStr.trim()) || 0;
-
             const recibidoUsd = parseFloat(document.getElementById('pagoRecibidoUsd')?.value || 0);
             const recibidoBs = parseFloat(document.getElementById('pagoRecibidoBs')?.value || 0);
-
             const totalRecibidoBs = recibidoBs + (recibidoUsd * tasa);
             const diferenciaBs = totalRecibidoBs - totalBs;
 
@@ -975,7 +1305,6 @@
             const nombreCliente = document.getElementById('clienteNombre').value.trim();
             const metodoPago = document.getElementById('metodoPagoSelect').value;
             const aplicaIgtf = document.getElementById('aplicaIgtfSelect').value === 'SI';
-
             if (!rifCliente || !nombreCliente) { alert('Ingrese datos del cliente.'); return; }
 
             let tasaRaw = document.getElementById('tasaBcv').value.toString().replace(',', '.');
@@ -993,7 +1322,6 @@
             const subtotalBs = baseGravadaBs + montoExentoBs + ivaBs;
             const igtfBs = aplicaIgtf ? subtotalBs * 0.03 : 0;
             const totalBs = subtotalBs + igtfBs;
-
             const facturaNro = 'FAC-' + Math.floor(1000 + Math.random() * 9000);
             const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
 
@@ -1023,20 +1351,11 @@
 
             try {
                 const { data: facturaData, error: facturaError } = await supabaseClient
-                    .from('invoices')
-                    .insert([{
-                        tenant_id: tenantActual.id,
-                        factura_nro: facturaNro,
-                        nro_control: nroControl,
-                        tasa_bcv: tasa,
-                        monto_usd: baseGravadaUsd + montoExentoUsd,
-                        subtotal_bs: subtotalBs,
-                        iva_bs: ivaBs,
-                        igtf_bs: igtfBs,
-                        total_bs: totalBs,
-                        cliente_rif: rifCliente,
-                        cliente_nombre: nombreCliente,
-                        metodo_pago: metodoPago
+                    .from('invoices').insert([{
+                        tenant_id: tenantActual.id, factura_nro: facturaNro, nro_control: nroControl,
+                        tasa_bcv: tasa, monto_usd: baseGravadaUsd + montoExentoUsd, subtotal_bs: subtotalBs,
+                        iva_bs: ivaBs, igtf_bs: igtfBs, total_bs: totalBs, cliente_rif: rifCliente,
+                        cliente_nombre: nombreCliente, metodo_pago: metodoPago
                     }]).select();
 
                 if (facturaError) throw facturaError;
@@ -1069,7 +1388,6 @@
             cambiarPestana('historial');
         }
 
-        // --- MODO OFFLINE ---
         function verificarColaOffline() {
             let cola = JSON.parse(localStorage.getItem('facturas_offline') || '[]');
             const badge = document.getElementById('offlineBadge');
@@ -1108,18 +1426,16 @@
             } catch (err) { alert('Error: ' + err.message); }
         }
 
-        // --- IMPRESIÓN BLUETOOTH TÉRMICA ESC/POS ---
         async function imprimirBluetooth() {
             if (!documentoActualTicket) return;
             try {
                 const device = await navigator.bluetooth.requestDevice({
-                    filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }, { namePrefix: 'Printer' }, { namePrefix: 'MPT' }, { namePrefix: 'RP' }],
+                    filters: [{ services: ['000018f0-0000-1000-8000-00805f9b34fb'] }, { namePrefix: 'Printer' }, { namePrefix: 'MPT' }],
                     optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
                 });
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
                 const characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
-
                 const doc = documentoActualTicket;
                 let encoder = new TextEncoder();
                 let comandos = '\x1B\x40\x1B\x61\x01';
@@ -1128,19 +1444,16 @@
                 comandos += `Nro: ${doc.factura_nro || doc.nota_nro} | Ctrl: ${doc.nro_control}\n`;
                 comandos += `Total: $ ${(doc.total_bs / doc.tasa_bcv).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}\n`;
                 comandos += `Copia sin derecho a credito fiscal\n\n\n`;
-
                 await characteristic.writeValue(encoder.encode(comandos));
                 alert('¡Impresión térmica enviada con éxito!');
             } catch (err) { alert('Error Bluetooth: ' + err.message); }
         }
 
-        // --- NOTAS DE CRÉDITO Y DÉBITO MULTIMONEDA ---
         async function abrirModalNotaCredito(inv) {
             facturaSeleccionadaParaNC = inv;
             document.getElementById('ncFacturaRef').innerText = inv.factura_nro + ' (Control: ' + inv.nro_control + ')';
             document.getElementById('ncClienteRef').innerText = `${inv.cliente_nombre} (${inv.cliente_rif})`;
             document.getElementById('ncMotivo').value = '';
-
             const { data: items } = await supabaseClient.from('invoice_items').select('*').eq('invoice_id', inv.id);
             facturaItemsParaNC = items || [];
             let htmlItems = '';
@@ -1178,7 +1491,7 @@
                         if (prodData) await supabaseClient.from('productos').update({ stock: (prodData.stock || 0) + item.cantidad }).eq('id', item.producto_id);
                     }
                 }
-                alert(`¡Nota de Crédito ${notaNro} emitida con éxito haciendo referencia a la factura ${inv.factura_nro}!`);
+                alert(`¡Nota de Crédito ${notaNro} emitida con éxito!`);
                 cerrarModalNotaCredito();
                 cargarHistorial();
             } catch (err) { alert('Error: ' + err.message); }
@@ -1219,7 +1532,7 @@
                 const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
 
                 await supabaseClient.from('notas_debito').insert([{ tenant_id: tenantActual.id, invoice_id: inv.id, nota_nro: notaNro, nro_control: nroControl, motivo: motivo, total_bs: montoBs, tasa_bcv: inv.tasa_bcv }]);
-                alert(`¡Nota de Débito ${notaNro} emitida con éxito haciendo referencia a la factura ${inv.factura_nro}!`);
+                alert(`¡Nota de Débito ${notaNro} emitida con éxito!`);
                 cerrarModalNotaDebito();
                 cargarHistorial();
             } catch (err) { alert('Error: ' + err.message); }
@@ -1271,12 +1584,10 @@
             if (!supabaseClient || !tenantActual) return;
             const fechaDesde = document.getElementById('filtroFechaDesde').value;
             const fechaHasta = document.getElementById('filtroFechaHasta').value;
-
             const { data: facturas } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
             const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*').eq('tenant_id', tenantActual.id);
             const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*').eq('tenant_id', tenantActual.id);
 
-            // Cabecera estrictamente formateada para auditoría del Libro de Ventas SENIAT
             let csvContent = "\uFEFFsep=;\nFecha;Tipo Documento;Nro Documento;Nro Control;Doc Afectado;RIF Cliente;Razon Social;Metodo Pago;Tasa BCV;Ventas Exentas (Bs);Base Imponible Gravada (Bs);Alicuota IVA (%);IVA Debito Fiscal (Bs);IGTF Percibido (Bs);Total Venta (Bs)\n";
 
             if (facturas) {
@@ -1287,7 +1598,6 @@
                     const ivaBs = f.iva_bs || 0;
                     const baseGravadaBs = ivaBs > 0 ? (ivaBs / 0.16) : 0;
                     const exentoBs = Math.max(0, f.total_bs - baseGravadaBs - ivaBs - (f.igtf_bs || 0));
-                    
                     csvContent += `"${formatearFecha8Digitos(f.created_at)}";"FACTURA";"${f.factura_nro}";"${f.nro_control}";"N/A";"${f.cliente_rif}";"${(f.cliente_nombre||'').replace(/"/g,'""')}";"${f.metodo_pago}";${t};${exentoBs.toFixed(2)};${baseGravadaBs.toFixed(2)};16%;${ivaBs.toFixed(2)};${(f.igtf_bs||0).toFixed(2)};${f.total_bs.toFixed(2)}\n`;
                 });
             }
@@ -1324,45 +1634,24 @@
 
         async function cargarHistorial() {
             if (!supabaseClient || !tenantActual) return;
-            
             const { data: facturas } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
             const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*').eq('tenant_id', tenantActual.id);
             const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*').eq('tenant_id', tenantActual.id);
 
             documentosHistorialCache = [];
-            
-            if (facturas) {
-                facturas.forEach(f => documentosHistorialCache.push({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
-            }
-            
+            if (facturas) facturas.forEach(f => documentosHistorialCache.push({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
             if (notasCredito) {
                 notasCredito.forEach(nc => {
                     const facturaOrigen = (facturas || []).find(f => f.id === nc.invoice_id);
-                    documentosHistorialCache.push({
-                        ...nc, 
-                        tipoDoc: 'NOTA CREDITO', 
-                        numero: nc.nota_nro, 
-                        factura_afectada: facturaOrigen ? facturaOrigen.factura_nro : 'N/A', 
-                        cliente_nombre: facturaOrigen ? facturaOrigen.cliente_nombre : 'Cliente', 
-                        cliente_rif: facturaOrigen ? facturaOrigen.cliente_rif : 'V-000'
-                    });
+                    documentosHistorialCache.push({...nc, tipoDoc: 'NOTA CREDITO', numero: nc.nota_nro, factura_afectada: facturaOrigen ? facturaOrigen.factura_nro : 'N/A', cliente_nombre: facturaOrigen ? facturaOrigen.cliente_nombre : 'Cliente', cliente_rif: facturaOrigen ? facturaOrigen.cliente_rif : 'V-000'});
                 });
             }
-
             if (notasDebito) {
                 notasDebito.forEach(nd => {
                     const facturaOrigen = (facturas || []).find(f => f.id === nd.invoice_id);
-                    documentosHistorialCache.push({
-                        ...nd, 
-                        tipoDoc: 'NOTA DEBITO', 
-                        numero: nd.nota_nro, 
-                        factura_afectada: facturaOrigen ? facturaOrigen.factura_nro : 'N/A', 
-                        cliente_nombre: facturaOrigen ? facturaOrigen.cliente_nombre : 'Cliente', 
-                        cliente_rif: facturaOrigen ? facturaOrigen.cliente_rif : 'V-000'
-                    });
+                    documentosHistorialCache.push({...nd, tipoDoc: 'NOTA DEBITO', numero: nd.nota_nro, factura_afectada: facturaOrigen ? facturaOrigen.factura_nro : 'N/A', cliente_nombre: facturaOrigen ? facturaOrigen.cliente_nombre : 'Cliente', cliente_rif: facturaOrigen ? facturaOrigen.cliente_rif : 'V-000'});
                 });
             }
-
             documentosHistorialCache.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
             renderizarHistorial(documentosHistorialCache);
         }
