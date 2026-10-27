@@ -587,10 +587,10 @@
         </div>
     </div>
 
-    <!-- MODAL MASTER: NUEVO / EDITAR INQUILINO -->
+    <!-- MODAL MASTER: NUEVO / EDITAR INQUILINO Y ASIGNAR ADMINISTRADOR -->
     <div id="modalTenantMaster" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 class="text-base font-bold text-emerald-400" id="tituloTenantModal">🏢 Registrar Nuevo Inquilino / Comercio</h3>
+            <h3 class="text-base font-bold text-emerald-400" id="tituloTenantModal">🏢 Registrar Nuevo Inquilino / Administrador</h3>
             <input type="hidden" id="masterTenantId">
             
             <div class="space-y-3 text-xs">
@@ -603,24 +603,34 @@
                     <input type="text" id="masterRazonSocial" placeholder="Distribidora Autorizada C.A." class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">Correo de Acceso (Usuario Principal)</label>
-                    <input type="email" id="masterEmail" placeholder="comercio@dominio.com" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
+                    <label class="block text-slate-400 mb-1">Correo Electrónico (Administrador del Inquilino)</label>
+                    <input type="email" id="masterEmail" placeholder="admin@comercio.com" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
                 </div>
                 <div>
-                    <label class="block text-slate-400 mb-1">Contraseña Inicial</label>
+                    <label class="block text-slate-400 mb-1">Contraseña de Acceso</label>
                     <input type="password" id="masterPassword" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
                 </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Estatus de Suscripción / Servicio</label>
-                    <select id="masterEstatus" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-emerald-400 font-semibold">
-                        <option value="activo">Activo (Acceso Completo)</option>
-                        <option value="suspendido">Suspendido (Moroso)</option>
-                    </select>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Rol Principal</label>
+                        <select id="masterRol" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-amber-400 font-semibold">
+                            <option value="admin">Administrador (Total)</option>
+                            <option value="supervisor">Supervisor</option>
+                            <option value="cajero">Cajero</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">Estatus del Servicio</label>
+                        <select id="masterEstatus" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-emerald-400 font-semibold">
+                            <option value="activo">Activo</option>
+                            <option value="suspendido">Suspendido (Moroso)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
             <div class="flex space-x-2 pt-2">
-                <button onclick="guardarInquilinoMaster()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Guardar Inquilino</button>
+                <button onclick="guardarInquilinoMasterConRol()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Guardar Inquilino / Admin</button>
                 <button onclick="cerrarModalTenantMaster()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
             </div>
         </div>
@@ -779,8 +789,10 @@
 
             const elementosAdmin = document.querySelectorAll('.tab-admin');
             const elementosMaster = document.querySelectorAll('.tab-master');
-            
             const btnAdminUsuarios = document.getElementById('btnMenuAdminUsuarios');
+
+            // CONDICIÓN MAESTRA GLOBAL (Ajusta aquí tu correo personal de administrador maestro si lo deseas)
+            const esMasterGlobal = tenantActual.rol === 'admin' && (tenantActual.email.includes('admin') || tenantActual.email.includes('master') || tenantActual.email.includes('edison') || tenantActual.rif.includes('MASTER'));
 
             if (tenantActual.rol === 'cajero') {
                 elementosAdmin.forEach(el => el.classList.add('hidden'));
@@ -793,12 +805,10 @@
                 btnAdminUsuarios.classList.add('hidden');
                 cambiarPestana('pos');
             } else {
-                // Admin / Master
                 elementosAdmin.forEach(el => el.classList.remove('hidden'));
                 btnAdminUsuarios.classList.remove('hidden');
-                
-                // Si es un correo master global (ej. soporte@mifacturadigital.com.ve) habilita la pestaña master
-                if (tenantActual.email.includes('admin') || tenantActual.email.includes('master') || tenantActual.rif.includes('MASTER')) {
+
+                if (esMasterGlobal) {
                     elementosMaster.forEach(el => el.classList.remove('hidden'));
                 } else {
                     elementosMaster.forEach(el => el.classList.add('hidden'));
@@ -933,7 +943,7 @@
             } catch (err) { alert('Error: ' + err.message); }
         }
 
-        // --- GESTIÓN MAESTRA DE INQUILINOS ---
+        // --- GESTIÓN MAESTRA DE INQUILINOS Y ADMINISTRADORES ---
         async function cargarInquilinosMaster() {
             if (!supabaseClient) return;
             const { data } = await supabaseClient.from('tenants').select('*').order('created_at', { ascending: false });
@@ -945,11 +955,11 @@
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50">
                         <td class="p-2.5 font-mono text-emerald-400">${t.rif}</td>
-                        <td class="p-2.5 font-semibold text-white">${t.razon_social}</td>
+                        <td class="p-2.5 font-semibold text-white">${t.razon_social} <br><span class="text-[10px] text-amber-400 uppercase">Rol: ${t.rol || 'admin'}</span></td>
                         <td class="p-2.5 text-slate-300">${t.email}</td>
                         <td class="p-2.5">${estatusBadge}</td>
                         <td class="p-2.5 text-center space-x-2">
-                            <button onclick='editarInquilinoMaster("${t.id}", "${t.rif}", "${t.razon_social}", "${t.email}", "${t.estatus || 'activo'}")' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Configurar</button>
+                            <button onclick='editarInquilinoMaster("${t.id}", "${t.rif}", "${t.razon_social}", "${t.email}", "${t.rol || 'admin'}", "${t.estatus || 'activo'}")' class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Configurar</button>
                             <button onclick='cambiarEstatusTenant("${t.id}", "${t.estatus === 'suspendido' ? 'activo' : 'suspendido'}")' class="text-amber-400 hover:text-amber-300 font-semibold cursor-pointer">${t.estatus === 'suspendido' ? 'Activar' : 'Suspender'}</button>
                         </td>
                     </tr>
@@ -963,43 +973,48 @@
             document.getElementById('masterRazonSocial').value = '';
             document.getElementById('masterEmail').value = '';
             document.getElementById('masterPassword').value = '';
+            document.getElementById('masterRol').value = 'admin';
             document.getElementById('masterEstatus').value = 'activo';
-            document.getElementById('tituloTenantModal').innerText = '🏢 Registrar Nuevo Inquilino';
+            document.getElementById('tituloTenantModal').innerText = '🏢 Registrar Nuevo Inquilino / Administrador';
             document.getElementById('modalTenantMaster').classList.remove('hidden');
         }
 
-        function editarInquilinoMaster(id, rif, razon, email, estatus) {
+        function editarInquilinoMaster(id, rif, razon, email, rol, estatus) {
             document.getElementById('masterTenantId').value = id;
             document.getElementById('masterRif').value = rif;
             document.getElementById('masterRazonSocial').value = razon;
             document.getElementById('masterEmail').value = email;
             document.getElementById('masterPassword').value = '';
+            document.getElementById('masterRol').value = rol;
             document.getElementById('masterEstatus').value = estatus;
-            document.getElementById('tituloTenantModal').innerText = '⚙️ Configurar Inquilino';
+            document.getElementById('tituloTenantModal').innerText = '⚙️ Configurar Inquilino / Administrador';
             document.getElementById('modalTenantMaster').classList.remove('hidden');
         }
 
         function cerrarModalTenantMaster() { document.getElementById('modalTenantMaster').classList.add('hidden'); }
 
-        async function guardarInquilinoMaster() {
+        async function guardarInquilinoMasterConRol() {
             const id = document.getElementById('masterTenantId').value;
             const rif = document.getElementById('masterRif').value.trim();
             const razon_social = document.getElementById('masterRazonSocial').value.trim();
             const email = document.getElementById('masterEmail').value.trim();
             const password = document.getElementById('masterPassword').value.trim();
+            const rol = document.getElementById('masterRol').value;
             const estatus = document.getElementById('masterEstatus').value;
+
             if (!rif || !razon_social || !email) { alert('Complete RIF, Razón Social y Correo.'); return; }
             try {
-                let payload = { rif, razon_social, email, estatus };
+                let payload = { rif, razon_social, email, rol, estatus };
                 if (password) payload.password = password;
+
                 if (id) {
                     await supabaseClient.from('tenants').update(payload).eq('id', id);
                 } else {
-                    if (!password) { alert('Asigne contraseña inicial.'); return; }
-                    payload.rol = 'admin';
+                    if (!password) { alert('Debe asignar una contraseña inicial.'); return; }
                     await supabaseClient.from('tenants').insert([payload]);
                 }
-                alert('¡Inquilino guardado con éxito!');
+
+                alert('¡Inquilino y Administrador guardados con éxito!');
                 cerrarModalTenantMaster();
                 cargarInquilinosMaster();
             } catch (err) { alert('Error: ' + err.message); }
