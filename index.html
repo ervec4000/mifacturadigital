@@ -17,7 +17,7 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-between p-4">
 
-    <!-- 1. PANTALLA DE LOGIN SEGURO -->
+    <!-- 1. PANTALLA DE LOGIN -->
     <div id="vistaLogin" class="w-full max-w-md bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-700 my-auto space-y-6">
         <header class="text-center space-y-2">
             <h1 class="text-2xl font-bold text-emerald-400">MiFacturaDigital</h1>
@@ -26,11 +26,11 @@
 
         <div class="space-y-4">
             <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico (Usuario)</label>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico (Inquilino / Supabase)</label>
                 <input type="email" id="loginEmail" placeholder="ervec2000@gmail.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
             <div>
-                <label class="block text-xs font-semibold text-slate-300 mb-1">Contraseña</label>
+                <label class="block text-xs font-semibold text-slate-300 mb-1">Contraseña (Opcional)</label>
                 <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white text-sm focus:outline-none focus:border-emerald-500">
             </div>
 
@@ -516,23 +516,33 @@
                     <label class="block text-slate-400 mb-1">Razón Social / Nombre Comercial</label>
                     <input type="text" id="perfilRazonSocial" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
                 </div>
-                <div class="border-t border-slate-700 pt-3 space-y-2">
-                    <h4 class="font-bold text-amber-400 uppercase text-[11px]">🔑 Cambiar Contraseña Segura</h4>
-                    <div>
-                        <label class="block text-slate-400 mb-1">Contraseña Actual</label>
-                        <input type="password" id="passActual" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 mb-1">Nueva Contraseña (Mín. 8 caracteres)</label>
-                        <input type="password" id="passNueva" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white">
-                    </div>
-                </div>
             </div>
 
             <div class="flex space-x-2 pt-2">
                 <button onclick="guardarCambiosPerfil()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Actualizar Datos</button>
                 <button onclick="cerrarModalPerfil()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cerrar</button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL GESTIÓN DE USUARIOS DEL INQUILINO -->
+    <div id="modalGestionUsuarios" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
+            <h3 class="text-base font-bold text-sky-400">👥 Gestión de Usuarios Internos</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-slate-900 text-slate-400 uppercase">
+                        <tr>
+                            <th class="p-2">Correo</th>
+                            <th class="p-2">Razón Social</th>
+                            <th class="p-2">Plan</th>
+                            <th class="p-2 text-center">Estatus</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaUsuariosTenant" class="divide-y divide-slate-700/50"></tbody>
+                </table>
+            </div>
+            <button onclick="cerrarModalGestionUsuarios()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl font-semibold cursor-pointer text-xs">Cerrar</button>
         </div>
     </div>
 
@@ -554,10 +564,6 @@
                 <div>
                     <label class="block text-slate-400 mb-1">Correo Electrónico</label>
                     <input type="email" id="masterEmail" placeholder="comercio@empresa.com" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Contraseña de Acceso</label>
-                    <input type="password" id="masterPassword" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded p-2.5 text-white">
                 </div>
                 <div>
                     <label class="block text-slate-400 mb-1">Plan Activo</label>
@@ -687,14 +693,13 @@
 
         async function iniciarSesionTenant() {
             const emailInput = document.getElementById('loginEmail').value.trim();
-            const passwordInput = document.getElementById('loginPassword').value.trim();
-            if (!emailInput || !passwordInput) { alert('Ingrese correo y contraseña.'); return; }
+            if (!emailInput) { alert('Ingrese un correo electrónico.'); return; }
 
-            // Consulta exacta apuntando a la columna 'Correo electrónico' y 'password'
+            // Consulta validando únicamente el correo registrado en Supabase
             const { data, error } = await supabaseClient
-                .from('Inquilinos').select('*').eq('Correo electrónico', emailInput).eq('password', passwordInput).single();
+                .from('Inquilinos').select('*').eq('Correo electrónico', emailInput).single();
 
-            if (error || !data) { alert('Credenciales incorrectas o contraseña no configurada.'); return; }
+            if (error || !data) { alert('Correo electrónico no registrado en el sistema.'); return; }
 
             tenantActual = data;
             if (!tenantActual.plan_activo) tenantActual.plan_activo = 'Freemium';
@@ -798,8 +803,6 @@
         function abrirModalPerfil() {
             document.getElementById('perfilEmail').value = tenantActual['Correo electrónico'] || '';
             document.getElementById('perfilRazonSocial').value = tenantActual.razon_social || '';
-            document.getElementById('passActual').value = '';
-            document.getElementById('passNueva').value = '';
             document.getElementById('modalPerfilUsuario').classList.remove('hidden');
         }
 
@@ -807,14 +810,9 @@
 
         async function guardarCambiosPerfil() {
             const nuevaRazon = document.getElementById('perfilRazonSocial').value.trim();
-            const passNueva = document.getElementById('passNueva').value;
             if (!nuevaRazon) { alert('La razón social no puede estar vacía.'); return; }
             try {
                 let updatePayload = { razon_social: nuevaRazon };
-                if (passNueva) {
-                    if (passNueva.length < 8) { alert('Mínimo 8 caracteres para la contraseña.'); return; }
-                    updatePayload.password = passNueva;
-                }
                 const { error } = await supabaseClient.from('Inquilinos').update(updatePayload).eq('id', tenantActual.id);
                 if (error) throw error;
                 tenantActual.razon_social = nuevaRazon;
@@ -850,7 +848,7 @@
             });
         }
 
-        // --- GESTIÓN MAESTRA DE INQUILINOS (TABLA Inquilinos) ---
+        // --- GESTIÓN MAESTRA DE INQUILINOS ---
         async function cargarInquilinosMaster() {
             if (!supabaseClient) return;
             const { data } = await supabaseClient.from('Inquilinos').select('*').order('created_at', { ascending: false });
@@ -877,7 +875,6 @@
             document.getElementById('masterRif').value = '';
             document.getElementById('masterRazonSocial').value = '';
             document.getElementById('masterEmail').value = '';
-            document.getElementById('masterPassword').value = '';
             document.getElementById('masterPlan').value = 'Freemium';
             document.getElementById('tituloTenantModal').innerText = '🏢 Registrar Nuevo Inquilino';
             document.getElementById('modalTenantMaster').classList.remove('hidden');
@@ -888,7 +885,6 @@
             document.getElementById('masterRif').value = rif;
             document.getElementById('masterRazonSocial').value = razon;
             document.getElementById('masterEmail').value = email;
-            document.getElementById('masterPassword').value = '';
             document.getElementById('masterPlan').value = plan;
             document.getElementById('tituloTenantModal').innerText = '⚙️ Configurar Inquilino';
             document.getElementById('modalTenantMaster').classList.remove('hidden');
@@ -901,18 +897,15 @@
             const rif = document.getElementById('masterRif').value.trim();
             const razon_social = document.getElementById('masterRazonSocial').value.trim();
             const email = document.getElementById('masterEmail').value.trim();
-            const password = document.getElementById('masterPassword').value.trim();
             const plan_activo = document.getElementById('masterPlan').value;
 
             if (!rif || !razon_social || !email) { alert('Complete RIF, Razón Social y Correo.'); return; }
             try {
                 let payload = { Rif: rif, razon_social, 'Correo electrónico': email, plan_activo };
-                if (password) payload.password = password;
 
                 if (id) {
                     await supabaseClient.from('Inquilinos').update(payload).eq('id', id);
                 } else {
-                    if (!password) { alert('Debe asignar una contraseña inicial.'); return; }
                     await supabaseClient.from('Inquilinos').insert([payload]);
                 }
 
