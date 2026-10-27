@@ -225,7 +225,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-900/40 p-4 rounded-xl border border-slate-700/50">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1">Buscar por Nro Documento o Cliente</label>
-                    <input type="text" id="filtroTexto" placeholder="Ej. FAC-5142 o V-12080468" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs" oninput="filtrarHistorial()">
+                    <input type="text" id="filtroTexto" placeholder="Ej. FAC-0001 o V-12080468" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white text-xs" oninput="filtrarHistorial()">
                 </div>
                 <div>
                     <label class="block text-xs text-slate-400 mb-1">Filtrar por Tipo</label>
@@ -1290,6 +1290,34 @@
             }
         }
 
+        // --- GENERACIÓN CONSECUTIVA AUTOMÁTICA ---
+        async function obtenerSiguienteCorrelativo() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('invoices')
+                    .select('factura_nro')
+                    .eq('tenant_id', tenantActual.id)
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                if (error || !data || data.length === 0) {
+                    return { facturaNro: 'FAC-0001', nroControl: '00-000001' };
+                }
+
+                const ultimaFactura = data[0].factura_nro; // Ej: "FAC-0005"
+                const numeroActual = parseInt(ultimaFactura.replace('FAC-', '')) || 0;
+                const siguienteNum = numeroActual + 1;
+
+                const facturaNroFormatted = 'FAC-' + String(siguienteNum).padStart(4, '0');
+                const nroControlFormatted = '00-' + String(siguienteNum).padStart(6, '0');
+
+                return { facturaNro: facturaNroFormatted, nroControl: nroControlFormatted };
+            } catch (e) {
+                const rand = Math.floor(1000 + Math.random() * 9000);
+                return { facturaNro: 'FAC-' + rand, nroControl: '00-' + Math.floor(100000 + Math.random() * 900000) };
+            }
+        }
+
         async function emitirFactura() {
             if (carritoItems.length === 0) { alert('Agregue ítems.'); return; }
             const rifCliente = document.getElementById('clienteRif').value.trim();
@@ -1313,8 +1341,11 @@
             const subtotalBs = baseGravadaBs + montoExentoBs + ivaBs;
             const igtfBs = aplicaIgtf ? subtotalBs * 0.03 : 0;
             const totalBs = subtotalBs + igtfBs;
-            const facturaNro = 'FAC-' + Math.floor(1000 + Math.random() * 9000);
-            const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
+
+            // Obtener correlativo consecutivo automático
+            const correlativo = await obtenerSiguienteCorrelativo();
+            const facturaNro = correlativo.facturaNro;
+            const nroControl = correlativo.nroControl;
 
             const facturaObjeto = {
                 tenant_id: tenantActual.id,
@@ -1361,7 +1392,7 @@
                         await supabaseClient.from('productos').update({ stock: Math.max(0, stockActual - item.cantidad) }).eq('id', item.productoId);
                     }
                 }
-                alert(`¡Factura ${facturaNro} emitida con éxito!`);
+                alert(`¡Factura ${facturaNro} emitida con éxito (Consecutivo automático)!`);
             } catch (err) {
                 let cola = JSON.parse(localStorage.getItem('facturas_offline') || '[]');
                 cola.push(facturaObjeto);
