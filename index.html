@@ -50,7 +50,7 @@
                 Punto de Venta (POS)
             </button>
             <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                Historial Facturas
+                Historial Comprobantes
             </button>
             <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 📊 Reporte Z y Arqueo
@@ -166,7 +166,7 @@
             </button>
         </div>
 
-        <!-- SECCIÓN 2: HISTORIAL Y NOTAS -->
+        <!-- SECCIÓN 2: HISTORIAL Y NOTAS UNIFICADAS -->
         <div id="seccionHistorial" class="hidden space-y-6">
             <div class="flex justify-between items-center">
                 <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">Comprobantes Fiscales y Notas (Crédito / Débito)</h3>
@@ -176,10 +176,10 @@
                 <table class="w-full text-left text-xs text-slate-300">
                     <thead class="bg-slate-900 text-slate-400 uppercase">
                         <tr>
-                            <th class="p-2.5">Factura Nro</th>
+                            <th class="p-2.5">Documento</th>
                             <th class="p-2.5">Nro Control</th>
                             <th class="p-2.5">Cliente</th>
-                            <th class="p-2.5">Método Pago</th>
+                            <th class="p-2.5">Método / Motivo</th>
                             <th class="p-2.5">Fecha</th>
                             <th class="p-2.5">Total Bs.</th>
                             <th class="p-2.5 text-center">Acciones Fiscales</th>
@@ -357,14 +357,14 @@
         </div>
     </div>
 
-    <!-- MODAL TICKET FACTURA -->
+    <!-- MODAL TICKET / COMPROBANTE UNIFICADO -->
     <div id="modalTicket" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-white text-slate-900 w-full max-w-md rounded-xl p-6 shadow-2xl relative font-mono text-xs space-y-3 max-h-[90vh] overflow-y-auto">
             <div class="text-center border-b border-dashed border-slate-400 pb-3 space-y-1">
                 <h2 class="font-bold text-sm" id="ticketComercioNombre">COMERCIO DE PRUEBA C.A.</h2>
                 <p id="ticketComercioRif">RIF: J-12345678-9</p>
-                <p class="font-bold text-emerald-700 mt-1">FACTURA FISCAL DIGITAL</p>
-                <p class="text-[9px] text-slate-600">Providencia Administrativa SNAT/2024/102</p>
+                <p class="font-bold text-emerald-700 mt-1" id="ticketTipoTitulo">FACTURA FISCAL DIGITAL</p>
+                <p class="text-[9px] text-slate-600">Providencia Administrativa SENIAT SNAT/2024/102</p>
             </div>
 
             <div class="space-y-1 border-b border-dashed border-slate-400 pb-3 text-[11px]">
@@ -375,11 +375,11 @@
             </div>
 
             <div class="border-b border-dashed border-slate-400 pb-3 space-y-1">
-                <div class="font-bold mb-1 text-[11px]">DETALLE DE ÍTEMS / MATERIALES</div>
+                <div class="font-bold mb-1 text-[11px]" id="ticketSeccionDetalleTitulo">DETALLE DE ÍTEMS / MATERIALES</div>
                 <div id="ticketItemsContainer" class="space-y-1"></div>
             </div>
 
-            <div class="border-b border-dashed border-slate-400 pb-2 space-y-1 text-[11px]">
+            <div id="bloqueTotalesFactura" class="border-b border-dashed border-slate-400 pb-2 space-y-1 text-[11px]">
                 <div class="flex justify-between"><span>Base Imponible Gravada:</span><span id="ticketBaseGravada">Bs. 0,00</span></div>
                 <div class="flex justify-between"><span>Monto Exento:</span><span id="ticketExento">Bs. 0,00</span></div>
                 <div class="flex justify-between font-bold"><span>IVA (16%):</span><span id="ticketIva">Bs. 0,00</span></div>
@@ -387,7 +387,7 @@
             </div>
 
             <div class="flex justify-between font-bold text-sm border-t border-slate-900 pt-2">
-                <span>TOTAL A PAGAR:</span>
+                <span id="ticketLabelTotal">TOTAL A PAGAR:</span>
                 <span id="ticketTotal">Bs. 0,00</span>
             </div>
 
@@ -397,7 +397,7 @@
             </div>
 
             <div class="flex space-x-2 pt-2">
-                <button onclick="window.print()" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2 rounded font-sans font-semibold cursor-pointer">🖨️ Imprimir Ticket</button>
+                <button onclick="window.print()" class="w-full bg-slate-900 hover:bg-slate-800 text-white py-2 rounded font-sans font-semibold cursor-pointer">🖨️ Imprimir Comprobante</button>
                 <button onclick="cerrarTicket()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 py-2 rounded font-sans font-semibold cursor-pointer">Cerrar</button>
             </div>
         </div>
@@ -900,7 +900,6 @@
 
                 await supabaseClient.from('invoice_items').insert(itemsParaInsertar);
 
-                // Descontar Stock en Supabase
                 for (const item of carritoItems) {
                     const prodOriginal = productosCache.find(p => p.id === item.productoId);
                     if (prodOriginal) {
@@ -937,7 +936,7 @@
             if (facturaItemsParaNC.length === 0) {
                 htmlItems = '<p class="text-slate-500">No hay ítems en esta factura.</p>';
             } else {
-                facturaItemsParaNC.forEach((item, idx) => {
+                facturaItemsParaNC.forEach((item) => {
                     const subBs = item.subtotal_usd * inv.tasa_bcv;
                     htmlItems += `
                         <div class="flex justify-between items-center border-b border-slate-800 pb-1">
@@ -1128,84 +1127,168 @@
             document.getElementById('zTotalVentas').innerText = 'Bs. ' + totalVentas.toLocaleString('es-VE', {minimumFractionDigits: 2});
         }
 
+        // --- CARGAR HISTORIAL UNIFICADO (FACTURAS, NC Y ND) ---
         async function cargarHistorial() {
             if (!supabaseClient || !tenantActual) return;
-            const { data } = await supabaseClient
-                .from('invoices')
-                .select('*')
-                .eq('tenant_id', tenantActual.id)
-                .order('created_at', { ascending: false });
+
+            const { data: facturas } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
+            const { data: notasCredito } = await supabaseClient.from('notas_credito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
+            const { data: notasDebito } = await supabaseClient.from('notas_debito').select('*, invoices(cliente_nombre, cliente_rif)').eq('tenant_id', tenantActual.id);
 
             const tbody = document.getElementById('tablaHistorial');
             tbody.innerHTML = '';
-            if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No hay facturas registradas.</td></tr>`;
+
+            let documentos = [];
+
+            if (facturas) {
+                facturas.forEach(f => documentos.push({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
+            }
+            if (notasCredito) {
+                notasCredito.forEach(nc => documentos.push({
+                    ...nc, 
+                    tipoDoc: 'NOTA CREDITO', 
+                    numero: nc.nota_nro, 
+                    cliente_nombre: nc.invoices?.cliente_nombre || 'Cliente',
+                    cliente_rif: nc.invoices?.cliente_rif || 'V-000'
+                }));
+            }
+            if (notasDebito) {
+                notasDebito.forEach(nd => documentos.push({
+                    ...nd, 
+                    tipoDoc: 'NOTA DEBITO', 
+                    numero: nd.nota_nro, 
+                    cliente_nombre: nd.invoices?.cliente_nombre || 'Cliente',
+                    cliente_rif: nd.invoices?.cliente_rif || 'V-000'
+                }));
+            }
+
+            documentos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            if (documentos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No hay comprobantes registrados.</td></tr>`;
                 return;
             }
 
-            data.forEach(inv => {
-                const fecha = new Date(inv.created_at).toLocaleString();
-                const clienteStr = inv.cliente_nombre ? `${inv.cliente_nombre} (${inv.cliente_rif})` : 'Consumidor Final';
-                const metodoStr = inv.metodo_pago || 'EFECTIVO DIVISAS';
+            documentos.forEach(doc => {
+                const fecha = new Date(doc.created_at).toLocaleString();
+                const clienteStr = doc.cliente_nombre ? `${doc.cliente_nombre} (${doc.cliente_rif})` : 'Consumidor Final';
+                
+                let badgeColor = 'text-emerald-400 bg-emerald-900/30 border-emerald-700/50';
+                if (doc.tipoDoc === 'NOTA CREDITO') badgeColor = 'text-amber-400 bg-amber-900/30 border-amber-700/50';
+                if (doc.tipoDoc === 'NOTA DEBITO') badgeColor = 'text-sky-400 bg-sky-900/30 border-sky-700/50';
+
+                let infoExtra = doc.metodo_pago || doc.motivo || 'N/A';
+
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-800/50">
-                        <td class="p-2.5 font-semibold text-emerald-400">${inv.factura_nro}</td>
-                        <td class="p-2.5 font-mono text-slate-300">${inv.nro_control}</td>
+                        <td class="p-2.5 font-semibold">
+                            <span class="px-2 py-0.5 rounded text-[10px] border ${badgeColor}">${doc.tipoDoc}</span><br>
+                            <span class="text-white mt-1 inline-block">${doc.numero}</span>
+                        </td>
+                        <td class="p-2.5 font-mono text-slate-300">${doc.nro_control}</td>
                         <td class="p-2.5 text-slate-300">${clienteStr}</td>
-                        <td class="p-2.5 text-slate-300 font-mono text-[11px]">${metodoStr}</td>
+                        <td class="p-2.5 text-slate-300 font-mono text-[11px]">${infoExtra}</td>
                         <td class="p-2.5 text-slate-400">${fecha}</td>
-                        <td class="p-2.5 font-mono text-white">Bs. ${inv.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</td>
+                        <td class="p-2.5 font-mono text-white">Bs. ${doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</td>
                         <td class="p-2.5 text-center space-x-1">
-                            <button onclick='verTicket(${JSON.stringify(inv)})' class="bg-slate-700 hover:bg-slate-600 text-emerald-300 px-2 py-1 rounded text-xs cursor-pointer">Ticket</button>
-                            <button onclick='abrirModalNotaCredito(${JSON.stringify(inv)})' class="bg-amber-900/50 hover:bg-amber-900 text-amber-300 border border-amber-700/50 px-2 py-1 rounded text-xs cursor-pointer">NC</button>
-                            <button onclick='abrirModalNotaDebito(${JSON.stringify(inv)})' class="bg-sky-900/50 hover:bg-sky-900 text-sky-300 border border-sky-700/50 px-2 py-1 rounded text-xs cursor-pointer">ND</button>
+                            <button onclick='verComprobanteUnificado(${JSON.stringify(doc)})' class="bg-slate-700 hover:bg-slate-600 text-slate-200 px-3 py-1 rounded text-xs cursor-pointer">Ver / Imprimir</button>
+                            ${doc.tipoDoc === 'FACTURA' ? `
+                                <button onclick='abrirModalNotaCredito(${JSON.stringify(doc)})' class="bg-amber-900/50 hover:bg-amber-900 text-amber-300 border border-amber-700/50 px-2 py-1 rounded text-xs cursor-pointer">NC</button>
+                                <button onclick='abrirModalNotaDebito(${JSON.stringify(doc)})' class="bg-sky-900/50 hover:bg-sky-900 text-sky-300 border border-sky-700/50 px-2 py-1 rounded text-xs cursor-pointer">ND</button>
+                            ` : ''}
                         </td>
                     </tr>
                 `;
             });
         }
 
-        async function verTicket(inv) {
+        async function verComprobanteUnificado(doc) {
             document.getElementById('ticketComercioNombre').innerText = tenantActual.razon_social;
             document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif}`;
-            document.getElementById('ticketNro').innerText = 'Factura: ' + inv.factura_nro;
-            document.getElementById('ticketControl').innerText = 'Nro Control: ' + inv.nro_control;
-            const fechaHora = new Date(inv.created_at);
+            const fechaHora = new Date(doc.created_at);
             document.getElementById('ticketFecha').innerText = 'Fecha/Hora: ' + fechaHora.toLocaleDateString() + ' ' + fechaHora.toLocaleTimeString();
-            document.getElementById('ticketTasa').innerText = inv.tasa_bcv.toFixed(4);
-            document.getElementById('ticketCliente').innerText = `Cliente: ${inv.cliente_nombre} | RIF: ${inv.cliente_rif}`;
-            document.getElementById('ticketMetodoPago').innerText = `Método de Pago: ${inv.metodo_pago || 'EFECTIVO DIVISAS'}`;
+            document.getElementById('ticketTasa').innerText = doc.tasa_bcv.toFixed(4);
+            document.getElementById('ticketCliente').innerText = `Cliente: ${doc.cliente_nombre || 'Consumidor Final'} | RIF: ${doc.cliente_rif || 'V-000'}`;
 
-            const { data: items } = await supabaseClient.from('invoice_items').select('*').eq('invoice_id', inv.id);
+            const tituloTipo = document.getElementById('ticketTipoTitulo');
+            const nroDocElem = document.getElementById('ticketNro');
+            const controlElem = document.getElementById('ticketControl');
+            const metodoElem = document.getElementById('ticketMetodoPago');
+            const itemsContainer = document.getElementById('ticketItemsContainer');
+            const bloqueTotales = document.getElementById('bloqueTotalesFactura');
 
-            let itemsHtml = '';
-            let baseGravadaCalculadaBs = 0, montoExentoCalculadoBs = 0;
+            if (doc.tipoDoc === 'FACTURA') {
+                tituloTipo.innerText = 'FACTURA FISCAL DIGITAL';
+                tituloTipo.className = 'font-bold text-emerald-700 mt-1';
+                nroDocElem.innerText = 'Factura: ' + doc.factura_nro;
+                controlElem.innerText = 'Nro Control: ' + doc.nro_control;
+                metodoElem.innerText = 'Método de Pago: ' + (doc.metodo_pago || 'EFECTIVO DIVISAS');
+                bloqueTotales.classList.remove('hidden');
 
-            if (items) {
-                items.forEach(item => {
-                    const subUsd = item.subtotal_usd;
-                    const subBs = subUsd * inv.tasa_bcv;
-                    if (item.es_exento) montoExentoCalculadoBs += subBs;
-                    else baseGravadaCalculadaBs += subBs;
+                const { data: items } = await supabaseClient.from('invoice_items').select('*').eq('invoice_id', doc.id);
+                let itemsHtml = '';
+                let baseGravadaCalculadaBs = 0, montoExentoCalculadoBs = 0;
 
-                    itemsHtml += `
-                        <div class="border-b border-dotted border-slate-300 pb-1 mb-1">
-                            <div class="font-bold">${item.descripcion}</div>
-                            <div class="flex justify-between text-[10px] text-slate-600">
-                                <span>${item.cantidad} x $ ${item.precio_unitario_usd.toFixed(2)} (${item.es_exento ? 'EXENTO' : 'GRAVADO 16%'})</span>
-                                <span class="font-mono font-bold">$ ${subUsd.toFixed(2)} (Bs. ${subBs.toLocaleString('es-VE', {minimumFractionDigits: 2})})</span>
+                if (items) {
+                    items.forEach(item => {
+                        const subUsd = item.subtotal_usd;
+                        const subBs = subUsd * doc.tasa_bcv;
+                        if (item.es_exento) montoExentoCalculadoBs += subBs;
+                        else baseGravadaCalculadaBs += subBs;
+
+                        itemsHtml += `
+                            <div class="border-b border-dotted border-slate-300 pb-1 mb-1">
+                                <div class="font-bold">${item.descripcion}</div>
+                                <div class="flex justify-between text-[10px] text-slate-600">
+                                    <span>${item.cantidad} x $ ${item.precio_unitario_usd.toFixed(2)}</span>
+                                    <span class="font-mono font-bold">$ ${subUsd.toFixed(2)} (Bs. ${subBs.toLocaleString('es-VE', {minimumFractionDigits: 2})})</span>
+                                </div>
                             </div>
-                        </div>
-                    `;
-                });
-            }
+                        `;
+                    });
+                }
+                itemsContainer.innerHTML = itemsHtml;
+                document.getElementById('ticketBaseGravada').innerText = 'Bs. ' + baseGravadaCalculadaBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+                document.getElementById('ticketExento').innerText = 'Bs. ' + montoExentoCalculadoBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+                document.getElementById('ticketIva').innerText = 'Bs. ' + doc.iva_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+                document.getElementById('ticketIgtf').innerText = 'Bs. ' + doc.igtf_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+                document.getElementById('ticketTotal').innerText = 'Bs. ' + doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+                document.getElementById('ticketLabelTotal').innerText = 'TOTAL A PAGAR:';
 
-            document.getElementById('ticketItemsContainer').innerHTML = itemsHtml;
-            document.getElementById('ticketBaseGravada').innerText = 'Bs. ' + baseGravadaCalculadaBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
-            document.getElementById('ticketExento').innerText = 'Bs. ' + montoExentoCalculadoBs.toLocaleString('es-VE', {minimumFractionDigits: 2});
-            document.getElementById('ticketIva').innerText = 'Bs. ' + inv.iva_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
-            document.getElementById('ticketIgtf').innerText = 'Bs. ' + inv.igtf_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
-            document.getElementById('ticketTotal').innerText = 'Bs. ' + inv.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            } else if (doc.tipoDoc === 'NOTA CREDITO') {
+                tituloTipo.innerText = 'NOTA DE CRÉDITO FISCAL';
+                tituloTipo.className = 'font-bold text-amber-700 mt-1';
+                nroDocElem.innerText = 'Nota Crédito: ' + doc.nota_nro;
+                controlElem.innerText = 'Nro Control: ' + doc.nro_control;
+                metodoElem.innerText = 'Motivo: ' + doc.motivo;
+                bloqueTotales.classList.add('hidden');
+
+                itemsContainer.innerHTML = `
+                    <div class="p-2 bg-amber-50 rounded border border-amber-200 text-amber-900 space-y-1">
+                        <p class="font-bold">Documento de Ajuste (Devolución)</p>
+                        <p>Monto Total Reintegrado: <span class="font-bold font-mono">Bs. ${doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</span></p>
+                    </div>
+                `;
+                document.getElementById('ticketTotal').innerText = 'Bs. ' + doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+                document.getElementById('ticketLabelTotal').innerText = 'TOTAL NOTA CRÉDITO:';
+
+            } else if (doc.tipoDoc === 'NOTA DEBITO') {
+                tituloTipo.innerText = 'NOTA DE DÉBITO FISCAL';
+                tituloTipo.className = 'font-bold text-sky-700 mt-1';
+                nroDocElem.innerText = 'Nota Débito: ' + doc.nota_nro;
+                controlElem.innerText = 'Nro Control: ' + doc.nro_control;
+                metodoElem.innerText = 'Motivo: ' + doc.motivo;
+                bloqueTotales.classList.add('hidden');
+
+                itemsContainer.innerHTML = `
+                    <div class="p-2 bg-sky-50 rounded border border-sky-200 text-sky-900 space-y-1">
+                        <p class="font-bold">Documento de Ajuste (Recargo)</p>
+                        <p>Monto Total Incremento: <span class="font-bold font-mono">Bs. ${doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2})}</span></p>
+                    </div>
+                `;
+                document.getElementById('ticketTotal').innerText = 'Bs. ' + doc.total_bs.toLocaleString('es-VE', {minimumFractionDigits: 2});
+                document.getElementById('ticketLabelTotal').innerText = 'TOTAL NOTA DÉBITO:';
+            }
 
             document.getElementById('modalTicket').classList.remove('hidden');
         }
