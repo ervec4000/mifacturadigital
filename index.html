@@ -1425,7 +1425,6 @@
 
             const tasa = doc.tasa_bcv || 1;
             
-            // Consultar ítems reales de la factura para separar Base Gravada y Exento con precisión quirúrgica
             const { data: items } = await supabaseClient.from('invoice_items').select('*').eq('invoice_id', doc.id);
             let baseGravadaUsd = 0;
             let montoExentoUsd = 0;
@@ -1475,7 +1474,7 @@
         async function imprimirBluetoothReal() { alert('Impresión térmica BT'); }
         function enviarWhatsApp() { window.open(`https://wa.me/?text=Comprobante`, '_blank'); }
 
-        // Módulos complementarios de Inventario Físico, Etiquetas QR y CxC
+        // Módulos complementarios de Inventario Físico, Etiquetas QR (CON RENDERIZADO REAL) y CxC
         async function cargarInventarioFisico() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             inventarioFisicoCache = data || [];
@@ -1529,13 +1528,13 @@
             if (!data || data.length === 0) { container.innerHTML = '<p class="text-slate-500">Sin artículos.</p>'; return; }
             data.forEach((p, idx) => {
                 container.innerHTML += `
-                    <div class="bg-white text-slate-900 p-4 rounded-xl border border-slate-300 flex items-center justify-between font-mono text-xs">
+                    <div class="bg-white text-slate-900 p-4 rounded-xl border border-slate-300 flex items-center justify-between font-mono text-xs shadow">
                         <div>
-                            <p class="font-bold">${p.codigo_sku||'SKU'}</p>
-                            <p class="text-sm font-bold text-slate-800">${p.descripcion}</p>
-                            <p class="text-[10px] text-slate-600">Ubicación: ${p.ubicacion||'DEP'} | Lote: ${p.lote||'N/A'}</p>
+                            <p class="font-bold text-emerald-700">${p.codigo_sku||'SKU'}</p>
+                            <p class="text-sm font-bold text-slate-900">${p.descripcion}</p>
+                            <p class="text-[10px] text-slate-600 mt-1">Ubicación: ${p.ubicacion||'DEP'} | Lote: ${p.lote||'N/A'}</p>
                         </div>
-                        <div id="qr_box_${idx}" class="w-20 h-20 bg-slate-100 flex items-center justify-center border">QR</div>
+                        <div id="qr_box_${idx}" class="w-20 h-20 bg-slate-50 flex items-center justify-center border border-slate-200 rounded"></div>
                     </div>
                 `;
             });
@@ -1543,7 +1542,14 @@
                 const box = document.getElementById(`qr_box_${idx}`);
                 box.innerHTML = '';
                 try {
-                    new QRCode(box, { text: `SKU:${p.codigo_sku}|DESC:${p.descripcion}|LOTE:${p.lote||'N/A'}`, width: 75, height: 75 });
+                    new QRCode(box, { 
+                        text: `SKU:${p.codigo_sku}|DESC:${p.descripcion}|LOTE:${p.lote||'N/A'}|UBI:${p.ubicacion||'DEP'}`, 
+                        width: 72, 
+                        height: 72,
+                        colorDark : "#0f172a",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.M
+                    });
                 } catch(e) { box.innerText = 'QR Code'; }
             });
         }
