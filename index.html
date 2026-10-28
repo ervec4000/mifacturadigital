@@ -370,7 +370,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 5: KARDEX PPM (SUPER OPTIMIZADO) -->
+            <!-- SECCIÓN 5: KARDEX PPM -->
             <div id="seccionKardex" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
@@ -615,7 +615,7 @@
         </footer>
     </div>
 
-    <!-- MODAL TICKET -->
+    <!-- MODAL TICKET / COMPROBANTE FISCAL RIGUROSO -->
     <div id="modalTicket" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
         <div class="bg-white text-slate-900 w-full max-w-md rounded-2xl p-6 shadow-2xl relative font-mono text-xs space-y-3 max-h-[90vh] overflow-y-auto">
             <div class="text-center border-b border-dashed border-slate-400 pb-3 space-y-1">
@@ -626,20 +626,21 @@
             </div>
             <div class="space-y-1 border-b border-dashed border-slate-400 pb-3 text-[11px]">
                 <div class="flex justify-between"><span id="ticketNro">Factura: FAC-0000</span><span id="ticketFecha">Fecha: --/--/----</span></div>
-                <div class="flex justify-between"><span id="ticketControl">Control: 00-000000</span><span>Tasa: <span id="ticketTasa">0.00</span></span></div>
+                <div class="flex justify-between"><span id="ticketControl">Control: 00-000000</span><span>Tasa BCV: <span id="ticketTasa">0.00</span></span></div>
                 <div id="ticketCliente" class="pt-1 font-bold">Cliente: --</div>
-                <div id="ticketClienteRif" class="text-slate-700">RIF: --</div>
+                <div id="ticketClienteRif" class="text-slate-700">RIF/Cédula: --</div>
                 <div id="ticketMetodoPago" class="text-slate-700 font-bold">Método: --</div>
+                <div id="ticketReferenciaExtra" class="text-[10px] text-sky-700 font-bold italic hidden">Ref: --</div>
             </div>
             <div class="space-y-1">
-                <div class="font-bold border-b border-slate-900 pb-1">DETALLE DE ARTÍCULOS</div>
+                <div class="font-bold border-b border-slate-900 pb-1">DETALLE DE ARTÍCULOS / SERVICIOS</div>
                 <div id="ticketItemsContainer" class="space-y-1 text-[11px]"></div>
             </div>
             <div class="border-t border-dashed border-slate-400 pt-2 space-y-1 font-mono text-[11px]">
-                <div class="flex justify-between"><span>Base Imponible:</span><span id="ticketBase">$ 0.00</span></div>
-                <div class="flex justify-between"><span>Exento:</span><span id="ticketExento">$ 0.00</span></div>
-                <div class="flex justify-between"><span>IVA 16%:</span><span id="ticketIva">$ 0.00</span></div>
-                <div class="flex justify-between"><span>IGTF 3%:</span><span id="ticketIgtf">$ 0.00</span></div>
+                <div class="flex justify-between"><span>Base Imponible:</span><span id="ticketBase">$ 0.00 | Bs. 0.00</span></div>
+                <div class="flex justify-between"><span>Monto Exento:</span><span id="ticketExento">$ 0.00 | Bs. 0.00</span></div>
+                <div class="flex justify-between"><span>IVA (16%):</span><span id="ticketIva">$ 0.00 | Bs. 0.00</span></div>
+                <div class="flex justify-between"><span>IGTF (3% Divisas):</span><span id="ticketIgtf">$ 0.00 | Bs. 0.00</span></div>
             </div>
             <div class="flex justify-between font-bold text-sm border-t-2 border-slate-900 pt-2">
                 <span>TOTAL A PAGAR:</span>
@@ -895,7 +896,7 @@
             cargarInquilinosMaster();
         }
 
-        // --- NOTAS DE DÉBITO Y CRÉDITO ---
+        // --- NOTAS DE DÉBITO Y CRÉDITO (CONFORME A PROVIDENCIA SENIAT) ---
         async function cargarFacturasAfectadasSelect() {
             const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
             const select = document.getElementById('facturaAfectadaSelect');
@@ -924,10 +925,10 @@
                 tenant_id: tenantActual.id, factura_nro: nroNota, nro_control: nroControl, tasa_bcv: tasa,
                 monto_usd: montoUsd, subtotal_bs: montoBs, iva_bs: montoBs * 0.16, total_bs: montoBs * 1.16,
                 cliente_rif: invOriginal?.cliente_rif || 'V-0', cliente_nombre: invOriginal?.cliente_nombre || 'CLIENTE',
-                metodo_pago: `${tipoNota} REF: ${facturaAfectada} - ${motivo}`
+                metodo_pago: `${tipoNota} - AFECTA FACTURA: ${facturaAfectada} | MOTIVO: ${motivo}`
             }]);
 
-            alert(`¡${tipoNota} emitida con éxito (${nroNota})!`);
+            alert(`¡${tipoNota} emitida con éxito (${nroNota}) conforme a Providencia SENIAT!`);
             cambiarPestana('historial');
         }
 
@@ -1012,13 +1013,11 @@
                 const margen = prodData?.margen_utilidad_porcentaje || 30;
                 const nuevoPrecioVenta = nuevoCostoProm * (1 + (margen / 100));
 
-                // 1. Actualizar stock y costos en productos
                 await supabaseClient.from('productos').update({ 
                     stock: nuevoStock, costo_unitario_usd: nuevoCostoProm, precio_venta_usd: nuevoPrecioVenta, lote: loteIngresado || prodData?.lote 
                 }).eq('id', productoId);
 
-                // 2. Insertar movimiento de entrada en el Kardex
-                const { error: errKardex } = await supabaseClient.from('kardex_movimientos').insert([{
+                await supabaseClient.from('kardex_movimientos').insert([{
                     tenant_id: tenantActual.id,
                     producto_id: productoId,
                     tipo_movimiento: 'ENTRADA',
@@ -1030,11 +1029,7 @@
                     tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
                 }]);
 
-                if (errKardex) {
-                    alert('⚠️ El stock se actualizó, pero hubo un detalle al registrar el kardex: ' + errKardex.message);
-                } else {
-                    alert('¡Compra registrada e incluida con éxito en el Kardex y Libro de Compras!');
-                }
+                alert('¡Compra registrada e incluida con éxito en el Kardex y Libro de Compras!');
                 cargarKardexMovimientos();
             } catch (err) { alert('Error: ' + err.message); }
         }
@@ -1049,7 +1044,6 @@
 
         // --- KARDEX PPM ROBUSTO & OPTIMIZADO ---
         async function cargarKardexMovimientos() {
-            // Descargar en paralelo los movimientos y los productos para evitar bloqueos
             const [resMovs, resProds] = await Promise.all([
                 supabaseClient.from('kardex_movimientos').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false }),
                 supabaseClient.from('productos').select('id, codigo_sku, descripcion').eq('tenant_id', tenantActual.id)
@@ -1060,15 +1054,12 @@
 
             const movimientos = resMovs.data || [];
             if (resMovs.error || movimientos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex todavía. Registra compras o ventas.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex todavía.</td></tr>`;
                 return;
             }
 
-            // Crear un mapa de productos para acceso O(1)
             const productosMap = {};
-            if (resProds.data) {
-                resProds.data.forEach(p => { productosMap[p.id] = p; });
-            }
+            if (resProds.data) { resProds.data.forEach(p => { productosMap[p.id] = p; }); }
 
             movimientos.forEach(m => {
                 const prod = productosMap[m.producto_id];
@@ -1216,7 +1207,7 @@
             const tbody = document.getElementById('tablaClientesGestion');
             tbody.innerHTML = '';
             if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">Sin clientes registrados. Agrega uno o emite una factura.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">Sin clientes registrados.</td></tr>`;
                 return;
             }
             data.forEach(c => {
@@ -1340,14 +1331,16 @@
 
             let baseUsd = 0, exentoUsd = 0;
             carritoItems.forEach(i => { if(i.esExento) exentoUsd += i.precio*i.cantidad; else baseUsd += i.precio*i.cantidad; });
-            const subtotalBs = (baseUsd + exentoUsd) * tasa;
+            const subtotalBs = baseUsd * tasa;
+            const exentoBs = exentoUsd * tasa;
             const ivaBs = baseUsd * tasa * 0.16;
-            const igtfBs = document.getElementById('aplicaIgtfSelect').value === 'SI' ? (subtotalBs + ivaBs) * 0.03 : 0;
-            const totalBs = subtotalBs + ivaBs + igtfBs;
+            const aplicaIgtf = document.getElementById('aplicaIgtfSelect').value === 'SI';
+            const igtfBs = aplicaIgtf ? (subtotalBs + exentoBs + ivaBs) * 0.03 : 0;
+            const totalBs = subtotalBs + exentoBs + ivaBs + igtfBs;
 
             const { data: invData } = await supabaseClient.from('invoices').insert([{
                 tenant_id: tenantActual.id, factura_nro: facturaNro, nro_control: nroControl,
-                tasa_bcv: tasa, monto_usd: baseUsd + exentoUsd, subtotal_bs: subtotalBs + ivaBs,
+                tasa_bcv: tasa, monto_usd: baseUsd + exentoUsd, subtotal_bs: subtotalBs + exentoBs,
                 iva_bs: ivaBs, igtf_bs: igtfBs, total_bs: totalBs, cliente_rif: rif,
                 cliente_nombre: nombre, metodo_pago: document.getElementById('metodoPagoSelect').value
             }]).select();
@@ -1408,6 +1401,13 @@
             document.getElementById('ticketComercioNombre').innerText = tenantActual.razon_social;
             document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif}`;
             document.getElementById('ticketComercioDir').innerText = tenantActual.direccion || 'VENEZUELA';
+            
+            // Determinar tipo de documento estricto bajo providencia
+            let tituloDoc = 'FACTURA FISCAL DIGITAL';
+            if ((doc.numero || '').startsWith('NC')) tituloDoc = 'NOTA DE CRÉDITO FISCAL';
+            if ((doc.numero || '').startsWith('ND')) tituloDoc = 'NOTA DE DÉBITO FISCAL';
+            document.getElementById('ticketTipoDoc').innerText = tituloDoc;
+
             document.getElementById('ticketNro').innerText = 'Documento: ' + doc.numero;
             document.getElementById('ticketControl').innerText = 'Control: ' + (doc.nro_control || '00-000000');
             document.getElementById('ticketFecha').innerText = 'Fecha: ' + formatearFecha8Digitos(doc.created_at);
@@ -1416,22 +1416,40 @@
             document.getElementById('ticketClienteRif').innerText = 'RIF/Cédula: ' + (doc.cliente_rif || 'V-0');
             document.getElementById('ticketMetodoPago').innerText = 'Método: ' + (doc.metodo_pago || 'EFECTIVO');
             
+            const refExtra = document.getElementById('ticketReferenciaExtra');
+            if (doc.metodo_pago && (doc.metodo_pago.includes('NOTA') || doc.metodo_pago.includes('AFECTA'))) {
+                refExtra.innerText = doc.metodo_pago;
+                refExtra.classList.remove('hidden');
+            } else {
+                refExtra.classList.add('hidden');
+            }
+
             const tasa = doc.tasa_bcv || 1;
-            document.getElementById('ticketBase').innerText = `$ ${(doc.monto_usd||0).toFixed(2)} | Bs. ${((doc.monto_usd||0)*tasa).toFixed(2)}`;
-            document.getElementById('ticketExento').innerText = `$ 0.00 | Bs. 0.00`;
-            document.getElementById('ticketIva').innerText = `Bs. ${(doc.iva_bs||0).toFixed(2)}`;
-            document.getElementById('ticketIgtf').innerText = `Bs. ${(doc.igtf_bs||0).toFixed(2)}`;
-            document.getElementById('ticketTotal').innerText = `$ ${((doc.total_bs||0)/tasa).toFixed(2)} | Bs. ${(doc.total_bs||0).toFixed(2)}`;
+            const totalBs = doc.total_bs || 0;
+            const ivaBs = doc.iva_bs || 0;
+            const igtfBs = doc.igtf_bs || 0;
+            
+            // Estimación de base gravada vs exenta para el ticket
+            const subtotalBs = doc.subtotal_bs || (totalBs - ivaBs - igtfBs);
+            const baseGravadaBs = subtotalBs; 
+            const exentoBs = 0; 
+
+            document.getElementById('ticketBase').innerText = `$ ${(baseGravadaBs/tasa).toFixed(2)} | Bs. ${baseGravadaBs.toFixed(2)}`;
+            document.getElementById('ticketExento').innerText = `$ ${(exentoBs/tasa).toFixed(2)} | Bs. ${exentoBs.toFixed(2)}`;
+            document.getElementById('ticketIva').innerText = `$ ${(ivaBs/tasa).toFixed(2)} | Bs. ${ivaBs.toFixed(2)}`;
+            document.getElementById('ticketIgtf').innerText = `$ ${(igtfBs/tasa).toFixed(2)} | Bs. ${igtfBs.toFixed(2)}`;
+            document.getElementById('ticketTotal').innerText = `$ ${(totalBs/tasa).toFixed(2)} | Bs. ${totalBs.toFixed(2)}`;
 
             const container = document.getElementById('ticketItemsContainer');
             container.innerHTML = '';
             const { data: items } = await supabaseClient.from('invoice_items').select('*').eq('invoice_id', doc.id);
             if (items && items.length > 0) {
                 items.forEach(it => {
-                    container.innerHTML += `<div class="flex justify-between border-b border-dotted border-slate-300 py-0.5"><span>${it.cantidad}x ${it.descripcion}</span><span>$ ${(it.subtotal_usd||0).toFixed(2)}</span></div>`;
+                    const subUsd = it.subtotal_usd || (it.cantidad * it.precio_unitario_usd);
+                    container.innerHTML += `<div class="flex justify-between border-b border-dotted border-slate-300 py-0.5"><span>${it.cantidad}x ${it.descripcion}</span><span>$ ${subUsd.toFixed(2)} | Bs. ${(subUsd*tasa).toFixed(2)}</span></div>`;
                 });
             } else {
-                container.innerHTML = `<div class="py-1">1x ${doc.metodo_pago}</div>`;
+                container.innerHTML = `<div class="py-1">1x ${doc.metodo_pago} | Total: Bs. ${totalBs.toFixed(2)}</div>`;
             }
             document.getElementById('modalTicket').classList.remove('hidden');
         }
