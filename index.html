@@ -370,7 +370,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 5: KARDEX PPM -->
+            <!-- SECCIÓN 5: KARDEX PPM (BLINDADO) -->
             <div id="seccionKardex" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
@@ -387,9 +387,9 @@
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                                 <tr>
                                     <th class="p-3">Fecha</th>
-                                    <th class="p-3">Artículo / Proveedor / Cliente</th>
+                                    <th class="p-3">Artículo / Proveedor / Documento</th>
                                     <th class="p-3">Movimiento</th>
-                                    <th class="p-3">Documento / Ref</th>
+                                    <th class="p-3">Ref</th>
                                     <th class="p-3 text-center">Inicial</th>
                                     <th class="p-3 text-center">Entradas (+)</th>
                                     <th class="p-3 text-center">Salidas (-)</th>
@@ -954,11 +954,11 @@
         async function descargarLibroComprasOficialExcel() {
             const { data: compras } = await supabaseClient.from('kardex_movimientos').select('*').eq('tenant_id', tenantActual.id).eq('tipo_movimiento', 'ENTRADA');
             const matriz = [[null, 'COMPAÑÍA:', tenantActual.razon_social], [], [null, null, null, null, 'LIBRO DE COMPRAS SENIAT']];
-            matriz.push([null, 'Oper', 'Fecha', 'RIF Prov', 'Proveedor', 'Factura', 'Total Compras', 'Base Imponible', 'IVA']);
+            matriz.push([null, 'Oper', 'Fecha', 'Proveedor / Ref', 'Total Compras', 'Base Imponible', 'IVA']);
             if (compras) {
                 compras.forEach((c, i) => {
-                    const base = (c.costo_unit_usd_in || 1) * (c.cantidad_in || 1) * (c.tasa_bcv || 1);
-                    matriz.push([null, i+1, new Date(c.created_at), c.proveedor_rif||'J-0', c.proveedor_nombre||'PROVEEDOR', c.documento_ref, base*1.16, base, base*0.16]);
+                    const base = (c.costo_promedio_usd || 1) * (c.cantidad_in || 1) * (c.tasa_bcv || 1);
+                    matriz.push([null, i+1, new Date(c.created_at), c.documento_ref, base*1.16, base, base*0.16]);
                 });
             }
             descargarExcelMatriz(matriz, 'Libro_de_Compras', 'LibroCompras');
@@ -992,7 +992,7 @@
             descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'CxC', 'CxC');
         }
 
-        // --- REGISTRO DE COMPRAS CON KARDEX ---
+        // --- REGISTRO DE COMPRAS CON KARDEX BLINDADO ---
         async function registrarCompraInventario() {
             const productoId = document.getElementById('compraProductoSelect').value;
             const cantidad = parseFloat(document.getElementById('compraCantidad').value) || 0;
@@ -1013,19 +1013,29 @@
                 const margen = prodData?.margen_utilidad_porcentaje || 30;
                 const nuevoPrecioVenta = nuevoCostoProm * (1 + (margen / 100));
 
+                // 1. Actualizar producto y stock
                 await supabaseClient.from('productos').update({ 
                     stock: nuevoStock, costo_unitario_usd: nuevoCostoProm, precio_venta_usd: nuevoPrecioVenta, lote: loteIngresado || prodData?.lote 
                 }).eq('id', productoId);
 
-                await supabaseClient.from('kardex_movimientos').insert([{
-                    tenant_id: tenantActual.id, producto_id: productoId, tipo_movimiento: 'ENTRADA',
-                    documento_ref: docRef, cantidad_in: cantidad, cantidad_out: 0, cantidad_inicial: stockActual,
-                    cantidad_ajuste: 0, costo_unit_usd_in: costo, saldo_cantidad: nuevoStock,
-                    costo_promedio_usd: nuevoCostoProm, tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1,
-                    proveedor_rif: provRif, proveedor_nombre: provNombre
+                // 2. Insertar movimiento de entrada en el Kardex usando estructura garantizada
+                const { error: errKardex } = await supabaseClient.from('kardex_movimientos').insert([{
+                    tenant_id: tenantActual.id,
+                    producto_id: productoId,
+                    tipo_movimiento: 'ENTRADA',
+                    documento_ref: `${docRef} | ${provNombre} (${provRif})`,
+                    cantidad_in: cantidad,
+                    cantidad_out: 0,
+                    saldo_cantidad: nuevoStock,
+                    costo_promedio_usd: nuevoCostoProm,
+                    tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
                 }]);
 
-                alert('¡Compra registrada e incluida en el Kardex y Libro de Compras!');
+                if (errKardex) {
+                    alert('⚠️ El stock se actualizó, pero hubo un detalle al registrar el kardex: ' + errKardex.message);
+                } else {
+                    alert('¡Compra registrada e incluida con éxito en el Kardex y Libro de Compras!');
+                }
                 cargarKardexMovimientos();
             } catch (err) { alert('Error: ' + err.message); }
         }
@@ -1038,7 +1048,7 @@
             data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} [Stock: ${p.stock||0}]</option>`; });
         }
 
-        // --- KARDEX PPM ROBUSTO (SIN FALLOS DE JOIN) ---
+        // --- KARDEX PPM ROBUSTO ---
         async function cargarKardexMovimientos() {
             const { data, error } = await supabaseClient.from('kardex_movimientos').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
             
@@ -1055,12 +1065,11 @@
                     const { data: prod } = await supabaseClient.from('productos').select('descripcion, codigo_sku').eq('id', m.producto_id).single();
                     if (prod) nombreArticulo = `${prod.codigo_sku || 'S/N'} - ${prod.descripcion}`;
                 }
-                const entidad = m.proveedor_nombre || m.proveedor_rif || 'Operación Interna';
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 text-slate-400">${formatearFecha8Digitos(m.created_at)}</td>
-                        <td class="p-3 font-mono text-emerald-400">${nombreArticulo}<br><span class="text-[10px] text-slate-400">${entidad}</span></td>
+                        <td class="p-3 font-mono text-emerald-400">${nombreArticulo}</td>
                         <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${m.tipo_movimiento==='ENTRADA'?'bg-emerald-950 text-emerald-300':'bg-rose-950 text-rose-300'}">${m.tipo_movimiento}</span></td>
                         <td class="p-3 font-mono">${m.documento_ref}</td>
                         <td class="p-3 text-center">${m.cantidad_inicial||0}</td>
@@ -1305,7 +1314,7 @@
             const diffBs = totalRecibidoBs - totalBs;
             if (diffBs >= 0) {
                 document.getElementById('vueltoBs').innerText = `Bs. ${diffBs.toFixed(2)}`;
-                document.getElementById('vueltoUsd`').innerText = `$ ${(diffBs / tasa).toFixed(2)}`;
+                document.getElementById('vueltoUsd').innerText = `$ ${(diffBs / tasa).toFixed(2)}`;
             } else {
                 document.getElementById('vueltoBs').innerText = `Bs. 0.00 (Faltan Bs. ${Math.abs(diffBs).toFixed(2)})`;
                 document.getElementById('vueltoUsd').innerText = `$ 0.00`;
@@ -1355,9 +1364,7 @@
                     await supabaseClient.from('kardex_movimientos').insert([{
                         tenant_id: tenantActual.id, producto_id: item.productoId, tipo_movimiento: 'SALIDA',
                         documento_ref: facturaNro, cantidad_in: 0, cantidad_out: item.cantidad,
-                        cantidad_inicial: stockInicial, cantidad_ajuste: 0, costo_unit_usd_in: 0,
-                        saldo_cantidad: nuevoStock, costo_promedio_usd: costoProm, tasa_bcv: tasa,
-                        proveedor_rif: rif, proveedor_nombre: nombre
+                        saldo_cantidad: nuevoStock, costo_promedio_usd: costoProm, tasa_bcv: tasa
                     }]);
                 }
             }
