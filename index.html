@@ -348,9 +348,11 @@
                                     <th class="p-3">Fecha</th>
                                     <th class="p-3">Movimiento</th>
                                     <th class="p-3">Documento</th>
-                                    <th class="p-3">Entrada (+)</th>
-                                    <th class="p-3">Salida (-)</th>
-                                    <th class="p-3">Saldo Total (=)</th>
+                                    <th class="p-3 text-center">Inicial</th>
+                                    <th class="p-3 text-center">Entradas (+)</th>
+                                    <th class="p-3 text-center">Salidas (-)</th>
+                                    <th class="p-3 text-center">Ajustes (±)</th>
+                                    <th class="p-3 text-center">Saldo Total (=)</th>
                                     <th class="p-3">Costo Prom ($)</th>
                                 </tr>
                             </thead>
@@ -909,8 +911,10 @@
                                 producto_id: prodIns[0].id,
                                 tipo_movimiento: 'SALDO INICIAL',
                                 documento_ref: 'MASIVO-' + sku,
-                                cantidad_in: stock,
+                                cantidad_in: 0,
                                 cantidad_out: 0,
+                                cantidad_inicial: stock,
+                                cantidad_ajuste: 0,
                                 costo_unit_usd_in: precio,
                                 saldo_cantidad: stock,
                                 costo_promedio_usd: precio,
@@ -979,8 +983,10 @@
                 Movimiento: m.tipo_movimiento,
                 Documento: m.documento_ref,
                 Artículo: m.productos?.descripcion || 'Artículo',
+                Inicial: m.cantidad_inicial || 0,
                 Entrada: m.cantidad_in || 0,
                 Salida: m.cantidad_out || 0,
+                Ajustes: m.cantidad_ajuste || 0,
                 'Saldo Total': m.saldo_cantidad,
                 'Costo Promedio ($)': m.costo_promedio_usd
             }));
@@ -1053,14 +1059,14 @@
                 const costo = prodData ? (prodData.precio_unitario_usd || 0) : 0;
 
                 let nuevoStock = stockActual;
-                let cantIn = 0, cantOut = 0;
+                let cantAjusteVal = 0;
 
                 if (tipo === 'AJUSTE ENTRADA') {
                     nuevoStock += cantidad;
-                    cantIn = cantidad;
+                    cantAjusteVal = cantidad; // Positivo
                 } else {
                     nuevoStock = Math.max(0, stockActual - cantidad);
-                    cantOut = cantidad;
+                    cantAjusteVal = -cantidad; // Negativo
                 }
 
                 await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', productoId);
@@ -1070,8 +1076,10 @@
                     producto_id: productoId,
                     tipo_movimiento: tipo,
                     documento_ref: motivo,
-                    cantidad_in: cantIn,
-                    cantidad_out: cantOut,
+                    cantidad_in: 0,
+                    cantidad_out: 0,
+                    cantidad_inicial: 0,
+                    cantidad_ajuste: cantAjusteVal,
                     saldo_cantidad: nuevoStock,
                     costo_promedio_usd: costo,
                     tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
@@ -1118,7 +1126,7 @@
             if (diferencia === 0) { alert('El stock físico coincide con el teórico. Sin ajustes necesarios.'); return; }
 
             const tipo = diferencia > 0 ? 'AJUSTE ENTRADA' : 'AJUSTE SALIDA';
-            const cantidad = Math.abs(diferencia);
+            const cantAjusteVal = diferencia; // Positivo o negativo
             const motivo = `Toma de Inventario Físico (Teórico: ${stockTeorico} vs Real: ${stockFisico})`;
 
             try {
@@ -1129,8 +1137,10 @@
                     producto_id: productoId,
                     tipo_movimiento: tipo,
                     documento_ref: motivo,
-                    cantidad_in: diferencia > 0 ? cantidad : 0,
-                    cantidad_out: diferencia < 0 ? cantidad : 0,
+                    cantidad_in: 0,
+                    cantidad_out: 0,
+                    cantidad_inicial: 0,
+                    cantidad_ajuste: cantAjusteVal,
                     saldo_cantidad: stockFisico,
                     costo_promedio_usd: costo,
                     tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
@@ -1239,6 +1249,8 @@
                     documento_ref: docRef, 
                     cantidad_in: cantidad, 
                     cantidad_out: 0,
+                    cantidad_inicial: 0,
+                    cantidad_ajuste: 0,
                     costo_unit_usd_in: costo, 
                     saldo_cantidad: nuevoStock, 
                     costo_promedio_usd: nuevoCostoProm, 
@@ -1261,7 +1273,7 @@
             const { data } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
             const tbody = document.getElementById('tablaKardexMovimientos');
             tbody.innerHTML = '';
-            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin movimientos.</td></tr>`; return; }
+            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Sin movimientos.</td></tr>`; return; }
             data.forEach(m => {
                 const desc = m.productos ? m.productos.descripcion : 'Artículo';
                 let badgeColor = 'bg-amber-950 text-amber-300';
@@ -1269,14 +1281,21 @@
                 else if (m.tipo_movimiento === 'SALDO INICIAL') badgeColor = 'bg-sky-950 text-sky-300';
                 else if (m.tipo_movimiento === 'SALIDA' || m.tipo_movimiento === 'AJUSTE SALIDA') badgeColor = 'bg-rose-950 text-rose-300';
 
+                const inicialVal = m.cantidad_inicial > 0 ? m.cantidad_inicial : '-';
+                const entradaVal = m.cantidad_in > 0 ? '+' + m.cantidad_in : '-';
+                const salidaVal = m.cantidad_out > 0 ? '-' + m.cantidad_out : '-';
+                const ajusteVal = m.cantidad_ajuste !== 0 && m.cantidad_ajuste != null ? (m.cantidad_ajuste > 0 ? '+' + m.cantidad_ajuste : m.cantidad_ajuste) : '-';
+
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 text-slate-400">${formatearFecha8Digitos(m.created_at)}</td>
                         <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${badgeColor}">${m.tipo_movimiento}</span><br><span class="text-[10px] text-white">${desc}</span></td>
                         <td class="p-3 font-mono">${m.documento_ref}</td>
-                        <td class="p-3 font-mono text-emerald-400">${m.cantidad_in > 0 ? '+' + m.cantidad_in : '-'}</td>
-                        <td class="p-3 font-mono text-rose-400">${m.cantidad_out > 0 ? '-' + m.cantidad_out : '-'}</td>
-                        <td class="p-3 font-mono font-bold text-white">${m.saldo_cantidad}</td>
+                        <td class="p-3 font-mono text-sky-400 text-center">${inicialVal}</td>
+                        <td class="p-3 font-mono text-emerald-400 text-center">${entradaVal}</td>
+                        <td class="p-3 font-mono text-rose-400 text-center">${salidaVal}</td>
+                        <td class="p-3 font-mono text-amber-400 text-center">${ajusteVal}</td>
+                        <td class="p-3 font-mono font-bold text-white text-center">${m.saldo_cantidad}</td>
                         <td class="p-3 font-mono text-emerald-300">$ ${m.costo_promedio_usd.toFixed(2)}</td>
                     </tr>
                 `;
@@ -1339,8 +1358,10 @@
                         producto_id: nuevoProdId,
                         tipo_movimiento: 'SALDO INICIAL',
                         documento_ref: 'INIT-' + (payload.codigo_sku || '001'),
-                        cantidad_in: stockIngresado,
+                        cantidad_in: 0,
                         cantidad_out: 0,
+                        cantidad_inicial: stockIngresado,
+                        cantidad_ajuste: 0,
                         costo_unit_usd_in: precioIngresado,
                         saldo_cantidad: stockIngresado,
                         costo_promedio_usd: precioIngresado,
@@ -1556,8 +1577,8 @@
                     
                     await supabaseClient.from('kardex_movimientos').insert([{
                         tenant_id: tenantActual.id, producto_id: item.productoId, tipo_movimiento: 'SALIDA',
-                        documento_ref: facturaNro, cantidad_in: 0, cantidad_out: item.cantidad, precio_venta_usd: item.precio,
-                        saldo_cantidad: nuevoStock, costo_promedio_usd: pData ? pData.precio_unitario_usd : item.precio, tasa_bcv: tasa
+                        documento_ref: facturaNro, cantidad_in: 0, cantidad_out: item.cantidad, cantidad_inicial: 0, cantidad_ajuste: 0,
+                        precio_venta_usd: item.precio, saldo_cantidad: nuevoStock, costo_promedio_usd: pData ? pData.precio_unitario_usd : item.precio, tasa_bcv: tasa
                     }]);
                 }
                 alert(`¡Factura ${facturaNro} emitida con éxito a tasa de Bs. ${tasa}!`);
