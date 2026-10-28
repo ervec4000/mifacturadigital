@@ -216,7 +216,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 2: HISTORIAL / COMPROBANTES (ACTUALIZADO CON SOPORTE NC Y ND ROBUSTO) -->
+            <!-- SECCIÓN 2: HISTORIAL / COMPROBANTES -->
             <div id="seccionHistorial" class="hidden space-y-6">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                     <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📋 Historial de Comprobantes Fiscales (Facturas, NC y ND)</h3>
@@ -1007,7 +1007,7 @@
             cargarInquilinosMaster();
         }
 
-        // --- NOTAS DE DÉBITO Y CRÉDITO (REQUISITOS SENIAT VÁLIDOS) ---
+        // --- NOTAS DE DÉBITO Y CRÉDITO ---
         async function cargarFacturasAfectadasSelect() {
             const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
             const select = document.getElementById('facturaAfectadaSelect');
@@ -1095,9 +1095,9 @@
             });
         }
 
-        // --- CONEXIÓN CON IMPRESORAS FISCALES FÍSICAS (WEBSERIAL API) ---
+        // --- WEBSERIAL API IMPRESORAS ---
         async function conectarImpresoraFiscalWebSerial() {
-            if (!('serial' in navigator)) { alert('Tu navegador no soporta WebSerial API para impresoras fiscales.'); return; }
+            if (!('serial' in navigator)) { alert('Tu navegador no soporta WebSerial API.'); return; }
             try {
                 portSerialFiscal = await navigator.serial.requestPort();
                 await portSerialFiscal.open({ baudRate: 9600 });
@@ -1107,7 +1107,7 @@
             }
         }
 
-        // --- GESTIÓN MULTI-DEPÓSITO Y TRANSFERENCIAS INTERNAS ---
+        // --- GESTIÓN MULTI-DEPÓSITO ---
         async function cargarProductosSelectTransf() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             const select = document.getElementById('transfProductoSelect');
@@ -1139,7 +1139,7 @@
             cargarKardexMovimientos();
         }
 
-        // --- INVENTARIO FÍSICO, CONCILIACIÓN E HISTÓRICO SUPABASE ---
+        // --- INVENTARIO FÍSICO Y CONCILIACIÓN ---
         async function cargarInventarioFisico() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             inventarioFisicoCache = data || [];
@@ -1190,7 +1190,7 @@
                 stock_teorico: stockTeorico, stock_real: real, diferencia: diff
             }]);
 
-            alert(`¡Stock actualizado a ${real} y registrado en el histórico de Supabase (Diferencia: ${diff})!`);
+            alert(`¡Stock actualizado a ${real} y registrado en el histórico de Supabase!`);
             cargarInventarioFisico();
         }
 
@@ -1209,7 +1209,7 @@
                     }]);
                 }
             }
-            alert('¡Conciliación de inventario físico grabada y registrada exitosamente en Supabase!');
+            alert('¡Conciliación grabada y registrada en Supabase con éxito!');
             cargarInventarioFisico();
         }
 
@@ -1240,7 +1240,7 @@
         }
 
         function exportarInventarioFisicoExcel() {
-            if (!inventarioFisicoCache.length) { alert('No hay datos cargados para exportar.'); return; }
+            if (!inventarioFisicoCache.length) { alert('No hay datos cargados.'); return; }
             const excelData = inventarioFisicoCache.map(p => {
                 const real = parseFloat(document.getElementById(`conteo_${p.id}`)?.value) || p.stock || 0;
                 const teorico = p.stock || 0;
@@ -1249,7 +1249,7 @@
             const worksheet = XLSX.utils.json_to_sheet(excelData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "InventarioFisico");
-            XLSX.writeFile(workbook, `Inventario_Fisico_Conciliacion_${new Date().toISOString().slice(0,10)}.xlsx`);
+            XLSX.writeFile(workbook, `Inventario_Fisico_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
         function importarInventarioFisicoExcel(e) { document.getElementById('inputImportExcel').click(); }
@@ -1277,14 +1277,13 @@
                         }
                     }
                 });
-                alert('¡Datos de inventario físico importados desde Excel con éxito!');
+                alert('¡Datos importados desde Excel!');
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // --- ENVÍO DE FACTURA POR WHATSAPP CORREGIDO ---
         function enviarWhatsApp() {
-            if (!comprobanteActualCache) { alert('No hay comprobante activo seleccionado.'); return; }
+            if (!comprobanteActualCache) { alert('No hay comprobante activo.'); return; }
             const doc = comprobanteActualCache;
             const texto = `🧾 *COMPROBANTE FISCAL DIGITAL*\n*Comercio:* ${tenantActual.razon_social}\n*RIF:* ${tenantActual.rif}\n*Documento:* ${doc.numero}\n*Control:* ${doc.nro_control||'N/A'}\n*Cliente:* ${doc.cliente_nombre}\n*Total:* Bs. ${doc.total_bs.toFixed(2)}\n\n_Emitido con MiFacturaDigital.com.ve_`;
             window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank');
@@ -1344,7 +1343,6 @@
             descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Kardex', 'Kardex');
         }
 
-        // --- REGISTRO DE COMPRAS CON KARDEX BLINDADO ---
         async function registrarCompraInventario() {
             const productoId = document.getElementById('compraProductoSelect').value;
             const cantidad = parseFloat(document.getElementById('compraCantidad').value) || 0;
@@ -1381,7 +1379,7 @@
                     tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
                 }]);
 
-                alert('¡Compra registrada e incluida con éxito en el Kardex y Libro de Compras!');
+                alert('¡Compra registrada e incluida en el Kardex y Libro de Compras!');
                 cargarKardexMovimientos();
             } catch (err) { alert('Error: ' + err.message); }
         }
@@ -1394,7 +1392,6 @@
             data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} [Stock: ${p.stock||0}]</option>`; });
         }
 
-        // --- KARDEX PPM ROBUSTO & OPTIMIZADO ---
         async function cargarKardexMovimientos() {
             const [resMovs, resProds] = await Promise.all([
                 supabaseClient.from('kardex_movimientos').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false }),
@@ -1406,7 +1403,7 @@
 
             const movimientos = resMovs.data || [];
             if (resMovs.error || movimientos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex todavía.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex.</td></tr>`;
                 return;
             }
 
@@ -1528,21 +1525,8 @@
             cargarProductosGestion();
         }
 
-        // --- CLIENTES ---
         async function cargarClientesSelect() {
             let { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
-            if (!data || data.length === 0) {
-                const { data: invs } = await supabaseClient.from('invoices').select('cliente_rif, cliente_nombre').eq('tenant_id', tenantActual.id);
-                if (invs && invs.length > 0) {
-                    const unicos = {};
-                    invs.forEach(i => { if (i.cliente_rif) unicos[i.cliente_rif] = i.cliente_nombre; });
-                    for (const [rif, nombre] of Object.entries(unicos)) {
-                        await supabaseClient.from('clientes').insert([{ tenant_id: tenantActual.id, rif, razon_social: nombre, direccion: 'San Felipe, Yaracuy', telefono: '0414-0000000' }]);
-                    }
-                    const resReintentar = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
-                    data = resReintentar.data;
-                }
-            }
             clientesCache = data || [];
             const select = document.getElementById('clienteSelect');
             select.innerHTML = '<option value="">-- Seleccionar --</option>';
@@ -1583,7 +1567,6 @@
             cargarClientesGestion();
         }
 
-        // --- POS Y EMISIÓN CON CORRELATIVOS SENIAT ---
         function agregarItem() {
             const select = document.getElementById('productoSelect');
             const prodId = select.value;
@@ -1729,7 +1712,7 @@
                 await supabaseClient.from('clientes').insert([{ tenant_id: tenantActual.id, rif, razon_social: nombre, direccion: 'San Felipe', telefono: '0414-0000000' }]);
             }
 
-            alert(`¡Factura ${facturaNro} (Control: ${nroControl}) emitida con éxito!`);
+            alert(`¡Factura ${facturaNro} emitida con éxito!`);
             carritoItems = [];
             actualizarTablaYCalculos();
             cambiarPestana('historial');
