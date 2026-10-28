@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <style>
         @media print {
             body * { visibility: hidden; }
@@ -1474,7 +1473,7 @@
         async function imprimirBluetoothReal() { alert('Impresión térmica BT'); }
         function enviarWhatsApp() { window.open(`https://wa.me/?text=Comprobante`, '_blank'); }
 
-        // Módulos complementarios de Inventario Físico, Etiquetas QR (CON RENDERIZADO REAL) y CxC
+        // Módulos complementarios de Inventario Físico, Etiquetas QR (ROBUSTO CON API DE QR DIRECTA) y CxC
         async function cargarInventarioFisico() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             inventarioFisicoCache = data || [];
@@ -1526,7 +1525,11 @@
             const container = document.getElementById('contenedorGridEtiquetas');
             container.innerHTML = '';
             if (!data || data.length === 0) { container.innerHTML = '<p class="text-slate-500">Sin artículos.</p>'; return; }
+            
             data.forEach((p, idx) => {
+                const textoQr = encodeURIComponent(`SKU:${p.codigo_sku||'N/A'}|DESC:${p.descripcion}|LOTE:${p.lote||'SIN-LOTE'}|UBI:${p.ubicacion||'DEP'}`);
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${textoQr}`;
+
                 container.innerHTML += `
                     <div class="bg-white text-slate-900 p-4 rounded-xl border border-slate-300 flex items-center justify-between font-mono text-xs shadow">
                         <div>
@@ -1534,23 +1537,11 @@
                             <p class="text-sm font-bold text-slate-900">${p.descripcion}</p>
                             <p class="text-[10px] text-slate-600 mt-1">Ubicación: ${p.ubicacion||'DEP'} | Lote: ${p.lote||'N/A'}</p>
                         </div>
-                        <div id="qr_box_${idx}" class="w-20 h-20 bg-slate-50 flex items-center justify-center border border-slate-200 rounded"></div>
+                        <div class="w-20 h-20 bg-slate-50 flex items-center justify-center border border-slate-200 rounded p-1">
+                            <img src="${qrUrl}" alt="QR" class="w-full h-full object-contain">
+                        </div>
                     </div>
                 `;
-            });
-            data.forEach((p, idx) => {
-                const box = document.getElementById(`qr_box_${idx}`);
-                box.innerHTML = '';
-                try {
-                    new QRCode(box, { 
-                        text: `SKU:${p.codigo_sku}|DESC:${p.descripcion}|LOTE:${p.lote||'N/A'}|UBI:${p.ubicacion||'DEP'}`, 
-                        width: 72, 
-                        height: 72,
-                        colorDark : "#0f172a",
-                        colorLight : "#ffffff",
-                        correctLevel : QRCode.CorrectLevel.M
-                    });
-                } catch(e) { box.innerText = 'QR Code'; }
             });
         }
         function imprimirEtiquetasQr() { window.print(); }
