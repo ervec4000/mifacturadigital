@@ -10,8 +10,9 @@
     <style>
         @media print {
             body * { visibility: hidden; }
-            #modalTicket, #modalTicket *, #seccionEtiquetas, #seccionEtiquetas * { visibility: visible; }
-            #modalTicket, #seccionEtiquetas { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+            #seccionFisico, #seccionFisico *, #modalTicket, #modalTicket * { visibility: visible; }
+            #seccionFisico { position: absolute; left: 0; top: 0; width: 100%; background: white; color: black; }
+            #modalTicket { position: absolute; left: 0; top: 0; width: 100%; background: white; color: black; }
             .no-print { display: none !important; }
         }
     </style>
@@ -67,7 +68,7 @@
             </div>
         </header>
 
-        <!-- Navegación por Pestañas Organizada (Checklist 100%) -->
+        <!-- Navegación por Pestañas Organizada -->
         <nav class="bg-slate-950/60 border-b border-slate-800 px-6 py-2.5 flex flex-wrap gap-2">
             <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer shadow-md flex items-center gap-1.5">🛒 POS Ventas</button>
             <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📋 Comprobantes</button>
@@ -76,7 +77,7 @@
             <button onclick="cambiarPestana('compras')" id="btnTabCompras" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📥 Compras</button>
             <button onclick="cambiarPestana('retenciones')" id="btnTabRetenciones" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🧾 Retenciones IVA</button>
             <button onclick="cambiarPestana('kardex')" id="btnTabKardex" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📦 Kardex PPM</button>
-            <button onclick="cambiarPestana('fisico')" id="btnTabFisico" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🔍 Inv. Físico</button>
+            <button onclick="cambiarPestana('fisico')" id="btnTabFisico" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🔍 Inv. Físico & Conciliación</button>
             <button onclick="cambiarPestana('multideposito')" id="btnTabMultideposito" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🏢 Multi-Depósito</button>
             <button onclick="cambiarPestana('etiquetas')" id="btnTabEtiquetas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🏷️ Etiquetas QR</button>
             <button onclick="cambiarPestana('cuentas')" id="btnTabCuentas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📑 CxC</button>
@@ -376,7 +377,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN NUEVA: RETENCIONES DE IVA (75% / 100%) -->
+            <!-- SECCIÓN: RETENCIONES DE IVA (75% / 100%) -->
             <div id="seccionRetenciones" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
@@ -455,67 +456,90 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN: INVENTARIO FÍSICO -->
+            <!-- SECCIÓN: INVENTARIO FÍSICO Y CONCILIACIÓN (ACTUALIZADO CON HISTÓRICO) -->
             <div id="seccionFisico" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                         <div>
-                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🔍 Inventario Físico / Toma de Conteo Profesional</h3>
+                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🔍 Inventario Físico, Conciliación y Toma de Conteo</h3>
                         </div>
-                        <div class="flex gap-2 flex-wrap">
-                            <button onclick="exportarInventarioFisicoExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Inventario Físico</button>
-                            <button onclick="imprimirInventarioFisicoPDF()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer">🖨️ Imprimir Acta</button>
+                        <div class="flex gap-2 flex-wrap no-print">
+                            <button onclick="exportarInventarioFisicoExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Excel</button>
+                            <button onclick="importarInventarioFisicoExcel(event)" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📤 Importar Excel</button>
+                            <input type="file" id="inputImportExcel" accept=".xlsx, .xls, .csv" class="hidden" onchange="procesarArchivoImportado(event)">
+                            <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer">🖨️ Imprimir Acta</button>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-6 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 items-end">
+                    <div class="grid grid-cols-1 md:grid-cols-6 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 items-end no-print">
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Fecha de Conteo</label>
                             <input type="date" id="fisicoFecha" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono">
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Material Desde</label>
-                            <input type="text" id="fisicoMatDesde" placeholder="SKU-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisico()">
+                            <input type="text" id="fisicoMatDesde" placeholder="SKU-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono">
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Material Hasta</label>
-                            <input type="text" id="fisicoMatHasta" placeholder="SKU-999" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisico()">
+                            <input type="text" id="fisicoMatHasta" placeholder="SKU-999" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono">
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Categoría Desde</label>
-                            <input type="text" id="fisicoCatDesde" placeholder="A" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisico()">
+                            <input type="text" id="fisicoCatDesde" placeholder="A" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono">
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Categoría Hasta</label>
-                            <input type="text" id="fisicoCatHasta" placeholder="Z" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisico()">
+                            <input type="text" id="fisicoCatHasta" placeholder="Z" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono">
                         </div>
                         <div>
                             <button onclick="cargarInventarioFisico()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 px-3 rounded-xl cursor-pointer shadow">🔄 Cargar</button>
                         </div>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs text-slate-300">
+                        <table class="w-full text-left text-xs text-slate-300 border border-slate-800">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                                 <tr>
-                                    <th class="p-3">SKU</th>
-                                    <th class="p-3">Descripción</th>
-                                    <th class="p-3">Categoría</th>
-                                    <th class="p-3">Ubicación</th>
-                                    <th class="p-3 text-center">Stock Teórico</th>
-                                    <th class="p-3 text-center">Conteo Físico Real</th>
-                                    <th class="p-3 text-center">Diferencia</th>
-                                    <th class="p-3 text-center">Acción</th>
+                                    <th class="p-3 border-b border-slate-800">SKU</th>
+                                    <th class="p-3 border-b border-slate-800">Descripción</th>
+                                    <th class="p-3 border-b border-slate-800">Categoría</th>
+                                    <th class="p-3 border-b border-slate-800">Ubicación</th>
+                                    <th class="p-3 border-b border-slate-800 text-center">Stock Teórico</th>
+                                    <th class="p-3 border-b border-slate-800 text-center">Stock Físico Real</th>
+                                    <th class="p-3 border-b border-slate-800 text-center">Diferencia</th>
+                                    <th class="p-3 border-b border-slate-800 text-center no-print">Acción</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaInventarioFisico" class="divide-y divide-slate-800/60"></tbody>
                         </table>
                     </div>
-                    <div class="pt-2">
-                        <button onclick="guardarTodoInventarioFisico()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs cursor-pointer shadow">💾 Grabar y Aplicar Todos los Ajustes</button>
+                    <div class="pt-2 no-print flex gap-3">
+                        <button onclick="guardarTodoInventarioFisico()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs cursor-pointer shadow">💾 Grabar Conciliación y Actualizar Stock</button>
+                        <button onclick="cargarHistoricoInventarioFisico()" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold py-3 px-5 rounded-xl text-xs cursor-pointer shadow">📜 Ver Histórico en Supabase</button>
+                    </div>
+                </div>
+
+                <!-- TABLA HISTÓRICO DE INVENTARIOS FÍSICOS -->
+                <div id="contenedorHistoricoFisico" class="hidden bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-3">
+                    <h4 class="text-sm font-bold text-sky-400 uppercase tracking-wider">📜 Histórico de Tomas de Inventario Físico (Supabase)</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                                <tr>
+                                    <th class="p-2.5">Fecha Conteo</th>
+                                    <th class="p-2.5">SKU</th>
+                                    <th class="p-2.5">Descripción</th>
+                                    <th class="p-2.5 text-center">Teórico</th>
+                                    <th class="p-2.5 text-center">Real</th>
+                                    <th class="p-2.5 text-center">Diferencia</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaHistoricoFisico" class="divide-y divide-slate-800/60"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
-            <!-- SECCIÓN NUEVA: GESTIÓN MULTI-DEPÓSITO / TRANSFERENCIAS -->
+            <!-- SECCIÓN: GESTIÓN MULTI-DEPÓSITO / TRANSFERENCIAS -->
             <div id="seccionMultideposito" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🏢 Gestión Multi-Depósito y Transferencias Internas</h3>
@@ -771,7 +795,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT GENERAL Y MÓDULOS INTEGRADOS AL 100% -->
+    <!-- SCRIPT GENERAL Y MÓDULOS -->
     <script>
         const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji'; 
@@ -785,6 +809,7 @@
         let documentosHistorialCache = [];
         let inventarioFisicoCache = [];
         let portSerialFiscal = null;
+        let comprobanteActualCache = null;
 
         window.onload = function() {
             if (window.supabase) {
@@ -1101,6 +1126,159 @@
 
             alert(`¡Transferencia de ${cant} unidades desde "${origen}" hacia "${destino}" registrada con éxito!`);
             cargarKardexMovimientos();
+        }
+
+        // --- INVENTARIO FÍSICO, CONCILIACIÓN E HISTÓRICO SUPABASE ---
+        async function cargarInventarioFisico() {
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            inventarioFisicoCache = data || [];
+            const tbody = document.getElementById('tablaInventarioFisico');
+            tbody.innerHTML = '';
+            if (!inventarioFisicoCache.length) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Sin artículos registrados para inventario físico.</td></tr>`;
+                return;
+            }
+            inventarioFisicoCache.forEach(p => {
+                const stockTeorico = p.stock || 0;
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900" id="fila_fisica_${p.id}">
+                        <td class="p-3 font-mono">${p.codigo_sku||'S/N'}</td>
+                        <td class="p-3">${p.descripcion}</td>
+                        <td class="p-3">${p.categoria||'N/A'}</td>
+                        <td class="p-3 font-mono">${p.ubicacion||'DEP'}</td>
+                        <td class="p-3 text-center font-bold text-sky-400" id="teorico_${p.id}">${stockTeorico}</td>
+                        <td class="p-3 text-center">
+                            <input type="number" id="conteo_${p.id}" value="${stockTeorico}" oninput="calcularDiferenciaFisica('${p.id}', ${stockTeorico})" class="w-20 bg-slate-900 border border-slate-800 rounded p-1.5 text-center font-mono text-white">
+                        </td>
+                        <td class="p-3 text-center font-bold text-emerald-400" id="diff_${p.id}">0</td>
+                        <td class="p-3 text-center no-print"><button onclick="aplicarConteoUnico('${p.id}', ${stockTeorico})" class="text-emerald-400 hover:underline">Aplicar</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        function calcularDiferenciaFisica(prodId, teorico) {
+            const real = parseFloat(document.getElementById(`conteo_${prodId}`).value) || 0;
+            const diff = real - teorico;
+            const diffEl = document.getElementById(`diff_${prodId}`);
+            diffEl.innerText = diff > 0 ? `+${diff}` : diff;
+            diffEl.className = `p-3 text-center font-bold ${diff === 0 ? 'text-slate-400' : (diff > 0 ? 'text-emerald-400' : 'text-rose-400')}`;
+        }
+
+        async function aplicarConteoUnico(prodId, stockTeorico) {
+            const real = parseFloat(document.getElementById(`conteo_${prodId}`).value) || 0;
+            const diff = real - stockTeorico;
+            const fechaConteo = document.getElementById('fisicoFecha').value || new Date().toISOString().slice(0,10);
+            const prod = inventarioFisicoCache.find(x => x.id === prodId);
+
+            // Actualizar stock en productos
+            await supabaseClient.from('productos').update({ stock: real }).eq('id', prodId);
+
+            // Guardar en histórico de Supabase
+            await supabaseClient.from('inventario_fisico_historico').insert([{
+                tenant_id: tenantActual.id, fecha_conteo: fechaConteo, producto_id: prodId,
+                sku: prod?.codigo_sku || 'S/N', descripcion: prod?.descripcion || 'Artículo',
+                stock_teorico: stockTeorico, stock_real: real, diferencia: diff
+            }]);
+
+            alert(`¡Stock actualizado a ${real} y registrado en el histórico de Supabase (Diferencia: ${diff})!`);
+            cargarInventarioFisico();
+        }
+
+        async function guardarTodoInventarioFisico() {
+            const fechaConteo = document.getElementById('fisicoFecha').value || new Date().toISOString().slice(0,10);
+            for (const p of inventarioFisicoCache) {
+                const real = parseFloat(document.getElementById(`conteo_${p.id}`).value);
+                if (!isNaN(real)) {
+                    const teorico = p.stock || 0;
+                    const diff = real - teorico;
+                    await supabaseClient.from('productos').update({ stock: real }).eq('id', p.id);
+                    await supabaseClient.from('inventario_fisico_historico').insert([{
+                        tenant_id: tenantActual.id, fecha_conteo: fechaConteo, producto_id: p.id,
+                        sku: p.codigo_sku || 'S/N', descripcion: p.descripcion || 'Artículo',
+                        stock_teorico: teorico, stock_real: real, diferencia: diff
+                    }]);
+                }
+            }
+            alert('¡Conciliación de inventario físico grabada y registrada exitosamente en Supabase!');
+            cargarInventarioFisico();
+        }
+
+        async function cargarHistoricoInventarioFisico() {
+            const { data } = await supabaseClient.from('inventario_fisico_historico').select('*').eq('tenant_id', tenantActual.id).order('creado_en', { ascending: false });
+            const container = document.getElementById('contenedorHistoricoFisico');
+            const tbody = document.getElementById('tablaHistoricoFisico');
+            tbody.innerHTML = '';
+            container.classList.remove('hidden');
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Sin registros en el histórico de Supabase.</td></tr>`;
+                return;
+            }
+
+            data.forEach(h => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900">
+                        <td class="p-2.5 font-mono text-slate-400">${h.fecha_conteo}</td>
+                        <td class="p-2.5 font-mono text-emerald-400">${h.sku}</td>
+                        <td class="p-2.5">${h.descripcion}</td>
+                        <td class="p-2.5 text-center font-bold text-sky-400">${h.stock_teorico}</td>
+                        <td class="p-2.5 text-center font-bold text-white">${h.stock_real}</td>
+                        <td class="p-2.5 text-center font-bold ${h.diferencia===0?'text-slate-400':(h.diferencia>0?'text-emerald-400':'text-rose-400')}">${h.diferencia>0?'+'+h.diferencia:h.diferencia}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function exportarInventarioFisicoExcel() {
+            if (!inventarioFisicoCache.length) { alert('No hay datos cargados para exportar.'); return; }
+            const excelData = inventarioFisicoCache.map(p => {
+                const real = parseFloat(document.getElementById(`conteo_${p.id}`)?.value) || p.stock || 0;
+                const teorico = p.stock || 0;
+                return { SKU: p.codigo_sku, Descripción: p.descripcion, Categoría: p.categoria, Ubicación: p.ubicacion, StockTeórico: teorico, StockFísicoReal: real, Diferencia: real - teorico };
+            });
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "InventarioFisico");
+            XLSX.writeFile(workbook, `Inventario_Fisico_Conciliacion_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        function importarInventarioFisicoExcel(e) { document.getElementById('inputImportExcel').click(); }
+        function procesarArchivoImportado(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.SheetNames[0];
+                const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
+                
+                rows.forEach(r => {
+                    const sku = r.SKU || r.sku;
+                    const real = parseFloat(r.StockFísicoReal || r.StockFisicoReal || r.stock_real);
+                    if (sku && !isNaN(real)) {
+                        const prod = inventarioFisicoCache.find(x => x.codigo_sku === sku);
+                        if (prod) {
+                            const inputEl = document.getElementById(`conteo_${prod.id}`);
+                            if (inputEl) {
+                                inputEl.value = real;
+                                calcularDiferenciaFisica(prod.id, prod.stock || 0);
+                            }
+                        }
+                    }
+                });
+                alert('¡Datos de inventario físico importados desde Excel con éxito!');
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- ENVÍO DE FACTURA POR WHATSAPP CORREGIDO ---
+        function enviarWhatsApp() {
+            if (!comprobanteActualCache) { alert('No hay comprobante activo seleccionado.'); return; }
+            const doc = comprobanteActualCache;
+            const texto = `🧾 *COMPROBANTE FISCAL DIGITAL*\n*Comercio:* ${tenantActual.razon_social}\n*RIF:* ${tenantActual.rif}\n*Documento:* ${doc.numero}\n*Control:* ${doc.nro_control||'N/A'}\n*Cliente:* ${doc.cliente_nombre}\n*Total:* Bs. ${doc.total_bs.toFixed(2)}\n\n_Emitido con MiFacturaDigital.com.ve_`;
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank');
         }
 
         // --- EXPORTACIÓN OFICIAL SENIAT ---
@@ -1492,7 +1670,6 @@
 
             const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
             
-            // Correlativos estrictos SENIAT
             const { count } = await supabaseClient.from('invoices').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantActual.id);
             const correlativoNum = (count || 0) + 1;
             const facturaNro = 'FAC-' + String(correlativoNum).padStart(4, '0');
@@ -1567,6 +1744,7 @@
         }
 
         async function verComprobante(doc) {
+            comprobanteActualCache = doc;
             document.getElementById('ticketComercioNombre').innerText = tenantActual.razon_social;
             document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif}`;
             document.getElementById('ticketComercioDir').innerText = tenantActual.direccion || 'VENEZUELA';
@@ -1641,54 +1819,6 @@
         }
 
         async function imprimirBluetoothReal() { alert('Impresión térmica BT'); }
-        function enviarWhatsApp() { window.open(`https://wa.me/?text=Comprobante`, '_blank'); }
-
-        // Módulos complementarios de Inventario Físico y Etiquetas QR
-        async function cargarInventarioFisico() {
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
-            inventarioFisicoCache = data || [];
-            const tbody = document.getElementById('tablaInventarioFisico');
-            tbody.innerHTML = '';
-            inventarioFisicoCache.forEach(p => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900">
-                        <td class="p-3 font-mono">${p.codigo_sku||'S/N'}</td>
-                        <td class="p-3">${p.descripcion}</td>
-                        <td class="p-3">${p.categoria||'N/A'}</td>
-                        <td class="p-3 font-mono">${p.ubicacion||'DEP'}</td>
-                        <td class="p-3 text-center">${p.stock||0}</td>
-                        <td class="p-3 text-center"><input type="number" id="conteo_${p.id}" value="${p.stock||0}" class="w-20 bg-slate-900 border border-slate-800 rounded p-1 text-center font-mono"></td>
-                        <td class="p-3 text-center" id="diff_${p.id}">0</td>
-                        <td class="p-3 text-center"><button onclick="aplicarConteoUnico('${p.id}', ${p.stock||0})" class="text-emerald-400 hover:underline">Aplicar</button></td>
-                    </tr>
-                `;
-            });
-        }
-        function filtrarInventarioFisico() {}
-        async function aplicarConteoUnico(prodId, stockTeorico) {
-            const real = parseFloat(document.getElementById(`conteo_${prodId}`).value) || 0;
-            const diff = real - stockTeorico;
-            await supabaseClient.from('productos').update({ stock: real }).eq('id', prodId);
-            alert(`¡Stock actualizado a ${real} (Diferencia: ${diff})!`);
-            cargarInventarioFisico();
-        }
-        async function guardarTodoInventarioFisico() {
-            for (const p of inventarioFisicoCache) {
-                const real = parseFloat(document.getElementById(`conteo_${p.id}`).value);
-                if (!isNaN(real) && real !== p.stock) {
-                    await supabaseClient.from('productos').update({ stock: real }).eq('id', p.id);
-                }
-            }
-            alert('¡Todos los ajustes de inventario físico han sido aplicados!');
-            cargarInventarioFisico();
-        }
-        function imprimirInventarioFisicoPDF() { window.print(); }
-        async function exportarInventarioFisicoExcel() {
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
-            if (!data) return;
-            const excelData = data.map(p => ({ SKU: p.codigo_sku, Descripción: p.descripcion, StockTeórico: p.stock }));
-            descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Inventario_Fisico', 'Fisico');
-        }
 
         async function renderizarEtiquetasQr() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
