@@ -1575,10 +1575,20 @@
                     const nuevoStock = Math.max(0, (pData.stock || 0) - item.cantidad);
                     await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.productoId);
                     
+                    // CORRECCIÓN CLAVE: Registrar la Salida con cantidad_out y columnas alineadas en el Kardex
                     await supabaseClient.from('kardex_movimientos').insert([{
-                        tenant_id: tenantActual.id, producto_id: item.productoId, tipo_movimiento: 'SALIDA',
-                        documento_ref: facturaNro, cantidad_in: 0, cantidad_out: item.cantidad, cantidad_inicial: 0, cantidad_ajuste: 0,
-                        precio_venta_usd: item.precio, saldo_cantidad: nuevoStock, costo_promedio_usd: pData ? pData.precio_unitario_usd : item.precio, tasa_bcv: tasa
+                        tenant_id: tenantActual.id, 
+                        producto_id: item.productoId, 
+                        tipo_movimiento: 'SALIDA',
+                        documento_ref: facturaNro, 
+                        cantidad_in: 0, 
+                        cantidad_out: item.cantidad,
+                        cantidad_inicial: 0,
+                        cantidad_ajuste: 0,
+                        precio_venta_usd: item.precio, 
+                        saldo_cantidad: nuevoStock, 
+                        costo_promedio_usd: pData ? pData.precio_unitario_usd : item.precio, 
+                        tasa_bcv: tasa
                     }]);
                 }
                 alert(`¡Factura ${facturaNro} emitida con éxito a tasa de Bs. ${tasa}!`);
