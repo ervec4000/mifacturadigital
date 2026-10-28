@@ -60,9 +60,6 @@
             </div>
 
             <div class="flex items-center gap-3 flex-wrap">
-                <span id="offlineBadge" class="hidden bg-amber-950 text-amber-300 border border-amber-700 text-[10px] px-2.5 py-1 rounded-lg font-mono">⚠️ Offline (<span id="contadorOffline">0</span>)</span>
-                <button onclick="sincronizarOffline()" id="btnSincronizar" class="hidden bg-sky-600 hover:bg-sky-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold cursor-pointer">Sincronizar</button>
-                
                 <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-xl">
                     <button onclick="abrirModalPerfil()" class="hover:bg-slate-800 text-slate-300 hover:text-white text-xs px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1.5">⚙️ Perfil</button>
                     <button onclick="abrirModalSuscripcion()" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-700/50 text-xs px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer">💳 Renovar Plan</button>
@@ -75,10 +72,10 @@
         <nav class="bg-slate-950/60 border-b border-slate-800 px-6 py-2.5 flex flex-wrap gap-2">
             <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer shadow-md flex items-center gap-1.5">🛒 POS Ventas</button>
             <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📋 Comprobantes</button>
+            <button onclick="cambiarPestana('notasFiscales')" id="btnTabNotasFiscales" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📑 Notas Déb/Créd</button>
             <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📊 Reporte Z & Libros</button>
             <button onclick="cambiarPestana('compras')" id="btnTabCompras" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📥 Compras</button>
             <button onclick="cambiarPestana('kardex')" id="btnTabKardex" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📦 Kardex PPM</button>
-            <button onclick="cambiarPestana('ajustes')" id="btnTabAjustes" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">⚖️ Ajustes</button>
             <button onclick="cambiarPestana('fisico')" id="btnTabFisico" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🔍 Inventario Físico</button>
             <button onclick="cambiarPestana('etiquetas')" id="btnTabEtiquetas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🏷️ Etiquetas QR</button>
             <button onclick="cambiarPestana('cuentas')" id="btnTabCuentas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📑 Créditos (CxC)</button>
@@ -254,18 +251,50 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 3: REPORTE Z Y LIBROS SENIAT OFICIALES -->
+            <!-- SECCIÓN: NOTAS DE DÉBITO Y CRÉDITO -->
+            <div id="seccionNotasFiscales" class="hidden tab-admin space-y-6">
+                <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
+                    <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📑 Emisión de Notas de Débito y Crédito (Providencia SENIAT)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Tipo de Nota</label>
+                            <select id="tipoNotaSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+                                <option value="NOTA CREDITO">Nota de Crédito (Devolución / Descuento)</option>
+                                <option value="NOTA DEBITO">Nota de Débito (Cargo Adicional)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Factura Afectada</label>
+                            <select id="facturaAfectadaSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Monto de la Nota ($ USD)</label>
+                            <input type="number" id="montoNotaUsd" step="0.01" value="10.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-xs text-slate-400 mb-1">Motivo Legal / Justificación (SENIAT)</label>
+                            <input type="text" id="motivoNota" placeholder="Ej. Devolución de mercancía defectuosa según factura afectada" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="emitirNotaFiscal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs cursor-pointer shadow">
+                                Emitir Nota Fiscal Definitiva
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN 3: REPORTE Z Y LIBROS SENIAT -->
             <div id="seccionCierrez" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-6">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                         <div>
                             <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📊 Reporte Z, Libro de Ventas y Libro de Compras Oficial SENIAT</h3>
-                            <p class="text-xs text-slate-400">Estructura exacta basada en los modelos normativos oficiales</p>
                         </div>
                         <div class="flex gap-2 flex-wrap">
                             <button onclick="generarReporteZ()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer">🔄 Recalcular</button>
-                            <button onclick="descargarLibroVentasOficialExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Descargar Libro de Ventas (Oficial SENIAT)</button>
-                            <button onclick="descargarLibroComprasOficialExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Descargar Libro de Compras (Oficial SENIAT)</button>
+                            <button onclick="descargarLibroVentasOficialExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Descargar Libro de Ventas</button>
+                            <button onclick="descargarLibroComprasOficialExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Descargar Libro de Compras</button>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 items-end">
@@ -341,7 +370,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 5: KARDEX -->
+            <!-- SECCIÓN 5: KARDEX PPM (ACTUALIZADO Y CONECTADO) -->
             <div id="seccionKardex" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
@@ -358,14 +387,14 @@
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                                 <tr>
                                     <th class="p-3">Fecha</th>
+                                    <th class="p-3">Artículo</th>
                                     <th class="p-3">Movimiento</th>
-                                    <th class="p-3">Documento / Lote</th>
+                                    <th class="p-3">Documento / Ref</th>
                                     <th class="p-3 text-center">Inicial</th>
                                     <th class="p-3 text-center">Entradas (+)</th>
                                     <th class="p-3 text-center">Salidas (-)</th>
-                                    <th class="p-3 text-center">Ajustes (±)</th>
                                     <th class="p-3 text-center">Saldo Total (=)</th>
-                                    <th class="p-3">Costo Prom ($)</th>
+                                    <th class="p-3">Costo ($)</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaKardexMovimientos" class="divide-y divide-slate-800/60"></tbody>
@@ -374,91 +403,43 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN: AJUSTES -->
-            <div id="seccionAjustes" class="hidden tab-admin space-y-6">
-                <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
-                    <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">⚖️ Módulo de Ajustes de Inventario (Mermas / Sobrantes)</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Artículo</label>
-                            <select id="ajusteProductoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Tipo de Ajuste</label>
-                            <select id="ajusteTipo" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
-                                <option value="AJUSTE ENTRADA">Sobrante / Entrada (+)</option>
-                                <option value="AJUSTE SALIDA">Merma / Daño / Salida (-)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Cantidad</label>
-                            <input type="number" id="ajusteCantidad" min="1" value="1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Número de Lote (Opcional)</label>
-                            <input type="text" id="ajusteLote" placeholder="LOTE-A" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs text-slate-400 mb-1">Motivo / Justificación</label>
-                            <input type="text" id="ajusteMotivo" placeholder="Ej. Conteo físico por rotura de empaque" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
-                        </div>
-                        <div class="flex items-end">
-                            <button onclick="registrarAjusteInventario()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs cursor-pointer shadow">
-                                Aplicar Ajuste y Sincronizar Kardex
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- SECCIÓN: INVENTARIO FÍSICO (NUEVO & MEJORADO) -->
+            <!-- SECCIÓN: INVENTARIO FÍSICO -->
             <div id="seccionFisico" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                         <div>
-                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🔍 Inventario Físico / Toma de Conteo</h3>
-                            <p class="text-xs text-slate-400">Filtre por fecha, rango de materiales y categorías para registrar conteos.</p>
+                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🔍 Inventario Físico / Toma de Conteo Profesional</h3>
                         </div>
                         <div class="flex gap-2 flex-wrap">
-                            <button onclick="exportarInventarioFisicoExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Conteo (Excel)</button>
-                            <label class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow flex items-center gap-1.5">
-                                📤 Importar Conteo (Excel)
-                                <input type="file" id="archivoImportFisico" accept=".xlsx, .xls, .csv" class="hidden" onchange="importarInventarioFisicoExcel(event)">
-                            </label>
-                            <button onclick="cargarInventarioFisico()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2.5 rounded-xl text-slate-200 cursor-pointer">🔄 Cargar</button>
+                            <button onclick="exportarInventarioFisicoExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Inventario Físico</button>
+                            <button onclick="imprimirInventarioFisicoPDF()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer">🖨️ Imprimir Acta</button>
                         </div>
                     </div>
-
-                    <!-- Filtros de Inventario Físico -->
-                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 items-end">
+                    <div class="grid grid-cols-1 md:grid-cols-6 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 items-end">
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">Fecha del Conteo</label>
-                            <input type="date" id="filtroFisicoFecha" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono">
+                            <label class="block text-xs text-slate-400 mb-1">Fecha de Conteo</label>
+                            <input type="date" id="fisicoFecha" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono">
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Material Desde</label>
-                            <input type="text" id="filtroFisicoMatDesde" placeholder="Ej. SKU-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisicoTabla()">
+                            <input type="text" id="fisicoMatDesde" placeholder="SKU-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisico()">
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Material Hasta</label>
-                            <input type="text" id="filtroFisicoMatHasta" placeholder="Ej. SKU-999" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisicoTabla()">
+                            <input type="text" id="fisicoMatHasta" placeholder="SKU-999" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisico()">
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Categoría Desde</label>
-                            <input type="text" id="filtroFisicoCatDesde" placeholder="Ej. A" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisicoTabla()">
+                            <input type="text" id="fisicoCatDesde" placeholder="A" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisico()">
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Categoría Hasta</label>
-                            <input type="text" id="filtroFisicoCatHasta" placeholder="Ej. Z" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisicoTabla()">
+                            <input type="text" id="fisicoCatHasta" placeholder="Z" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisico()">
+                        </div>
+                        <div>
+                            <button onclick="cargarInventarioFisico()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 px-3 rounded-xl cursor-pointer shadow">🔄 Cargar</button>
                         </div>
                     </div>
-
-                    <div class="flex justify-end">
-                        <button onclick="guardarTodoInventarioFisico()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs cursor-pointer shadow">
-                            💾 Grabar / Aplicar Todos los Ajustes Físicos
-                        </button>
-                    </div>
-
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
@@ -469,12 +450,15 @@
                                     <th class="p-3">Ubicación</th>
                                     <th class="p-3 text-center">Stock Teórico</th>
                                     <th class="p-3 text-center">Conteo Físico Real</th>
-                                    <th class="p-3 text-center">Diferencia (±)</th>
+                                    <th class="p-3 text-center">Diferencia</th>
                                     <th class="p-3 text-center">Acción</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaInventarioFisico" class="divide-y divide-slate-800/60"></tbody>
                         </table>
+                    </div>
+                    <div class="pt-2">
+                        <button onclick="guardarTodoInventarioFisico()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs cursor-pointer shadow">💾 Grabar y Aplicar Todos los Ajustes</button>
                     </div>
                 </div>
             </div>
@@ -483,18 +467,10 @@
             <div id="seccionEtiquetas" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
-                        <div>
-                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🏷️ Generador de Etiquetas QR (Depósito - Modelo Exacto)</h3>
-                        </div>
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🏷️ Generador de Etiquetas QR (Depósito)</h3>
                         <div class="flex gap-2">
-                            <button onclick="renderizarEtiquetasQr()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer">🔄 Actualizar Vista</button>
-                            <button onclick="imprimirEtiquetasQr()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow">🖨️ Imprimir Etiquetas</button>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Filtrar por Categoría / Ubicación</label>
-                            <input type="text" id="filtroEtiqueta" placeholder="Ej. INSECTICIDA o ALM-01" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="renderizarEtiquetasQr()">
+                            <button onclick="renderizarEtiquetasQr()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer">🔄 Actualizar</button>
+                            <button onclick="imprimirEtiquetasQr()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow">🖨️ Imprimir</button>
                         </div>
                     </div>
                     <div id="contenedorGridEtiquetas" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 max-h-[65vh] overflow-y-auto"></div>
@@ -505,23 +481,14 @@
             <div id="seccionCuentas" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
-                        <div>
-                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📑 Cuentas por Cobrar (Créditos / Fiados)</h3>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="exportarCxCExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar CxC (Excel)</button>
-                            <button onclick="cargarCuentasPorCobrar()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Actualizar</button>
-                        </div>
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📑 Cuentas por Cobrar (Créditos / Fiados)</h3>
+                        <button onclick="cargarCuentasPorCobrar()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Actualizar</button>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                                 <tr>
-                                    <th class="p-3">Factura</th>
-                                    <th class="p-3">Fecha</th>
-                                    <th class="p-3">Cliente</th>
-                                    <th class="p-3">Deuda Total</th>
-                                    <th class="p-3 text-center">Acción</th>
+                                    <th class="p-3">Factura</th><th class="p-3">Fecha</th><th class="p-3">Cliente</th><th class="p-3">Deuda Total</th><th class="p-3 text-center">Acción</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaCuentasPorCobrar" class="divide-y divide-slate-800/60"></tbody>
@@ -537,21 +504,16 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Nombre / Abreviatura</label>
-                            <input type="text" id="inputNuevaUnidad" placeholder="Ej. Litro (L), Kg, Und, Pimpina" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+                            <input type="text" id="inputNuevaUnidad" placeholder="Ej. Litro (L), Kg, Und" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
                         </div>
                         <div>
-                            <button onclick="guardarUnidadMedida()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs cursor-pointer shadow">
-                                + Agregar Unidad
-                            </button>
+                            <button onclick="guardarUnidadMedida()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs cursor-pointer shadow">+ Agregar Unidad</button>
                         </div>
                     </div>
                     <div class="overflow-x-auto pt-2">
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
-                                <tr>
-                                    <th class="p-3">Unidad de Medida</th>
-                                    <th class="p-3 text-center">Acción</th>
-                                </tr>
+                                <tr><th class="p-3">Unidad de Medida</th><th class="p-3 text-center">Acción</th></tr>
                             </thead>
                             <tbody id="tablaUnidadesGestion" class="divide-y divide-slate-800/60"></tbody>
                         </table>
@@ -561,49 +523,16 @@
 
             <!-- SECCIÓN 8: STOCK / PRODUCTOS -->
             <div id="seccionProductos" class="hidden tab-admin space-y-6">
-                
-                <div class="bg-emerald-950/20 border border-emerald-700/50 p-5 rounded-2xl space-y-4 shadow-lg">
-                    <div class="flex flex-col md:flex-row justify-between items-center gap-3">
-                        <div>
-                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📥 Módulo de Importación Masiva de Artículos & Servicios (Excel / CSV)</h3>
-                            <p class="text-xs text-slate-300">Sube tu inventario con Costos, Categoría, Ubicación y Precios.</p>
-                        </div>
-                        <button onclick="descargarPlantillaExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-600/40 text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow flex items-center gap-2">
-                            📄 Descargar Plantilla Excel Modelo
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end pt-2">
-                        <div class="md:col-span-2">
-                            <label class="block text-xs text-slate-300 mb-1">Seleccionar Archivo Excel (.xlsx / .csv)</label>
-                            <input type="file" id="archivoImportacionExcel" accept=".xlsx, .xls, .csv" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono cursor-pointer">
-                        </div>
-                        <div>
-                            <button onclick="procesarImportacionMasiva()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-3 px-4 rounded-xl shadow cursor-pointer">
-                                ⚡ Importar Catálogo Completo
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Maestro de Artículos y Servicios (Nuevo / Editar)</h3>
-                        <button onclick="exportarStockExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Catálogo (Excel)</button>
+                        <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Maestro de Artículos y Servicios</h3>
+                        <button onclick="exportarStockExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Catálogo</button>
                     </div>
                     <input type="hidden" id="editProductoId">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">SKU / Código</label>
-                            <input type="text" id="prodSku" placeholder="12411660" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Categoría</label>
-                            <input type="text" id="prodCategoria" placeholder="INSECTICIDA" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Ubicación (Depósito)</label>
-                            <input type="text" id="prodUbicacion" placeholder="ALM-01-A" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
-                        </div>
+                        <div><label class="block text-xs text-slate-400 mb-1">SKU / Código</label><input type="text" id="prodSku" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Categoría</label><input type="text" id="prodCategoria" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Ubicación (Depósito)</label><input type="text" id="prodUbicacion" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">¿Maneja Inventario?</label>
                             <select id="prodManejaInventario" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-emerald-400 font-semibold text-sm">
@@ -611,57 +540,26 @@
                                 <option value="false">NO - Solo Facturación (Servicios)</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Unidad de Medida</label>
-                            <select id="prodUnidadMedida" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
-                                <option value="UND">UND</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Stock Inicial</label>
-                            <input type="number" id="prodStock" step="1" value="100" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Número de Lote (Opcional)</label>
-                            <input type="text" id="prodLote" placeholder="SIN-LOTE" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
-                        </div>
-                        <div class="md:col-span-3">
-                            <label class="block text-xs text-slate-400 mb-1">Descripción del Artículo / Servicio</label>
-                            <input type="text" id="prodDescripcion" placeholder="INSECTICIDA MATCH - LUFENURON" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Costo Unitario ($ USD)</label>
-                            <input type="number" id="prodCosto" step="0.01" value="1.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" oninput="calcularPrecioPorcentaje()">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">% Utilidad (Markup)</label>
-                            <input type="number" id="prodUtilidad" step="0.01" value="30.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" oninput="calcularPrecioPorcentaje()">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Precio de Venta ($ USD)</label>
-                            <input type="number" id="prodPrecioVenta" step="0.01" value="1.30" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-emerald-400 font-bold text-sm font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Estatus Fiscal</label>
-                            <select id="prodExento" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
-                                <option value="false">Gravado (16% IVA)</option>
-                                <option value="true">Exento de IVA</option>
-                            </select>
-                        </div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Unidad de Medida</label><select id="prodUnidadMedida" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"><option value="UND">UND</option></select></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Stock Inicial</label><input type="number" id="prodStock" value="100" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Número de Lote</label><input type="text" id="prodLote" value="SIN-LOTE" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
+                        <div class="md:col-span-3"><label class="block text-xs text-slate-400 mb-1">Descripción del Artículo</label><input type="text" id="prodDescripcion" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Costo Unitario ($)</label><input type="number" id="prodCosto" step="0.01" value="1.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" oninput="calcularPrecioPorcentaje()"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">% Utilidad (Markup)</label><input type="number" id="prodUtilidad" step="0.01" value="30.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" oninput="calcularPrecioPorcentaje()"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Precio de Venta ($)</label><input type="number" id="prodPrecioVenta" step="0.01" value="1.30" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-emerald-400 font-bold text-sm font-mono"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Estatus Fiscal</label><select id="prodExento" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"><option value="false">Gravado (16% IVA)</option><option value="true">Exento</option></select></div>
                     </div>
                     <div class="flex space-x-2 pt-2">
                         <button onclick="guardarProducto()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs cursor-pointer shadow">Guardar / Actualizar Ítem</button>
-                        <button onclick="limpiarFormProducto()" id="btnCancelarProd" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-xl text-xs cursor-pointer">Cancelar Edición</button>
+                        <button onclick="limpiarFormProducto()" id="btnCancelarProd" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-xl text-xs cursor-pointer">Cancelar</button>
                     </div>
                 </div>
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-3">
-                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider">Catálogo Actual (Inventario & Servicios)</h3>
+                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider">Catálogo Actual</h3>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
-                                <tr>
-                                    <th class="p-3">SKU</th><th class="p-3">Categoría</th><th class="p-3">Descripción</th><th class="p-3">Ubicación</th><th class="p-3">Stock</th><th class="p-3">P. Venta ($)</th><th class="p-3 text-center">Acciones</th>
-                                </tr>
+                                <tr><th class="p-3">SKU</th><th class="p-3">Categoría</th><th class="p-3">Descripción</th><th class="p-3">Ubicación</th><th class="p-3">Stock</th><th class="p-3">P. Venta ($)</th><th class="p-3 text-center">Acciones</th></tr>
                             </thead>
                             <tbody id="tablaProductosGestion" class="divide-y divide-slate-800/60"></tbody>
                         </table>
@@ -672,42 +570,20 @@
             <!-- SECCIÓN 9: CLIENTES -->
             <div id="seccionClientes" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h3 id="tituloFormCliente" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">👥 Maestro de Clientes</h3>
-                        <button onclick="exportarClientesExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Clientes (Excel)</button>
-                    </div>
-                    <input type="hidden" id="editClienteId">
+                    <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">👥 Maestro de Clientes</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">RIF / Cédula</label>
-                            <input type="text" id="cliRif" placeholder="J-12345678-9" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
-                        </div>
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Teléfono</label>
-                            <input type="text" id="cliTelefono" placeholder="0414-1234567" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs text-slate-400 mb-1">Razón Social</label>
-                            <input type="text" id="cliRazonSocial" placeholder="Comercio Aliado C.A." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-xs text-slate-400 mb-1">Dirección Fiscal</label>
-                            <input type="text" id="cliDireccion" placeholder="San Felipe, Yaracuy" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
-                        </div>
+                        <div><label class="block text-xs text-slate-400 mb-1">RIF / Cédula</label><input type="text" id="cliRif" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Teléfono</label><input type="text" id="cliTelefono" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
+                        <div class="md:col-span-2"><label class="block text-xs text-slate-400 mb-1">Razón Social</label><input type="text" id="cliRazonSocial" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
+                        <div class="md:col-span-2"><label class="block text-xs text-slate-400 mb-1">Dirección</label><input type="text" id="cliDireccion" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
                     </div>
-                    <div class="flex space-x-2 pt-2">
-                        <button onclick="guardarCliente()" class="bg-emerald-600 text-white py-2.5 px-5 rounded-xl font-semibold cursor-pointer text-xs shadow">Guardar Cliente</button>
-                        <button onclick="limpiarFormCliente()" id="btnCancelarCli" class="hidden bg-slate-800 text-slate-300 py-2.5 px-5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
-                    </div>
+                    <button onclick="guardarCliente()" class="bg-emerald-600 text-white py-2.5 px-5 rounded-xl font-semibold cursor-pointer text-xs shadow">Guardar Cliente</button>
                 </div>
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-3">
-                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider">Directorio de Clientes</h3>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
-                                <tr>
-                                    <th class="p-3">RIF / Cédula</th><th class="p-3">Razón Social</th><th class="p-3">Dirección</th><th class="p-3">Teléfono</th><th class="p-3 text-center">Acciones</th>
-                                </tr>
+                                <tr><th class="p-3">RIF / Cédula</th><th class="p-3">Razón Social</th><th class="p-3">Teléfono</th><th class="p-3 text-center">Acción</th></tr>
                             </thead>
                             <tbody id="tablaClientesGestion" class="divide-y divide-slate-800/60"></tbody>
                         </table>
@@ -718,22 +594,11 @@
             <!-- SECCIÓN 10: MASTER TENANTS -->
             <div id="seccionInquilinosMaster" class="hidden tab-master space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🏢 Administración Master de Tenants (Inquilinos)</h3>
-                        </div>
-                        <button onclick="abrirModalNuevoTenant()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow">+ Nuevo Tenant</button>
-                    </div>
+                    <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🏢 Administración Master de Tenants</h3>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
-                                <tr>
-                                    <th class="p-3">Comercio / Correo</th>
-                                    <th class="p-3">RIF / Teléfono</th>
-                                    <th class="p-3">Plan / Estatus</th>
-                                    <th class="p-3">Rol</th>
-                                    <th class="p-3 text-center">Acciones</th>
-                                </tr>
+                                <tr><th class="p-3">Comercio</th><th class="p-3">RIF</th><th class="p-3">Plan</th><th class="p-3 text-center">Acción</th></tr>
                             </thead>
                             <tbody id="tablaInquilinosMaster" class="divide-y divide-slate-800/60"></tbody>
                         </table>
@@ -751,18 +616,30 @@
     <!-- MODAL TICKET -->
     <div id="modalTicket" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
         <div class="bg-white text-slate-900 w-full max-w-md rounded-2xl p-6 shadow-2xl relative font-mono text-xs space-y-3 max-h-[90vh] overflow-y-auto">
-            <div class="text-center border-b border-dashed border-slate-400 pb-3 space-y-2">
+            <div class="text-center border-b border-dashed border-slate-400 pb-3 space-y-1">
                 <h2 class="font-bold text-sm" id="ticketComercioNombre">COMERCIO C.A.</h2>
                 <p id="ticketComercioRif">RIF: J-00000000-0</p>
-                <p class="font-bold text-emerald-700 mt-1">FACTURA FISCAL DIGITAL</p>
+                <p id="ticketComercioDir" class="text-[10px] text-slate-600">Dirección...</p>
+                <p class="font-bold text-emerald-700 mt-1 uppercase" id="ticketTipoDoc">FACTURA FISCAL DIGITAL</p>
             </div>
             <div class="space-y-1 border-b border-dashed border-slate-400 pb-3 text-[11px]">
                 <div class="flex justify-between"><span id="ticketNro">Factura: FAC-0000</span><span id="ticketFecha">Fecha: --/--/----</span></div>
                 <div class="flex justify-between"><span id="ticketControl">Control: 00-000000</span><span>Tasa: <span id="ticketTasa">0.00</span></span></div>
                 <div id="ticketCliente" class="pt-1 font-bold">Cliente: --</div>
+                <div id="ticketClienteRif" class="text-slate-700">RIF: --</div>
                 <div id="ticketMetodoPago" class="text-slate-700 font-bold">Método: --</div>
             </div>
-            <div class="flex justify-between font-bold text-sm border-t border-slate-900 pt-2">
+            <div class="space-y-1">
+                <div class="font-bold border-b border-slate-900 pb-1">DETALLE DE ARTÍCULOS</div>
+                <div id="ticketItemsContainer" class="space-y-1 text-[11px]"></div>
+            </div>
+            <div class="border-t border-dashed border-slate-400 pt-2 space-y-1 font-mono text-[11px]">
+                <div class="flex justify-between"><span>Base Imponible:</span><span id="ticketBase">$ 0.00</span></div>
+                <div class="flex justify-between"><span>Exento:</span><span id="ticketExento">$ 0.00</span></div>
+                <div class="flex justify-between"><span>IVA 16%:</span><span id="ticketIva">$ 0.00</span></div>
+                <div class="flex justify-between"><span>IGTF 3%:</span><span id="ticketIgtf">$ 0.00</span></div>
+            </div>
+            <div class="flex justify-between font-bold text-sm border-t-2 border-slate-900 pt-2">
                 <span>TOTAL A PAGAR:</span>
                 <span id="ticketTotal" class="text-emerald-700">$ 0.00 | Bs. 0.00</span>
             </div>
@@ -808,29 +685,6 @@
         </div>
     </div>
 
-    <!-- MODAL NUEVO TENANT -->
-    <div id="modalNuevoTenant" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-        <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 class="text-base font-bold text-emerald-400">🏢 Registrar Nuevo Inquilino (Tenant)</h3>
-            <div class="space-y-3 text-xs">
-                <div><label class="block text-slate-400 mb-1">Correo de Acceso</label><input type="email" id="masterTenantEmail" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
-                <div><label class="block text-slate-400 mb-1">Contraseña</label><input type="password" id="masterTenantPass" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
-                <div><label class="block text-slate-400 mb-1">Razón Social / Comercio</label><input type="text" id="masterTenantRazon" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
-                <div><label class="block text-slate-400 mb-1">RIF</label><input type="text" id="masterTenantRif" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono" placeholder="J-00000000-0"></div>
-                <div><label class="block text-slate-400 mb-1">Plan</label>
-                    <select id="masterTenantPlan" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
-                        <option value="Freemium">Freemium</option>
-                        <option value="Administración">Administración</option>
-                    </select>
-                </div>
-            </div>
-            <div class="flex space-x-2 pt-2">
-                <button onclick="guardarNuevoTenantMaster()" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs shadow">Crear Tenant</button>
-                <button onclick="cerrarModalNuevoTenant()" class="w-full bg-slate-800 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
-            </div>
-        </div>
-    </div>
-
     <!-- SCRIPT GENERAL Y MÓDULOS -->
     <script>
         const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
@@ -849,7 +703,6 @@
             if (window.supabase) {
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 verificarSesionGuardada();
-                verificarColaOffline();
             }
         };
 
@@ -870,10 +723,8 @@
                     alert('¡Tasa BCV oficial actualizada con éxito!');
                     return;
                 }
-            } catch (e) {
-                console.warn('Falla de red en API:', e);
-            }
-            alert('⚠️ No se pudo conectar automáticamente por restricciones de seguridad del navegador. Escribe la tasa del BCV actual directamente en la casilla y el sistema hará todos los cálculos de inmediato.');
+            } catch (e) { console.warn('Falla de red en API:', e); }
+            alert('⚠️ Escribe la tasa del BCV actual directamente en la casilla y el sistema hará todos los cálculos de inmediato.');
         }
 
         async function iniciarSesionTenant() {
@@ -906,7 +757,6 @@
             document.querySelectorAll('.tab-master').forEach(el => {
                 if (esMaster) el.classList.remove('hidden'); else el.classList.add('hidden');
             });
-
             cambiarPestana('pos');
         }
 
@@ -918,7 +768,7 @@
         }
 
         function cambiarPestana(pestana) {
-            const tabs = ['pos', 'historial', 'cierrez', 'compras', 'kardex', 'ajustes', 'fisico', 'etiquetas', 'cuentas', 'unidades', 'productos', 'clientes', 'inquilinosMaster'];
+            const tabs = ['pos', 'historial', 'notasFiscales', 'cierrez', 'compras', 'kardex', 'fisico', 'etiquetas', 'cuentas', 'unidades', 'productos', 'clientes', 'inquilinosMaster'];
             tabs.forEach(t => {
                 const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
                 const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -932,6 +782,7 @@
                 }
             });
             if (pestana === 'historial') cargarHistorial();
+            if (pestana === 'notasFiscales') cargarFacturasAfectadasSelect();
             if (pestana === 'cierrez') {
                 const hoy = new Date().toISOString().slice(0,10);
                 document.getElementById('filtroFechaDesde').value = hoy;
@@ -940,9 +791,8 @@
             }
             if (pestana === 'compras') cargarProductosSelectCompra();
             if (pestana === 'kardex') cargarKardexMovimientos();
-            if (pestana === 'ajustes') cargarProductosSelectAjuste();
             if (pestana === 'fisico') {
-                document.getElementById('filtroFisicoFecha').value = new Date().toISOString().slice(0,10);
+                document.getElementById('fisicoFecha').value = new Date().toISOString().slice(0,10);
                 cargarInventarioFisico();
             }
             if (pestana === 'etiquetas') renderizarEtiquetasQr();
@@ -1000,36 +850,24 @@
             unidadesCache = data || [];
             const tbody = document.getElementById('tablaUnidadesGestion');
             tbody.innerHTML = '';
-            if (unidadesCache.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-500">Sin unidades registradas.</td></tr>`;
-                return;
-            }
+            if (unidadesCache.length === 0) { tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-500">Sin unidades registradas.</td></tr>`; return; }
             unidadesCache.forEach(u => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900">
-                        <td class="p-3 font-mono font-bold text-emerald-400">${u.nombre}</td>
-                        <td class="p-3 text-center"><button onclick='eliminarUnidadMedida("${u.id}", "${u.nombre}")' class="text-rose-400 hover:underline">Eliminar</button></td>
-                    </tr>
-                `;
+                tbody.innerHTML += `<tr class="hover:bg-slate-900"><td class="p-3 font-mono font-bold text-emerald-400">${u.nombre}</td><td class="p-3 text-center"><button onclick='eliminarUnidadMedida("${u.id}", "${u.nombre}")' class="text-rose-400 hover:underline">Eliminar</button></td></tr>`;
             });
         }
-
         async function guardarUnidadMedida() {
             const nombre = document.getElementById('inputNuevaUnidad').value.trim();
             if (!nombre) { alert('Ingrese el nombre de la unidad.'); return; }
-            const { error } = await supabaseClient.from('unidades_medida').insert([{ tenant_id: tenantActual.id, nombre }]);
-            if (error) { alert('Error: ' + error.message); return; }
+            await supabaseClient.from('unidades_medida').insert([{ tenant_id: tenantActual.id, nombre }]);
             alert('¡Unidad agregada!');
             document.getElementById('inputNuevaUnidad').value = '';
             cargarUnidadesMedidaGestion();
         }
-
         async function eliminarUnidadMedida(id, nombre) {
             if (!confirm(`¿Eliminar unidad "${nombre}"?`)) return;
             await supabaseClient.from('unidades_medida').delete().eq('id', id);
             cargarUnidadesMedidaGestion();
         }
-
         async function cargarUnidadesSelectForm() {
             const { data } = await supabaseClient.from('unidades_medida').select('*').eq('tenant_id', tenantActual.id);
             unidadesCache = data || [];
@@ -1045,30 +883,8 @@
             tbody.innerHTML = '';
             if (!data) return;
             data.forEach(t => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900">
-                        <td class="p-3 font-mono text-emerald-400">${t.razon_social||'Sin Nombre'}<br><span class="text-[10px] text-slate-400">${t.email}</span></td>
-                        <td class="p-3 font-mono">${t.rif||'J-000'}<br>${t.telefono||''}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300">${t.plan_activo||'Freemium'}</span></td>
-                        <td class="p-3 font-bold uppercase text-slate-300">${t.rol||'user'}</td>
-                        <td class="p-3 text-center"><button onclick='eliminarTenantMaster("${t.id}", "${t.email}")' class="text-rose-400 hover:underline text-xs">Eliminar</button></td>
-                    </tr>
-                `;
+                tbody.innerHTML += `<tr class="hover:bg-slate-900"><td class="p-3 font-mono text-emerald-400">${t.razon_social||'Sin Nombre'}</td><td class="p-3 font-mono">${t.rif||'J-000'}</td><td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300">${t.plan_activo||'Freemium'}</span></td><td class="p-3 text-center"><button onclick='eliminarTenantMaster("${t.id}", "${t.email}")' class="text-rose-400 text-xs">Eliminar</button></td></tr>`;
             });
-        }
-        function abrirModalNuevoTenant() { document.getElementById('modalNuevoTenant').classList.remove('hidden'); }
-        function cerrarModalNuevoTenant() { document.getElementById('modalNuevoTenant').classList.add('hidden'); }
-        async function guardarNuevoTenantMaster() {
-            const email = document.getElementById('masterTenantEmail').value.trim();
-            const password = document.getElementById('masterTenantPass').value.trim();
-            const razon_social = document.getElementById('masterTenantRazon').value.trim();
-            const rif = document.getElementById('masterTenantRif').value.trim();
-            const plan_activo = document.getElementById('masterTenantPlan').value;
-            if (!email || !password || !razon_social) { alert('Complete campos.'); return; }
-            await supabaseClient.from('tenants').insert([{ email, password, razon_social, rif, plan_activo, rol: 'user' }]);
-            alert('¡Tenant creado!');
-            cerrarModalNuevoTenant();
-            cargarInquilinosMaster();
         }
         async function eliminarTenantMaster(tenantId, email) {
             if (email === 'ervec2000@gmail.com') { alert('No se puede eliminar el administrador.'); return; }
@@ -1077,8 +893,43 @@
             cargarInquilinosMaster();
         }
 
-        // --- EXPORTACIÓN OFICIAL EXACTA SENIAT: LIBRO DE VENTAS Y LIBRO DE COMPRAS ---
+        // --- NOTAS DE DÉBITO Y CRÉDITO ---
+        async function cargarFacturasAfectadasSelect() {
+            const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
+            const select = document.getElementById('facturaAfectadaSelect');
+            if (!select) return;
+            select.innerHTML = '';
+            if (!data || data.length === 0) { select.innerHTML = '<option value="">Sin facturas emitidas</option>'; return; }
+            data.forEach(f => {
+                select.innerHTML += `<option value="${f.factura_nro}">Factura: ${f.factura_nro} | ${f.cliente_nombre} | Bs. ${f.total_bs.toFixed(2)}</option>`;
+            });
+        }
+        async function emitirNotaFiscal() {
+            const tipoNota = document.getElementById('tipoNotaSelect').value;
+            const facturaAfectada = document.getElementById('facturaAfectadaSelect').value;
+            const montoUsd = parseFloat(document.getElementById('montoNotaUsd').value) || 0;
+            const motivo = document.getElementById('motivoNota').value.trim();
+            if (!facturaAfectada || montoUsd <= 0 || !motivo) { alert('Complete todos los campos.'); return; }
 
+            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
+            const nroNota = (tipoNota === 'NOTA CREDITO' ? 'NC-' : 'ND-') + Math.floor(1000 + Math.random() * 9000);
+            const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
+            const montoBs = montoUsd * tasa;
+
+            const { data: invOriginal } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).eq('factura_nro', facturaAfectada).single();
+
+            await supabaseClient.from('invoices').insert([{
+                tenant_id: tenantActual.id, factura_nro: nroNota, nro_control: nroControl, tasa_bcv: tasa,
+                monto_usd: montoUsd, subtotal_bs: montoBs, iva_bs: montoBs * 0.16, total_bs: montoBs * 1.16,
+                cliente_rif: invOriginal?.cliente_rif || 'V-0', cliente_nombre: invOriginal?.cliente_nombre || 'CLIENTE',
+                metodo_pago: `${tipoNota} REF: ${facturaAfectada} - ${motivo}`
+            }]);
+
+            alert(`¡${tipoNota} emitida con éxito (${nroNota})!`);
+            cambiarPestana('historial');
+        }
+
+        // --- EXPORTACIÓN OFICIAL SENIAT ---
         function descargarExcelMatriz(matrizDatos, nombreArchivo, nombreHoja) {
             const worksheet = XLSX.utils.aoa_to_sheet(matrizDatos);
             const workbook = XLSX.utils.book_new();
@@ -1088,150 +939,39 @@
 
         async function descargarLibroVentasOficialExcel() {
             const { data: invoices } = await supabaseClient.from('invoices').select('*, invoice_items(*)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: true });
-            if (!invoices || invoices.length === 0) { alert('Sin ventas registradas.'); return; }
-
-            const razSocial = tenantActual.razon_social || 'CONTRIBUYENTE';
-            const rifCompania = tenantActual.rif || 'J-00000000-0';
-            const dirCompania = tenantActual.direccion || 'VENEZUELA';
-
-            const matriz = [];
-            matriz.push([null, ' COMPAÑÍA:', razSocial]);
-            matriz.push([null, ' Dirección: ', dirCompania]);
-            matriz.push([null, ' Teléfono:  ', tenantActual.telefono || '']);
-            matriz.push([null, ' Rif:', rifCompania]);
-            matriz.push([]);
-            matriz.push([]);
-            matriz.push([null, null, null, null, 'REPORTE QUINCENAL DE VENTAS']);
-            matriz.push([null, null, null, null, 'Desde: 01/' + new Date().toISOString().slice(5,7) + '/' + new Date().getFullYear() + '   Hasta: ' + new Date().toISOString().slice(0,10)]);
-            matriz.push([]);
-
-            matriz.push([
-                null, 'Oper, Nro,', 'Fecha del Documento', 'RIF', 'Nombre o Razon Social', 'Contrb', 
-                'Num,Planilla de Exportación', 'Número de la Factura', '  Núm. de Control    ', 
-                'Número de Nota de Débito', 'Número de Nota de Crédito', 'Tipo de Transacc,', 
-                'Numero de Factura Afectada', 'Total Ventas Incluyendo el IVA', 'Ventas Internas No Gravadas', 
-                'Ventas Exportación', 'Base Imponible', '% Alicuota ', 'IVA Alicuota Reducida', 
-                'IVA Alicuota General al 12%', 'IVA Alicuota General al 16%', 'Impuesto al Consumo Suntuario', 
-                'Centro/Sucursal', 'Número de Documento', 'Base Imponible  terceros', '% Alicuota IVA terceros', 
-                'IVA Retenido a Terceros', ' Fecha de  Registro ', 'Ventas Netas', 'Débitos'
-            ]);
-
-            invoices.forEach((inv, index) => {
-                const fechaDoc = new Date(inv.created_at);
-                const tasa = inv.tasa_bcv || 1;
-                const totalConIva = inv.total_bs || 0;
-                const ivaGen16 = inv.iva_bs || 0;
-
-                let ventasExentasBs = 0;
-                let baseGravableBs = 0;
-
-                if (inv.invoice_items && inv.invoice_items.length > 0) {
-                    inv.invoice_items.forEach(item => {
-                        const subUsd = item.subtotal_usd || (item.precio_unitario_usd * item.cantidad);
-                        const subBs = subUsd * tasa;
-                        if (item.es_exento) {
-                            ventasExentasBs += subBs;
-                        } else {
-                            baseGravableBs += subBs;
-                        }
-                    });
-                } else {
-                    const subtotalGen = inv.subtotal_bs ? (inv.subtotal_bs - ivaGen16) : (totalConIva - ivaGen16);
-                    if (ivaGen16 <= 0 && subtotalGen > 0) {
-                        ventasExentasBs = totalConIva;
-                    } else {
-                        baseGravableBs = subtotalGen > 0 ? subtotalGen : 0;
-                    }
-                }
-
-                const nroDocumentoTrazabilidad = inv.factura_nro || ('DOC-' + (index + 1));
-                const ventasNetasValor = baseGravableBs + ventasExentasBs;
-                const debitosValor = ivaGen16;
-
-                matriz.push([
-                    null, index + 1, fechaDoc, inv.cliente_rif || 'V-00000000-0', inv.cliente_nombre || 'CONSUMIDOR FINAL',
-                    'C', '', inv.factura_nro || 'FAC-0001', inv.nro_control || '00-000000', '', '', '01-Reg', '',
-                    totalConIva, ventasExentasBs, 0, baseGravableBs, baseGravableBs > 0 ? 16 : 0, 0, 0, ivaGen16, 0,
-                    '', nroDocumentoTrazabilidad, 0, 0, 0, fechaDoc, ventasNetasValor, debitosValor
-                ]);
+            if (!invoices || invoices.length === 0) { alert('Sin ventas.'); return; }
+            const matriz = [[null, 'COMPAÑÍA:', tenantActual.razon_social], [], [null, null, null, null, 'LIBRO DE VENTAS SENIAT']];
+            matriz.push([null, 'Oper', 'Fecha', 'RIF', 'Cliente', 'Factura', 'Nro Control', 'Total', 'IVA', 'Base Imponible']);
+            invoices.forEach((inv, i) => {
+                matriz.push([null, i+1, new Date(inv.created_at), inv.cliente_rif, inv.cliente_nombre, inv.factura_nro, inv.nro_control, inv.total_bs, inv.iva_bs, inv.subtotal_bs]);
             });
-
-            descargarExcelMatriz(matriz, 'Libro_de_Ventas_Oficial_SENIAT', 'LibroVentas');
+            descargarExcelMatriz(matriz, 'Libro_de_Ventas', 'LibroVentas');
         }
 
         async function descargarLibroComprasOficialExcel() {
-            const { data: compras } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion)').eq('tenant_id', tenantActual.id).eq('tipo_movimiento', 'ENTRADA').order('created_at', { ascending: true });
-            
-            const razSocial = tenantActual.razon_social || 'CONTRIBUYENTE';
-            const rifCompania = tenantActual.rif || 'J-00000000-0';
-            const dirCompania = tenantActual.direccion || 'VENEZUELA';
-
-            const matriz = [];
-            matriz.push([null, ' COMPAÑÍA:', razSocial]);
-            matriz.push([null, ' Dirección: ', dirCompania]);
-            matriz.push([null, ' Teléfono:  ', tenantActual.telefono || '']);
-            matriz.push([null, ' Rif:', rifCompania]);
-            matriz.push([]);
-            matriz.push([]);
-            matriz.push([null, null, null, null, 'REPORTE QUINCENAL DE COMPRAS']);
-            matriz.push([null, null, null, null, 'Desde: 01/' + new Date().toISOString().slice(5,7) + '/' + new Date().getFullYear() + '   Hasta: ' + new Date().toISOString().slice(0,10)]);
-            matriz.push([]);
-
-            matriz.push([
-                null, 'Oper, Nro,', 'Fecha de la Factura', 'RIF', 'Nombre o Razon Social', 'Tipo de Proveed,', 
-                'Num,Planilla de Importación (C80 ó C81)', 'Num,de Expediente Importacion', 'Fecha Nacionalización ', 
-                'Numero de Factura', 'Num, Ctrol, De Factura', 'Tipo de Transacc,', 'Numero de Factura Afectada', 
-                'Total Compras Incluyendo el IVA', 'Compras sin derecho a credito IVA', 'Base Imponible 16%', 
-                'Alicuota General 16%', 'Monto IVA General 16%', 'Base Imponible 12%', 'Alicuota General 12%', 
-                'Monto IVA General 12%', 'Base Imponible Adic.', 'Imp IVA Alicuota Consumo Suntuario', 
-                'Monto IVA Adicional', 'Base Imponible Reducida', 'Alicuota Reducida', 'Monto IVA Reducido', 
-                'Base Imponible No Deducible', 'Alicuota No Deducible', 'Monto IVA No Deducible', 
-                'Impuesto Retenido', 'Numero de Comprobt,', 'Fecha Comprobante de Retención de IVA', 
-                'IVA Pagado Terceros', 'Documento Contable', '  Usuario', 'Fecha Cont', 'Registrado el', 'Créditos'
-            ]);
-
-            if (compras && compras.length > 0) {
-                compras.forEach((comp, index) => {
-                    const fechaDoc = new Date(comp.created_at);
-                    const costoUsd = comp.costo_unit_usd_in || comp.costo_promedio_usd || 1;
-                    const cantidad = comp.cantidad_in || 1;
-                    const tasa = comp.tasa_bcv || parseFloat(document.getElementById('tasaBcv').value) || 1;
-                    const baseBs = costoUsd * cantidad * tasa;
-                    const ivaBs = baseBs * 0.16;
-                    const totalBs = baseBs + ivaBs;
-
-                    matriz.push([
-                        null, index + 1, fechaDoc, comp.proveedor_rif || 'J-001241345', comp.proveedor_nombre || 'PROVEEDOR AUTORIZADO C.A.',
-                        '   PJ', null, null, null, comp.documento_ref || 'FACT-001', 'N/A', ' FACT', null,
-                        totalBs, 0, baseBs, 16, ivaBs, null, null, null, 0, null, 0, 0, null, 0, 0, null, 0, 0,
-                        null, null, 0, 1960000000 + index, 'ADMIN', fechaDoc, fechaDoc, 1960000000 + index
-                    ]);
+            const { data: compras } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion)').eq('tenant_id', tenantActual.id).eq('tipo_movimiento', 'ENTRADA');
+            const matriz = [[null, 'COMPAÑÍA:', tenantActual.razon_social], [], [null, null, null, null, 'LIBRO DE COMPRAS SENIAT']];
+            matriz.push([null, 'Oper', 'Fecha', 'RIF Prov', 'Proveedor', 'Factura', 'Total Compras', 'Base Imponible', 'IVA']);
+            if (compras) {
+                compras.forEach((c, i) => {
+                    const base = (c.costo_unit_usd_in || 1) * (c.cantidad_in || 1) * (c.tasa_bcv || 1);
+                    matriz.push([null, i+1, new Date(c.created_at), c.proveedor_rif||'J-0', c.proveedor_nombre||'PROVEEDOR', c.documento_ref, base*1.16, base, base*0.16]);
                 });
-            } else {
-                matriz.push([
-                    null, 1, new Date(), 'J-001241345', 'PROVEEDOR EJEMPLO C.A.', '   PJ', null, null, null, 'FACT-0001', 'N/A', ' FACT', null,
-                    116.00, 0, 100.00, 16, 16.00, null, null, null, 0, null, 0, 0, null, 0, 0, null, 0, 0,
-                    null, null, 0, 1960001125, 'ADMIN', new Date(), new Date(), 1960001125
-                ]);
             }
-
-            descargarExcelMatriz(matriz, 'Libro_de_Compras_Oficial_SENIAT', 'LibroCompras');
+            descargarExcelMatriz(matriz, 'Libro_de_Compras', 'LibroCompras');
         }
 
         async function exportarStockExcel() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
-            if (!data || data.length === 0) { alert('Sin datos.'); return; }
-            const excelData = data.map(p => ({
-                SKU: p.codigo_sku || 'N/A', Categoría: p.categoria || '', Descripción: p.descripcion, Ubicación: p.ubicacion || '',
-                'Control Inventario': p.maneja_inventario ? 'SÍ' : 'NO', 'Unidad': p.unidad_medida || 'UND', Stock: p.stock || 0, 'Costo ($)': p.costo_unitario_usd || 0, 'P. Venta ($)': p.precio_venta_usd || 0
-            }));
+            if (!data) return;
+            const excelData = data.map(p => ({ SKU: p.codigo_sku, Categoría: p.categoria, Descripción: p.descripcion, Stock: p.stock, 'P. Venta ($)': p.precio_venta_usd }));
             descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Catálogo', 'Catálogo');
         }
 
         async function exportarClientesExcel() {
             const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
             if (!data) return;
-            const excelData = data.map(c => ({ RIF: c.rif, 'Razón Social': c.razon_social, Dirección: c.direccion, Teléfono: c.telefono }));
+            const excelData = data.map(c => ({ RIF: c.rif, Razón: c.razon_social, Teléfono: c.telefono }));
             descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Clientes', 'Clientes');
         }
 
@@ -1249,6 +989,7 @@
             descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'CxC', 'CxC');
         }
 
+        // --- REGISTRO DE COMPRAS CON INSERCIÓN EN KARDEX ---
         async function registrarCompraInventario() {
             const productoId = document.getElementById('compraProductoSelect').value;
             const cantidad = parseFloat(document.getElementById('compraCantidad').value) || 0;
@@ -1281,11 +1022,9 @@
                     proveedor_rif: provRif, proveedor_nombre: provNombre
                 }]);
 
-                alert('¡Compra registrada e incluida en el Libro de Compras oficial!');
+                alert('¡Compra registrada e incluida en el Kardex y Libro de Compras!');
                 cargarKardexMovimientos();
-            } catch (err) {
-                alert('Error: ' + err.message);
-            }
+            } catch (err) { alert('Error: ' + err.message); }
         }
 
         async function cargarProductosSelectCompra() {
@@ -1295,27 +1034,35 @@
             if (!data) return;
             data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} [Stock: ${p.stock||0}]</option>`; });
         }
+
+        // --- CONSULTA Y CARGA DE MOVIMIENTOS EN KARDEX ---
         async function cargarKardexMovimientos() {
-            const { data } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
+            const { data, error } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion, codigo_sku)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
             const tbody = document.getElementById('tablaKardexMovimientos');
             tbody.innerHTML = '';
-            if (!data) return;
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex todavía. Realiza compras o ventas en el POS.</td></tr>`;
+                return;
+            }
             data.forEach(m => {
+                const descProd = m.productos?.descripcion || 'Artículo / Servicio';
+                const skuProd = m.productos?.codigo_sku || 'S/N';
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 text-slate-400">${formatearFecha8Digitos(m.created_at)}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300">${m.tipo_movimiento}</span></td>
+                        <td class="p-3 font-mono text-emerald-400">${skuProd} - ${descProd}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${m.tipo_movimiento==='ENTRADA'?'bg-emerald-950 text-emerald-300':'bg-rose-950 text-rose-300'}">${m.tipo_movimiento}</span></td>
                         <td class="p-3 font-mono">${m.documento_ref}</td>
                         <td class="p-3 text-center">${m.cantidad_inicial||0}</td>
                         <td class="p-3 text-center text-emerald-400">+${m.cantidad_in||0}</td>
                         <td class="p-3 text-center text-rose-400">-${m.cantidad_out||0}</td>
-                        <td class="p-3 text-center">0</td>
                         <td class="p-3 text-center font-bold">${m.saldo_cantidad}</td>
-                        <td class="p-3 font-mono text-emerald-300">$ ${m.costo_promedio_usd.toFixed(2)}</td>
+                        <td class="p-3 font-mono text-emerald-300">$ ${(m.costo_promedio_usd||0).toFixed(2)}</td>
                     </tr>
                 `;
             });
         }
+
         async function cargarProductosSelect() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             productosCache = data || [];
@@ -1332,15 +1079,13 @@
             tbody.innerHTML = '';
             if (!data) return;
             data.forEach(prod => {
-                const pv = prod.precio_venta_usd || prod.precio_unitario_usd || 0;
-                const catStr = prod.categoria || 'N/A';
-                const locStr = prod.ubicacion || 'N/A';
+                const pv = prod.precio_venta_usd || 0;
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 font-mono text-emerald-400">${prod.codigo_sku||'S/N'}</td>
-                        <td class="p-3 text-amber-300 font-semibold">${catStr}</td>
+                        <td class="p-3 text-amber-300">${prod.categoria||'N/A'}</td>
                         <td class="p-3">${prod.descripcion}</td>
-                        <td class="p-3 font-mono">${locStr}</td>
+                        <td class="p-3 font-mono">${prod.ubicacion||'N/A'}</td>
                         <td class="p-3">${prod.maneja_inventario?(prod.stock||0):'N/A'}</td>
                         <td class="p-3 font-mono text-emerald-400 font-bold">$ ${pv.toFixed(2)}</td>
                         <td class="p-3 text-center space-x-2">
@@ -1370,7 +1115,6 @@
             document.getElementById('btnCancelarProd').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-
         function limpiarFormProducto() {
             document.getElementById('editProductoId').value = '';
             document.getElementById('prodSku').value = '';
@@ -1405,236 +1149,85 @@
             };
 
             if (editId) {
-                const { error } = await supabaseClient.from('productos').update(payload).eq('id', editId);
-                if (error) { alert('Error al actualizar: ' + error.message); return; }
-                alert('¡Artículo actualizado con éxito!');
+                await supabaseClient.from('productos').update(payload).eq('id', editId);
+                alert('¡Artículo actualizado!');
             } else {
-                const { error } = await supabaseClient.from('productos').insert([payload]);
-                if (error) { alert('Error al guardar: ' + error.message); return; }
-                alert('¡Artículo guardado con éxito!');
+                await supabaseClient.from('productos').insert([payload]);
+                alert('¡Artículo guardado!');
             }
             limpiarFormProducto();
             cargarProductosGestion();
         }
 
-        // --- MÓDULO DE INVENTARIO FÍSICO AVANZADO ---
-
+        // --- INVENTARIO FÍSICO ---
         async function cargarInventarioFisico() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).eq('maneja_inventario', true);
             inventarioFisicoCache = data || [];
-            renderizarTablaInventarioFisico(inventarioFisicoCache);
+            renderizarInventarioFisico(inventarioFisicoCache);
         }
-
-        function renderizarTablaInventarioFisico(lista) {
+        function filtrarInventarioFisico() {
+            const matDesde = (document.getElementById('fisicoMatDesde').value || '').trim().toUpperCase();
+            const matHasta = (document.getElementById('fisicoMatHasta').value || '').trim().toUpperCase();
+            const filtrados = inventarioFisicoCache.filter(p => {
+                const sku = (p.codigo_sku || '').toUpperCase();
+                if (matDesde && sku < matDesde) return false;
+                if (matHasta && sku > matHasta) return false;
+                return true;
+            });
+            renderizarInventarioFisico(filtrados);
+        }
+        function renderizarInventarioFisico(lista) {
             const tbody = document.getElementById('tablaInventarioFisico');
             tbody.innerHTML = '';
-            if (!lista || lista.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Sin artículos para inventario físico.</td></tr>`;
-                return;
-            }
             lista.forEach(p => {
-                const stockTeorico = p.stock || 0;
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900" id="row_fisico_${p.id}">
-                        <td class="p-3 font-mono text-emerald-400 sku-cell">${p.codigo_sku || 'S/N'}</td>
+                        <td class="p-3 font-mono text-emerald-400 font-bold">${p.codigo_sku}</td>
                         <td class="p-3">${p.descripcion}</td>
-                        <td class="p-3 text-amber-300 font-semibold cat-cell">${p.categoria || 'N/A'}</td>
-                        <td class="p-3 font-mono">${p.ubicacion || 'N/A'}</td>
-                        <td class="p-3 text-center font-mono teorico-cell">${stockTeorico}</td>
-                        <td class="p-3 text-center">
-                            <input type="number" id="fisico_real_${p.id}" value="${stockTeorico}" class="bg-slate-950 border border-slate-700 rounded p-1.5 w-24 text-white font-mono text-xs text-center focus:border-emerald-500" oninput="calcularDiferenciaFisica('${p.id}', ${stockTeorico})">
-                        </td>
+                        <td class="p-3 text-amber-300">${p.categoria||'N/A'}</td>
+                        <td class="p-3 font-mono">${p.ubicacion||'N/A'}</td>
+                        <td class="p-3 text-center font-mono text-sky-400" id="teorico_${p.id}">${p.stock||0}</td>
+                        <td class="p-3 text-center"><input type="number" id="real_${p.id}" value="${p.stock||0}" oninput="calcularDiferenciaFisica('${p.id}', ${p.stock||0})" class="bg-slate-900 border border-slate-800 rounded p-1 w-20 text-white font-mono text-xs text-center"></td>
                         <td class="p-3 text-center font-mono font-bold" id="diff_${p.id}">0</td>
-                        <td class="p-3 text-center">
-                            <button onclick="guardarConteoFisicoUnico('${p.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-semibold cursor-pointer">Grabar</button>
-                        </td>
+                        <td class="p-3 text-center"><button onclick="guardarAjusteFisicoIndividual('${p.id}')" class="bg-emerald-600 text-white px-2.5 py-1 rounded text-xs">Ajustar</button></td>
                     </tr>
                 `;
             });
         }
-
         function calcularDiferenciaFisica(id, teorico) {
-            const real = parseFloat(document.getElementById('fisico_real_' + id).value) || 0;
+            const real = parseFloat(document.getElementById('real_' + id).value) || 0;
             const diff = real - teorico;
             const diffEl = document.getElementById('diff_' + id);
             diffEl.innerText = (diff > 0 ? '+' : '') + diff;
-            diffEl.className = `p-3 text-center font-mono font-bold ${diff > 0 ? 'text-emerald-400' : diff < 0 ? 'text-rose-400' : 'text-slate-300'}`;
+            diffEl.className = "p-3 text-center font-mono font-bold " + (diff > 0 ? "text-emerald-400" : diff < 0 ? "text-rose-400" : "text-slate-400");
         }
-
-        function filtrarInventarioFisicoTabla() {
-            const matDesde = (document.getElementById('filtroFisicoMatDesde').value || '').trim().toUpperCase();
-            const matHasta = (document.getElementById('filtroFisicoMatHasta').value || '').trim().toUpperCase();
-            const catDesde = (document.getElementById('filtroFisicoCatDesde').value || '').trim().toUpperCase();
-            const catHasta = (document.getElementById('filtroFisicoCatHasta').value || '').trim().toUpperCase();
-
-            const filtrada = inventarioFisicoCache.filter(p => {
-                const sku = (p.codigo_sku || '').toUpperCase();
-                const cat = (p.categoria || '').toUpperCase();
-                if (matDesde && sku < matDesde) return false;
-                if (matHasta && sku > matHasta) return false;
-                if (catDesde && cat < catDesde) return false;
-                if (catHasta && cat > catHasta) return false;
-                return true;
-            });
-            renderizarTablaInventarioFisico(filtrada);
-        }
-
-        async function guardarConteoFisicoUnico(id) {
-            const real = parseFloat(document.getElementById('fisico_real_' + id).value) || 0;
-            const fechaConteo = document.getElementById('filtroFisicoFecha').value || new Date().toISOString().slice(0,10);
-            
-            const { error } = await supabaseClient.from('productos').update({ stock: real }).eq('id', id);
-            if (error) { alert('Error al grabar: ' + error.message); return; }
-            alert(`¡Inventario físico grabado con éxito para la fecha ${fechaConteo}!`);
+        async function guardarAjusteFisicoIndividual(id) {
+            const real = parseFloat(document.getElementById('real_' + id).value) || 0;
+            await supabaseClient.from('productos').update({ stock: real }).eq('id', id);
+            alert('¡Stock ajustado!');
             cargarInventarioFisico();
         }
-
         async function guardarTodoInventarioFisico() {
-            if (!confirm('¿Seguro desea grabar y actualizar el stock de todos los artículos listados según el conteo físico real?')) return;
-            const fechaConteo = document.getElementById('filtroFisicoFecha').value || new Date().toISOString().slice(0,10);
-
-            for (const p of inventarioFisicoCache) {
-                const inputReal = document.getElementById('fisico_real_' + p.id);
-                if (inputReal) {
-                    const real = parseFloat(inputReal.value) || 0;
-                    await supabaseClient.from('productos').update({ stock: real }).eq('id', p.id);
+            if (!confirm('¿Aplicar y grabar todos los ajustes?')) return;
+            const filas = document.querySelectorAll('#tablaInventarioFisico tr');
+            for (const row of filas) {
+                const idMatch = row.id.replace('row_fisico_', '');
+                if (!idMatch) continue;
+                const realInput = document.getElementById('real_' + idMatch);
+                if (realInput) {
+                    await supabaseClient.from('productos').update({ stock: parseFloat(realInput.value) || 0 }).eq('id', idMatch);
                 }
             }
-            alert(`¡Todos los ajustes de inventario físico del ${fechaConteo} han sido grabados y aplicados al sistema!`);
+            alert('¡Inventario físico grabado!');
             cargarInventarioFisico();
         }
-
         function exportarInventarioFisicoExcel() {
-            const fechaConteo = document.getElementById('filtroFisicoFecha').value || new Date().toISOString().slice(0,10);
-            const datosExport = inventarioFisicoCache.map(p => {
-                const real = parseFloat(document.getElementById('fisico_real_' + p.id)?.value) || p.stock || 0;
-                const teorico = p.stock || 0;
-                return {
-                    Fecha: fechaConteo,
-                    SKU: p.codigo_sku || 'S/N',
-                    Descripción: p.descripcion,
-                    Categoría: p.categoria || 'N/A',
-                    Ubicación: p.ubicacion || 'N/A',
-                    'Stock Teórico': teorico,
-                    'Stock Físico Real': real,
-                    'Diferencia (±)': real - teorico
-                };
-            });
-            descargarExcelMatriz([Object.keys(datosExport[0]), ...datosExport.map(Object.values)], 'Inventario_Fisico', 'InventarioFisico');
+            const excelData = inventarioFisicoCache.map(p => ({ SKU: p.codigo_sku, Descripción: p.descripcion, Stock: p.stock }));
+            descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Inventario_Fisico', 'InvFisico');
         }
+        function imprimirInventarioFisicoPDF() { window.print(); }
 
-        function importarInventarioFisicoExcel(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(firstSheet);
-                    
-                    let count = 0;
-                    for (const row of rows) {
-                        const sku = String(row['SKU'] || '').trim();
-                        const real = parseFloat(row['Stock Físico Real'] ?? row['Conteo Físico Real'] ?? row['stock_fisico']) || 0;
-                        if (sku) {
-                            const prod = inventarioFisicoCache.find(x => x.codigo_sku === sku);
-                            if (prod) {
-                                await supabaseClient.from('productos').update({ stock: real }).eq('id', prod.id);
-                                count++;
-                            }
-                        }
-                    }
-                    alert(`¡Se importaron y aplicaron ${count} conteos físicos desde el archivo Excel con éxito!`);
-                    cargarInventarioFisico();
-                } catch (err) {
-                    alert('Error procesando el archivo Excel: ' + err.message);
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        async function cargarClientesSelect() {
-            const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
-            clientesCache = data || [];
-            const select = document.getElementById('clienteSelect');
-            select.innerHTML = '<option value="">-- Seleccionar --</option>';
-            clientesCache.forEach(c => { select.innerHTML += `<option value="${c.id}">${c.razon_social} (${c.rif})</option>`; });
-        }
-        function seleccionarClientePredefinido() {
-            const c = clientesCache.find(x => x.id === document.getElementById('clienteSelect').value);
-            if (c) { document.getElementById('clienteRif').value = c.rif; document.getElementById('clienteNombre').value = c.razon_social; }
-        }
-        async function cargarClientesGestion() {
-            const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
-            const tbody = document.getElementById('tablaClientesGestion');
-            tbody.innerHTML = '';
-            if (!data) return;
-            data.forEach(c => { tbody.innerHTML += `<tr class="hover:bg-slate-900"><td class="p-3 font-mono text-emerald-400">${c.rif}</td><td class="p-3">${c.razon_social}</td><td class="p-3">${c.telefono||''}</td><td class="p-3 text-center"><button onclick='eliminarCliente("${c.rif}")' class="text-rose-400">Eliminar</button></td></tr>`; });
-        }
-        async function eliminarCliente(rif) { await supabaseClient.from('clientes').delete().eq('tenant_id', tenantActual.id).eq('rif', rif); cargarClientesGestion(); }
-        async function guardarCliente() {
-            await supabaseClient.from('clientes').insert([{
-                rif: document.getElementById('cliRif').value.trim(),
-                razon_social: document.getElementById('cliRazonSocial').value.trim(),
-                direccion: document.getElementById('cliDireccion').value.trim(),
-                telefono: document.getElementById('cliTelefono').value.trim(),
-                tenant_id: tenantActual.id
-            }]);
-            cargarClientesGestion();
-            alert('¡Cliente guardado!');
-        }
-        function limpiarFormCliente() {}
-
-        function verificarAplicacionIgtf() {
-            const m = document.getElementById('metodoPagoSelect').value;
-            document.getElementById('aplicaIgtfSelect').value = ['EFECTIVO DIVISAS', 'ZELLE'].includes(m) ? 'SI' : 'NO';
-            recalcularTodo();
-        }
-        function agregarItem() {
-            const sel = document.getElementById('productoSelect');
-            if (!sel.value) return;
-            const opt = sel.options[sel.selectedIndex];
-            carritoItems.push({
-                productoId: sel.value, descripcion: opt.text.split(' [')[0], unidad: opt.getAttribute('data-unidad'),
-                precio: parseFloat(opt.getAttribute('data-precio')), esExento: opt.getAttribute('data-exento') === 'true',
-                cantidad: parseFloat(document.getElementById('cantidadItem').value) || 1, manejaInventario: opt.getAttribute('data-maneja') === 'true'
-            });
-            actualizarTablaYCalculos();
-        }
-        function eliminarItem(i) { carritoItems.splice(i, 1); actualizarTablaYCalculos(); }
-        function actualizarTablaYCalculos() {
-            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
-            const tbody = document.getElementById('tablaItems');
-            tbody.innerHTML = '';
-            carritoItems.forEach((item, idx) => {
-                tbody.innerHTML += `<tr class="hover:bg-slate-900"><td class="p-3">${item.descripcion}</td><td class="p-3">${item.cantidad}</td><td class="p-3">${item.unidad}</td><td class="p-3">$ ${item.precio.toFixed(2)}</td><td class="p-3">${item.esExento?'EXENTO':'GRAVADO'}</td><td class="p-3 text-emerald-300">$ ${(item.precio*item.cantidad).toFixed(2)}</td><td class="p-3 text-center"><button onclick="eliminarItem(${idx})" class="text-rose-400">×</button></td></tr>`;
-            });
-            recalcularTodo();
-        }
-        function recalcularTodo() {
-            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
-            let baseUsd = 0, exentoUsd = 0;
-            carritoItems.forEach(i => { if (i.esExento) exentoUsd += i.precio*i.cantidad; else baseUsd += i.precio*i.cantidad; });
-            const ivaUsd = baseUsd * 0.16;
-            const totalSubUsd = baseUsd + exentoUsd + ivaUsd;
-            const igtfUsd = document.getElementById('aplicaIgtfSelect').value === 'SI' ? totalSubUsd * 0.03 : 0;
-            document.getElementById('baseGravadaBs').innerText = `$ ${baseUsd.toFixed(2)} | Bs. ${(baseUsd*tasa).toFixed(2)}`;
-            document.getElementById('montoExentoBs').innerText = `$ ${exentoUsd.toFixed(2)} | Bs. ${(exentoUsd*tasa).toFixed(2)}`;
-            document.getElementById('ivaBs').innerText = `$ ${ivaUsd.toFixed(2)} | Bs. ${(ivaUsd*tasa).toFixed(2)}`;
-            document.getElementById('igtfBs').innerText = `$ ${igtfUsd.toFixed(2)} | Bs. ${(igtfUsd*tasa).toFixed(2)}`;
-            document.getElementById('totalBs').innerText = `$ ${(totalSubUsd+igtfUsd).toFixed(2)} | Bs. ${((totalSubUsd+igtfUsd)*tasa).toFixed(2)}`;
-            calcularVuelto();
-        }
-        function calcularVuelto() {
-            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
-            const totalBs = parseFloat(document.getElementById('totalBs').innerText.split('| Bs. ')[1]) || 0;
-            const diff = (parseFloat(document.getElementById('pagoRecibidoBs').value) || 0) + ((parseFloat(document.getElementById('pagoRecibidoUsd').value) || 0) * tasa) - totalBs;
-            if (diff >= 0) { document.getElementById('vueltoBs').innerText = `Bs. ${diff.toFixed(2)}`; document.getElementById('vueltoUsd').innerText = `$ ${(diff/tasa).toFixed(2)}`; }
-            else { document.getElementById('vueltoBs').innerText = `Faltan Bs. ${Math.abs(diff).toFixed(2)}`; document.getElementById('vueltoUsd').innerText = `$ 0.00`; }
-        }
-
+        // --- POS Y REGISTRO EN KARDEX POR SALIDAS (VENTAS) ---
         async function emitirFactura() {
             if (carritoItems.length === 0) { alert('Carrito vacío.'); return; }
             const rif = document.getElementById('clienteRif').value.trim();
@@ -1666,13 +1259,28 @@
                     precio_unitario_usd: item.precio, es_exento: item.esExento, subtotal_usd: item.precio * item.cantidad,
                     descripcion: `${item.descripcion} (${item.unidad})`
                 }]);
+
                 if (item.manejaInventario) {
-                    const { data: pData } = await supabaseClient.from('productos').select('stock').eq('id', item.productoId).single();
-                    const nuevoStock = Math.max(0, (pData?.stock || 0) - item.cantidad);
+                    const { data: pData } = await supabaseClient.from('productos').select('*').eq('id', item.productoId).single();
+                    const stockInicial = pData?.stock || 0;
+                    const nuevoStock = Math.max(0, stockInicial - item.cantidad);
+                    const costoProm = pData?.costo_unitario_usd || 1;
+
+                    // Actualizar stock del producto
                     await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.productoId);
+
+                    // Registrar SALIDA en el Kardex PPM
+                    await supabaseClient.from('kardex_movimientos').insert([{
+                        tenant_id: tenantActual.id, producto_id: item.productoId, tipo_movimiento: 'SALIDA',
+                        documento_ref: facturaNro, cantidad_in: 0, cantidad_out: item.cantidad,
+                        cantidad_inicial: stockInicial, cantidad_ajuste: 0, costo_unit_usd_in: 0,
+                        saldo_cantidad: nuevoStock, costo_promedio_usd: costoProm, tasa_bcv: tasa,
+                        proveedor_rif: rif, proveedor_nombre: nombre
+                    }]);
                 }
             }
-            alert(`¡Factura ${facturaNro} emitida y registrada para el Libro de Ventas SENIAT!`);
+
+            alert(`¡Factura ${facturaNro} emitida con éxito y registrada en el Kardex y Libro de Ventas!`);
             carritoItems = [];
             actualizarTablaYCalculos();
             cambiarPestana('historial');
@@ -1691,14 +1299,39 @@
             const tbody = document.getElementById('tablaHistorial');
             tbody.innerHTML = '';
             lista.forEach(doc => {
-                tbody.innerHTML += `<tr class="hover:bg-slate-900"><td class="p-3">${doc.numero}</td><td class="p-3 font-mono">${doc.nro_control||'N/A'}</td><td class="p-3">${doc.cliente_nombre}</td><td class="p-3">${doc.metodo_pago}</td><td class="p-3">${formatearFecha8Digitos(doc.created_at)}</td><td class="p-3 font-mono">Bs. ${doc.total_bs.toFixed(2)}</td><td class="p-3 text-center"><button onclick='verComprobante(${JSON.stringify(doc)})' class="bg-slate-800 px-3 py-1.5 rounded">Ver</button></td></tr>`;
+                tbody.innerHTML += `<tr class="hover:bg-slate-900"><td class="p-3">${doc.numero}</td><td class="p-3 font-mono">${doc.nro_control||'N/A'}</td><td class="p-3">${doc.cliente_nombre}</td><td class="p-3">${doc.metodo_pago}</td><td class="p-3">${formatearFecha8Digitos(doc.created_at)}</td><td class="p-3 font-mono">Bs. ${doc.total_bs.toFixed(2)}</td><td class="p-3 text-center"><button onclick='verComprobante(${JSON.stringify(doc)})' class="bg-slate-800 px-3 py-1.5 rounded cursor-pointer text-xs">Ver</button></td></tr>`;
             });
         }
-        function verComprobante(doc) {
+
+        async function verComprobante(doc) {
             document.getElementById('ticketComercioNombre').innerText = tenantActual.razon_social;
             document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif}`;
-            document.getElementById('ticketNro').innerText = 'Comprobante: ' + doc.numero;
-            document.getElementById('ticketTotal').innerText = `Bs. ${doc.total_bs.toFixed(2)}`;
+            document.getElementById('ticketComercioDir').innerText = tenantActual.direccion || 'VENEZUELA';
+            document.getElementById('ticketNro').innerText = 'Documento: ' + doc.numero;
+            document.getElementById('ticketControl').innerText = 'Control: ' + (doc.nro_control || '00-000000');
+            document.getElementById('ticketFecha').innerText = 'Fecha: ' + formatearFecha8Digitos(doc.created_at);
+            document.getElementById('ticketTasa').innerText = doc.tasa_bcv || 1;
+            document.getElementById('ticketCliente').innerText = 'Cliente: ' + (doc.cliente_nombre || 'CONSUMIDOR FINAL');
+            document.getElementById('ticketClienteRif').innerText = 'RIF/Cédula: ' + (doc.cliente_rif || 'V-0');
+            document.getElementById('ticketMetodoPago').innerText = 'Método: ' + (doc.metodo_pago || 'EFECTIVO');
+            
+            const tasa = doc.tasa_bcv || 1;
+            document.getElementById('ticketBase').innerText = `$ ${(doc.monto_usd||0).toFixed(2)} | Bs. ${((doc.monto_usd||0)*tasa).toFixed(2)}`;
+            document.getElementById('ticketExento').innerText = `$ 0.00 | Bs. 0.00`;
+            document.getElementById('ticketIva').innerText = `Bs. ${(doc.iva_bs||0).toFixed(2)}`;
+            document.getElementById('ticketIgtf').innerText = `Bs. ${(doc.igtf_bs||0).toFixed(2)}`;
+            document.getElementById('ticketTotal').innerText = `$ ${((doc.total_bs||0)/tasa).toFixed(2)} | Bs. ${(doc.total_bs||0).toFixed(2)}`;
+
+            const container = document.getElementById('ticketItemsContainer');
+            container.innerHTML = '';
+            const { data: items } = await supabaseClient.from('invoice_items').select('*').eq('invoice_id', doc.id);
+            if (items && items.length > 0) {
+                items.forEach(it => {
+                    container.innerHTML += `<div class="flex justify-between border-b border-dotted border-slate-300 py-0.5"><span>${it.cantidad}x ${it.descripcion}</span><span>$ ${(it.subtotal_usd||0).toFixed(2)}</span></div>`;
+                });
+            } else {
+                container.innerHTML = `<div class="py-1">1x ${doc.metodo_pago}</div>`;
+            }
             document.getElementById('modalTicket').classList.remove('hidden');
         }
         function cerrarTicket() { document.getElementById('modalTicket').classList.add('hidden'); }
@@ -1711,112 +1344,8 @@
             document.getElementById('totalGavetaEfectivo').innerText = `Bs. ${total.toFixed(2)}`;
         }
 
-        function verificarColaOffline() {}
-        async function sincronizarOffline() {}
         async function imprimirBluetoothReal() { alert('Impresión térmica BT'); }
         function enviarWhatsApp() { window.open(`https://wa.me/?text=Comprobante`, '_blank'); }
-
-        // --- RENDERIZADO DE ETIQUETAS QR 100% FUNCIONAL Y EXACTO AL MODELO ---
-        async function renderizarEtiquetasQr() {
-            const { data: productos } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
-            const contenedor = document.getElementById('contenedorGridEtiquetas');
-            contenedor.innerHTML = '';
-            
-            const filtro = (document.getElementById('filtroEtiqueta')?.value || '').toLowerCase().trim();
-            const listaFiltrada = (productos || []).filter(p => 
-                !filtro || 
-                (p.descripcion || '').toLowerCase().includes(filtro) || 
-                (p.codigo_sku || '').toLowerCase().includes(filtro) || 
-                (p.categoria || '').toLowerCase().includes(filtro) || 
-                (p.ubicacion || '').toLowerCase().includes(filtro)
-            );
-
-            if (listaFiltrada.length === 0) {
-                contenedor.innerHTML = `<div class="col-span-2 p-6 text-center text-slate-400 font-mono text-xs">Sin artículos encontrados para generar etiquetas.</div>`;
-                return;
-            }
-
-            for (let i = 0; i < listaFiltrada.length; i++) {
-                const p = listaFiltrada[i];
-                const codigoSku = p.codigo_sku || 'S/N';
-                const loteProd = p.lote || 'SIN-LOTE';
-                const descProd = p.descripcion || 'ARTÍCULO SIN DESCRIPCIÓN';
-                const umProd = p.unidad_medida || 'UND';
-                const ubicacionProd = p.ubicacion || 'N/A';
-                const catProd = p.categoria ? ` [${p.categoria}]` : '';
-                const qrTextId = `canvas_qr_${i}`;
-
-                const cardHtml = `
-                    <div class="bg-white text-slate-900 rounded-lg border border-slate-400 p-3 shadow-md flex items-center gap-3 font-sans" style="width: 100%; max-width: 420px; page-break-inside: avoid;">
-                        <div class="flex-shrink-0 bg-white p-1 border border-slate-300">
-                            <canvas id="${qrTextId}" class="w-24 h-24"></canvas>
-                        </div>
-                        <div class="flex-1 min-w-0 space-y-1">
-                            <div class="border-b border-slate-900 pb-1 font-bold text-[11px] font-mono tracking-tight text-slate-900 truncate">
-                                CÓDIGO: ${codigoSku} | LOTE: ${loteProd}
-                            </div>
-                            <div class="font-bold text-xs uppercase text-slate-900 leading-tight pt-0.5 line-clamp-2">
-                                ${descProd}${catProd}
-                            </div>
-                            <div class="border-t border-slate-300 pt-1 font-bold text-[11px] font-mono text-slate-800 flex justify-between">
-                                <span>UM: ${umProd}</span>
-                                <span>UBICACIÓN: ${ubicacionProd}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                contenedor.innerHTML += cardHtml;
-
-                setTimeout(() => {
-                    const canvasEl = document.getElementById(qrTextId);
-                    if (canvasEl && window.QRCode) {
-                        QRCode.toCanvas(canvasEl, `SKU:${codigoSku}|LOTE:${loteProd}|LOC:${ubicacionProd}`, { width: 96, margin: 1 }, function (error) {
-                            if (error) console.error(error);
-                        });
-                    }
-                }, 50);
-            }
-        }
-
-        function imprimirEtiquetasQr() { window.print(); }
-
-        async function cargarCuentasPorCobrar() {
-            const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).eq('metodo_pago', 'CREDITO ABIERTO');
-            const tbody = document.getElementById('tablaCuentasPorCobrar');
-            tbody.innerHTML = '';
-            if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin cuentas por cobrar pendientes.</td></tr>`;
-                return;
-            }
-            data.forEach(c => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900">
-                        <td class="p-3 font-mono text-emerald-400">${c.factura_nro}</td>
-                        <td class="p-3">${formatearFecha8Digitos(c.created_at)}</td>
-                        <td class="p-3">${c.cliente_nombre}</td>
-                        <td class="p-3 font-mono">Bs. ${c.total_bs.toFixed(2)}</td>
-                        <td class="p-3 text-center"><button onclick="pagarCredito('${c.id}')" class="bg-emerald-600 text-white px-3 py-1 rounded text-xs">Abonar / Pagar</button></td>
-                    </tr>
-                `;
-            });
-        }
-        async function pagarCredito(id) {
-            if (!confirm('¿Marcar este crédito como pagado?')) return;
-            await supabaseClient.from('invoices').update({ metodo_pago: 'EFECTIVO DIVISAS (PAGADO)' }).eq('id', id);
-            alert('¡Crédito saldado con éxito!');
-            cargarCuentasPorCobrar();
-        }
-
-        async function registrarAjusteInventario() { alert('Módulo de ajuste registrado.'); }
-        async function descargarPlantillaExcel() { alert('Plantilla descargada.'); }
-        async function procesarImportacionMasiva() { alert('Importación masiva procesada con éxito.'); }
-        async function cargarProductosSelectAjuste() {
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
-            const select = document.getElementById('ajusteProductoSelect');
-            if(!select || !data) return;
-            select.innerHTML = '';
-            data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion}</option>`; });
-        }
     </script>
 </body>
 </html>
