@@ -94,10 +94,10 @@
                     <div>
                         <div class="flex justify-between items-center mb-1.5">
                             <label class="block text-xs font-semibold text-slate-300">Tasa BCV Oficial (Bs. / $)</label>
-                            <button onclick="consultarTasaBcvApi()" class="text-[10px] text-emerald-400 hover:underline cursor-pointer">🔄 Consultar BCV (XML)</button>
+                            <button onclick="consultarTasaBcvApi()" class="text-[10px] text-emerald-400 hover:underline cursor-pointer">🔄 Consultar API</button>
                         </div>
                         <input type="number" step="0.0001" id="tasaBcv" value="888.1183" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500 font-mono text-sm" oninput="recalcularTodo()">
-                        <p class="text-[10px] text-slate-400 mt-1">💡 Se extrae de bcv.org.ve o puedes editarla manualmente.</p>
+                        <p class="text-[10px] text-slate-400 mt-1">💡 Editable manualmente o vía API.</p>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1.5">Seleccionar Cliente Rápido</label>
@@ -634,46 +634,21 @@
             return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
         }
 
-        // Función inteligente para consultar BCV (Método robusto web scraping / API)
         async function consultarTasaBcvApi() {
             try {
-                // Intento 1: API de respaldo rápida
                 const res = await fetch('https://pydolarvenezuela-api.valtx.workers.dev/api/v1/dollar/bcv');
                 const json = await res.json();
                 if (json?.monitors?.usd?.price) {
                     let tasaVal = parseFloat(json.monitors.usd.price);
                     document.getElementById('tasaBcv').value = tasaVal.toFixed(4);
                     recalcularTodo();
-                    alert('¡Tasa BCV oficial obtenida con éxito!');
+                    alert('¡Tasa BCV oficial actualizada con éxito!');
                     return;
                 }
-            } catch (e) { console.warn('API principal offline, probando raspado directo...'); }
-
-            // Intento 2: Raspado directo simulando ImportXML desde bcv.org.ve mediante proxy CORS
-            try {
-                const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.bcv.org.ve');
-                const resProxy = await fetch(proxyUrl);
-                const dataProxy = await resProxy.json();
-                if (dataProxy && dataProxy.contents) {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(dataProxy.contents, 'text/html');
-                    const strongElem = doc.querySelector('#dolar strong') || doc.querySelector('.view-tipo-cambio-referencia strong') || doc.querySelector('.dinero strong');
-                    if (strongElem) {
-                        let tasaTxt = strongElem.textContent.trim().replace(/\./g, '').replace(',', '.');
-                        let tasaNum = parseFloat(tasaTxt);
-                        if (!isNaN(tasaNum)) {
-                            document.getElementById('tasaBcv').value = tasaNum.toFixed(4);
-                            recalcularTodo();
-                            alert('¡Tasa BCV extraída directamente de bcv.org.ve!');
-                            return;
-                        }
-                    }
-                }
-            } catch (errProxy) {
-                console.warn('Raspado directo no disponible:', errProxy);
+            } catch (e) {
+                console.warn('Falla de red en API:', e);
             }
-
-            alert('No se pudo conectar automáticamente. Puedes escribir la tasa del BCV de forma manual en la casilla.');
+            alert('⚠️ No se pudo conectar automáticamente por restricciones de seguridad del navegador. Escribe la tasa del BCV actual directamente en la casilla y el sistema hará todos los cálculos de inmediato.');
         }
 
         async function iniciarSesionTenant() {
