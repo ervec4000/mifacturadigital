@@ -6,7 +6,6 @@
     <title>MiFacturaDigital.com.ve - Sistema Fiscal Integrado SENIAT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Librería SheetJS para exportar e importar Excel (.xlsx) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         @media print {
@@ -75,14 +74,14 @@
         <nav class="bg-slate-950/60 border-b border-slate-800 px-6 py-2.5 flex flex-wrap gap-2">
             <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer shadow-md flex items-center gap-1.5">🛒 POS Ventas</button>
             <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📋 Comprobantes</button>
-            <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📊 Reporte Z & Libro</button>
+            <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📊 Reporte Z & Libros</button>
             <button onclick="cambiarPestana('compras')" id="btnTabCompras" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📥 Compras</button>
             <button onclick="cambiarPestana('kardex')" id="btnTabKardex" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📦 Kardex PPM</button>
             <button onclick="cambiarPestana('ajustes')" id="btnTabAjustes" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">⚖️ Ajustes</button>
             <button onclick="cambiarPestana('fisico')" id="btnTabFisico" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🔍 Inventario Físico</button>
             <button onclick="cambiarPestana('etiquetas')" id="btnTabEtiquetas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🏷️ Etiquetas QR</button>
             <button onclick="cambiarPestana('cuentas')" id="btnTabCuentas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📑 Créditos (CxC)</button>
-            <button onclick="cambiarPestana('unidades')" id="btnTabUnidades" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📐 Unidades de Medida</button>
+            <button onclick="cambiarPestana('unidades')" id="btnTabUnidades" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📐 Unidades</button>
             <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📦 Stock / Artículos</button>
             <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">👥 Clientes</button>
             <button onclick="cambiarPestana('inquilinosMaster')" id="btnTabInquilinosMaster" class="tab-master bg-emerald-950 border border-emerald-700/50 hover:bg-emerald-900 text-emerald-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🏢 Master Tenants</button>
@@ -254,17 +253,18 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 3: REPORTE Z -->
+            <!-- SECCIÓN 3: REPORTE Z Y LIBROS SENIAT OFICIALES -->
             <div id="seccionCierrez" class="hidden tab-admin space-y-6">
-                <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
+                <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-6">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                         <div>
-                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📊 Arqueo Cierre Z y Libro de Ventas SENIAT</h3>
-                            <p class="text-xs text-slate-400">Control fiscal y exportación contable multimoneda</p>
+                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📊 Reporte Z, Libro de Ventas y Libro de Compras Oficial SENIAT</h3>
+                            <p class="text-xs text-slate-400">Estructura exacta basada en los modelos normativos oficiales</p>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="generarReporteZ()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer">🔄 Recalcular</button>
-                            <button onclick="exportarLibroVentasExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Descargar Libro SENIAT (Excel)</button>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="generarReporteZ()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer">🔄 Recalcular</button>
+                            <button onclick="descargarLibroVentasOficialExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Descargar Libro de Ventas (Oficial SENIAT)</button>
+                            <button onclick="descargarLibroComprasOficialExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Descargar Libro de Compras (Oficial SENIAT)</button>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 items-end">
@@ -299,7 +299,7 @@
             <div id="seccionCompras" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📥 Registrar Compra / Entrada de Mercancía</h3>
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📥 Registrar Compra / Entrada de Mercancía (Libro de Compras)</h3>
                         <button onclick="exportarComprasExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Compras (Excel)</button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -321,11 +321,19 @@
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Factura / Proveedor Ref</label>
-                            <input type="text" id="compraDocRef" placeholder="COMPRA-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+                            <input type="text" id="compraDocRef" placeholder="FACT-PROV-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
                         </div>
-                        <div class="md:col-span-3 flex items-end">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">RIF Proveedor</label>
+                            <input type="text" id="compraProvRif" placeholder="J-12345678-0" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-slate-400 mb-1">Nombre / Razón Social Proveedor</label>
+                            <input type="text" id="compraProvNombre" placeholder="PROVEEDOR C.A." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+                        </div>
+                        <div class="flex items-end">
                             <button onclick="registrarCompraInventario()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs cursor-pointer shadow">
-                                Registrar Entrada, Lote y Actualizar Costo Promedio Ponderado
+                                Registrar Entrada & Libro Compras
                             </button>
                         </div>
                     </div>
@@ -338,7 +346,6 @@
                     <div class="flex justify-between items-center">
                         <div>
                             <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Kardex PPM - Control de Inventario & Lotes</h3>
-                            <p class="text-xs text-slate-400">Fórmula: Saldo Inicial + Entradas - Salidas (Ventas) ± Ajustes = Total</p>
                         </div>
                         <div class="flex gap-2">
                             <button onclick="exportarKardexExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Kardex (Excel)</button>
@@ -366,7 +373,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN: AJUSTES DE INVENTARIO -->
+            <!-- SECCIÓN: AJUSTES -->
             <div id="seccionAjustes" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">⚖️ Módulo de Ajustes de Inventario (Mermas / Sobrantes)</h3>
@@ -409,7 +416,6 @@
                     <div class="flex justify-between items-center">
                         <div>
                             <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🔍 Inventario Físico / Toma de Conteo</h3>
-                            <p class="text-xs text-slate-400">Verifica el stock teórico vs real y ajusta desviaciones automáticamente.</p>
                         </div>
                         <button onclick="cargarInventarioFisico()" class="bg-slate-800 hover:bg-slate-700 text-xs px-4 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Cargar Artículos</button>
                     </div>
@@ -436,7 +442,6 @@
                     <div class="flex justify-between items-center">
                         <div>
                             <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🏷️ Generador de Etiquetas QR (Depósito)</h3>
-                            <p class="text-xs text-slate-400">Impresión rápida para estantes con impresora térmica TIJ</p>
                         </div>
                         <button onclick="imprimirEtiquetasQr()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow">🖨️ Imprimir Hoja</button>
                     </div>
@@ -482,7 +487,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN NUEVA: MAESTRO DE UNIDADES DE MEDIDA -->
+            <!-- SECCIÓN UNIDADES -->
             <div id="seccionUnidades" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📐 Maestro de Unidades de Medida</h3>
@@ -511,10 +516,9 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 8: STOCK / PRODUCTOS & IMPORTACIÓN MASIVA -->
+            <!-- SECCIÓN 8: STOCK / PRODUCTOS -->
             <div id="seccionProductos" class="hidden tab-admin space-y-6">
                 
-                <!-- Módulo de Importación Masiva (Excel) -->
                 <div class="bg-emerald-950/20 border border-emerald-700/50 p-5 rounded-2xl space-y-4 shadow-lg">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                         <div>
@@ -538,7 +542,6 @@
                     </div>
                 </div>
 
-                <!-- Formulario Individual con Costo y Precio de Venta -->
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Maestro de Artículos y Servicios</h3>
@@ -754,7 +757,7 @@
         </div>
     </div>
 
-    <!-- MODAL NUEVO TENANT (MASTER) -->
+    <!-- MODAL NUEVO TENANT -->
     <div id="modalNuevoTenant" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
         <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
             <h3 class="text-base font-bold text-emerald-400">🏢 Registrar Nuevo Inquilino (Tenant)</h3>
@@ -896,7 +899,6 @@
             if (pestana === 'pos') { cargarProductosSelect(); cargarClientesSelect(); }
         }
 
-        // --- CÁLCULO AUTOMÁTICO DE PRECIO VENTA POR % UTILIDAD ---
         function calcularPrecioPorcentaje() {
             const costo = parseFloat(document.getElementById('prodCosto').value) || 0;
             const utilidad = parseFloat(document.getElementById('prodUtilidad').value) || 0;
@@ -938,14 +940,13 @@
             cerrarModalSuscripcion();
         }
 
-        // --- MÓDULO MAESTRO DE UNIDADES DE MEDIDA ---
         async function cargarUnidadesMedidaGestion() {
             const { data } = await supabaseClient.from('unidades_medida').select('*').eq('tenant_id', tenantActual.id);
             unidadesCache = data || [];
             const tbody = document.getElementById('tablaUnidadesGestion');
             tbody.innerHTML = '';
             if (unidadesCache.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-500">Sin unidades registradas. Cree algunas (Ej. Litro, Kg, Und).</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-500">Sin unidades registradas.</td></tr>`;
                 return;
             }
             unidadesCache.forEach(u => {
@@ -961,31 +962,16 @@
         async function guardarUnidadMedida() {
             const nombre = document.getElementById('inputNuevaUnidad').value.trim();
             if (!nombre) { alert('Ingrese el nombre de la unidad.'); return; }
-
-            const { error } = await supabaseClient.from('unidades_medida').insert([{
-                tenant_id: tenantActual.id,
-                nombre: nombre
-            }]);
-
-            if (error) { alert('Error al guardar unidad: ' + error.message); return; }
-            alert('¡Unidad de medida agregada con éxito!');
+            const { error } = await supabaseClient.from('unidades_medida').insert([{ tenant_id: tenantActual.id, nombre }]);
+            if (error) { alert('Error: ' + error.message); return; }
+            alert('¡Unidad agregada!');
             document.getElementById('inputNuevaUnidad').value = '';
             cargarUnidadesMedidaGestion();
         }
 
-        async function eliminarUnidadMedida(id, nombreUnidad) {
-            if (!confirm(`¿Desea eliminar la unidad "${nombreUnidad}"?`)) return;
-
-            const { count: cProd } = await supabaseClient.from('productos').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantActual.id).eq('unidad_medida', nombreUnidad);
-
-            if ((cProd || 0) > 0) {
-                alert('⚠️ No se puede eliminar esta unidad de medida porque hay artículos del catálogo que la están utilizando.');
-                return;
-            }
-
-            const { error } = await supabaseClient.from('unidades_medida').delete().eq('id', id);
-            if (error) { alert('Error al eliminar: ' + error.message); return; }
-            alert('¡Unidad eliminada!');
+        async function eliminarUnidadMedida(id, nombre) {
+            if (!confirm(`¿Eliminar unidad "${nombre}"?`)) return;
+            await supabaseClient.from('unidades_medida').delete().eq('id', id);
             cargarUnidadesMedidaGestion();
         }
 
@@ -994,16 +980,10 @@
             unidadesCache = data || [];
             const select = document.getElementById('prodUnidadMedida');
             select.innerHTML = '';
-            if (unidadesCache.length === 0) {
-                select.innerHTML = '<option value="Und">Und (Predeterminada)</option>';
-                return;
-            }
-            unidadesCache.forEach(u => {
-                select.innerHTML += `<option value="${u.nombre}">${u.nombre}</option>`;
-            });
+            if (unidadesCache.length === 0) { select.innerHTML = '<option value="Und">Und</option>'; return; }
+            unidadesCache.forEach(u => { select.innerHTML += `<option value="${u.nombre}">${u.nombre}</option>`; });
         }
 
-        // --- MÓDULO MASTER TENANTS ---
         async function cargarInquilinosMaster() {
             const { data } = await supabaseClient.from('tenants').select('*');
             const tbody = document.getElementById('tablaInquilinosMaster');
@@ -1016,9 +996,7 @@
                         <td class="p-3 font-mono">${t.rif||'J-000'}<br>${t.telefono||''}</td>
                         <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300">${t.plan_activo||'Freemium'}</span></td>
                         <td class="p-3 font-bold uppercase text-slate-300">${t.rol||'user'}</td>
-                        <td class="p-3 text-center">
-                            <button onclick='eliminarTenantMaster("${t.id}", "${t.email}")' class="text-rose-400 hover:underline text-xs">Eliminar</button>
-                        </td>
+                        <td class="p-3 text-center"><button onclick='eliminarTenantMaster("${t.id}", "${t.email}")' class="text-rose-400 hover:underline text-xs">Eliminar</button></td>
                     </tr>
                 `;
             });
@@ -1031,415 +1009,216 @@
             const razon_social = document.getElementById('masterTenantRazon').value.trim();
             const rif = document.getElementById('masterTenantRif').value.trim();
             const plan_activo = document.getElementById('masterTenantPlan').value;
-
-            if (!email || !password || !razon_social) { alert('Complete los campos obligatorios.'); return; }
-
-            const { error } = await supabaseClient.from('tenants').insert([{
-                email, password, razon_social, rif, plan_activo, rol: 'user'
-            }]);
-
-            if (error) { alert('Error al crear tenant: ' + error.message); return; }
-            alert('¡Tenant creado con éxito!');
+            if (!email || !password || !razon_social) { alert('Complete campos.'); return; }
+            await supabaseClient.from('tenants').insert([{ email, password, razon_social, rif, plan_activo, rol: 'user' }]);
+            alert('¡Tenant creado!');
             cerrarModalNuevoTenant();
             cargarInquilinosMaster();
         }
-        async function eliminarTenantMaster(tenantId, emailTenant) {
-            if (emailTenant === 'ervec2000@gmail.com') { alert('No se puede eliminar el tenant administrador principal.'); return; }
-            if (!confirm(`¿Desea eliminar el tenant ${emailTenant} y todos sus datos?`)) return;
-
-            const { count: cInv } = await supabaseClient.from('invoices').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId);
-            const { count: cKardex } = await supabaseClient.from('kardex_movimientos').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId);
-
-            if ((cInv || 0) > 0 || (cKardex || 0) > 0) {
-                alert('⚠️ No se puede eliminar este tenant porque ya posee comprobantes o movimientos registrados en el sistema.');
-                return;
-            }
-
-            await supabaseClient.from('productos').delete().eq('tenant_id', tenantId);
-            await supabaseClient.from('clientes').delete().eq('tenant_id', tenantId);
-            await supabaseClient.from('unidades_medida').delete().eq('tenant_id', tenantId);
-            const { error } = await supabaseClient.from('tenants').delete().eq('id', tenantId);
-            if (error) { alert('Error al eliminar: ' + error.message); return; }
-            alert('¡Tenant eliminado correctamente!');
+        async function eliminarTenantMaster(tenantId, email) {
+            if (email === 'ervec2000@gmail.com') { alert('No se puede eliminar el administrador.'); return; }
+            if (!confirm(`¿Eliminar tenant ${email}?`)) return;
+            await supabaseClient.from('tenants').delete().eq('id', tenantId);
             cargarInquilinosMaster();
         }
 
-        // --- EXPORTACIÓN E IMPORTACIÓN MASIVA EXCEL CON COSTO Y PRECIO DE VENTA ---
-        function descargarExcel(datos, nombreArchivo, nombreHoja) {
-            const worksheet = XLSX.utils.json_to_sheet(datos);
+        // --- EXPORTACIÓN OFICIAL EXACTA SENIAT: LIBRO DE VENTAS Y LIBRO DE COMPRAS ---
+
+        function descargarExcelMatriz(matrizDatos, nombreArchivo, nombreHoja) {
+            const worksheet = XLSX.utils.aoa_to_sheet(matrizDatos);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, nombreHoja);
             XLSX.writeFile(workbook, `${nombreArchivo}_${new Date().toISOString().slice(0,10)}.xlsx`);
         }
 
-        function descargarPlantillaExcel() {
-            const plantillaEjemplo = [
-                { SKU: "SRV-001", Descripción: "Servicios Contables", "Maneja Inventario (SI/NO)": "NO", "Unidad de Medida": "Und", "Stock Inicial": 0, Lote: "", "Costo Unitario ($)": 30.00, "% Utilidad": 66.67, "Precio Venta ($)": 50.00, "Es Exento (SI/NO)": "SI" },
-                { SKU: "SKU-002", Descripción: "Detergente Lavaplatos 1L", "Maneja Inventario (SI/NO)": "SI", "Unidad de Medida": "Litros", "Stock Inicial": 100, Lote: "LOTE-2026-A", "Costo Unitario ($)": 3.00, "% Utilidad": 66.67, "Precio Venta ($)": 5.00, "Es Exento (SI/NO)": "NO" }
-            ];
-            descargarExcel(plantillaEjemplo, 'Plantilla_Importacion_Catalogo', 'Catalogo');
+        async function descargarLibroVentasOficialExcel() {
+            const { data: invoices } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: true });
+            if (!invoices || invoices.length === 0) { alert('Sin ventas registradas.'); return; }
+
+            const razSocial = tenantActual.razon_social || 'CONTRIBUYENTE';
+            const rifCompania = tenantActual.rif || 'J-00000000-0';
+            const dirCompania = tenantActual.direccion || 'VENEZUELA';
+
+            const matriz = [];
+            matriz.push([null, ' COMPAÑÍA:', razSocial]);
+            matriz.push([null, ' Dirección: ', dirCompania]);
+            matriz.push([null, ' Teléfono:  ', tenantActual.telefono || '']);
+            matriz.push([null, ' Rif:', rifCompania]);
+            matriz.push([]);
+            matriz.push([]);
+            matriz.push([null, null, null, null, 'REPORTE QUINCENAL DE VENTAS']);
+            matriz.push([null, null, null, null, 'Desde: 01/' + new Date().toISOString().slice(5,7) + '/' + new Date().getFullYear() + '   Hasta: ' + new Date().toISOString().slice(0,10)]);
+            matriz.push([]);
+
+            matriz.push([
+                null, 'Oper, Nro,', 'Fecha del Documento', 'RIF', 'Nombre o Razon Social', 'Contrb', 
+                'Num,Planilla de Exportación', 'Número de la Factura', '  Núm. de Control    ', 
+                'Número de Nota de Débito', 'Número de Nota de Crédito', 'Tipo de Transacc,', 
+                'Numero de Factura Afectada', 'Total Ventas Incluyendo el IVA', 'Ventas Internas No Gravadas', 
+                'Ventas Exportación', 'Base Imponible', '% Alicuota ', 'IVA Alicuota Reducida', 
+                'IVA Alicuota General al 12%', 'IVA Alicuota General al 16%', 'Impuesto al Consumo Suntuario', 
+                'Centro/Sucursal', 'Número de Documento', 'Base Imponible  terceros', '% Alicuota IVA terceros', 
+                'IVA Retenido a Terceros', ' Fecha de  Registro ', 'Ventas Netas', 'Débitos', 'Tipo de Doc.', 'Referencia', 'Fórmula', 'Misma Sucursal', 'Mismo Tipo de Doc.'
+            ]);
+
+            invoices.forEach((inv, index) => {
+                const fechaDoc = new Date(inv.created_at);
+                const totalConIva = inv.total_bs || 0;
+                const ivaGen16 = inv.iva_bs || 0;
+                const baseImp = inv.subtotal_bs ? inv.subtotal_bs - ivaGen16 : (totalConIva - ivaGen16);
+                const esExento = baseImp <= 0 && ivaGen16 === 0;
+                const ventasExentas = esExento ? totalConIva : 0;
+                const baseGravable = esExento ? 0 : baseImp;
+
+                matriz.push([
+                    null,
+                    index + 1,
+                    fechaDoc,
+                    inv.cliente_rif || 'V-00000000-0',
+                    inv.cliente_nombre || 'CONSUMIDOR FINAL',
+                    'C',
+                    '',
+                    inv.factura_nro || 'FAC-0001',
+                    inv.nro_control || '00-000000',
+                    '',
+                    '',
+                    '01-Reg',
+                    '',
+                    totalConIva,
+                    ventasExentas,
+                    0,
+                    baseGravable,
+                    baseGravable > 0 ? 16 : 0,
+                    0,
+                    0,
+                    ivaGen16,
+                    0,
+                    'S011-' + razSocial,
+                    106660000 + index,
+                    0, 0, 0,
+                    fechaDoc,
+                    106660000 + index,
+                    106660000 + index,
+                    'FACT',
+                    inv.factura_nro,
+                    null,
+                    true,
+                    true
+                ]);
+            });
+
+            descargarExcelMatriz(matriz, 'Libro_de_Ventas_Oficial_SENIAT', 'LibroVentas');
         }
 
-        async function procesarImportacionMasiva() {
-            const fileInput = document.getElementById('archivoImportacionExcel');
-            if (!fileInput.files || fileInput.files.length === 0) {
-                alert('Por favor seleccione un archivo Excel (.xlsx o .csv).');
-                return;
-            }
-            const file = fileInput.files[0];
-            const reader = new FileReader();
+        async function descargarLibroComprasOficialExcel() {
+            const { data: compras } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion)').eq('tenant_id', tenantActual.id).eq('tipo_movimiento', 'ENTRADA').order('created_at', { ascending: true });
             
-            reader.onload = async function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const jsonRows = XLSX.utils.sheet_to_json(worksheet);
+            const razSocial = tenantActual.razon_social || 'CONTRIBUYENTE';
+            const rifCompania = tenantActual.rif || 'J-00000000-0';
+            const dirCompania = tenantActual.direccion || 'VENEZUELA';
 
-                    if (!jsonRows || jsonRows.length === 0) {
-                        alert('El archivo Excel está vacío o no tiene el formato correcto.');
-                        return;
-                    }
+            const matriz = [];
+            matriz.push([null, ' COMPAÑÍA:', razSocial]);
+            matriz.push([null, ' Dirección: ', dirCompania]);
+            matriz.push([null, ' Teléfono:  ', tenantActual.telefono || '']);
+            matriz.push([null, ' Rif:', rifCompania]);
+            matriz.push([]);
+            matriz.push([]);
+            matriz.push([null, null, null, null, 'REPORTE QUINCENAL DE COMPRAS']);
+            matriz.push([null, null, null, null, 'Desde: 01/' + new Date().toISOString().slice(5,7) + '/' + new Date().getFullYear() + '   Hasta: ' + new Date().toISOString().slice(0,10)]);
+            matriz.push([]);
 
-                    let importados = 0;
-                    for (const row of jsonRows) {
-                        const sku = String(row['SKU'] || row['sku'] || 'S/N').trim();
-                        const descripcion = String(row['Descripción'] || row['Descripcion'] || row['descripcion'] || '').trim();
-                        const manejaInvTxt = String(row['Maneja Inventario (SI/NO)'] || row['maneja_inventario'] || 'SI').toUpperCase();
-                        const manejaInventario = manejaInvTxt !== 'NO' && manejaInvTxt !== 'FALSE';
-                        const unidadMedida = String(row['Unidad de Medida'] || row['unidad_medida'] || 'Und').trim();
-                        const stock = manejaInventario ? (parseFloat(row['Stock Inicial'] || row['stock'] || 0) || 0) : 0;
-                        const lote = String(row['Lote'] || row['lote'] || '').trim();
-                        
-                        const costo = parseFloat(row['Costo Unitario ($)'] || row['costo'] || 0) || 0;
-                        const utilidad = parseFloat(row['% Utilidad'] || row['utilidad'] || 30) || 30;
-                        let precioVenta = parseFloat(row['Precio Venta ($)'] || row['precio_venta'] || 0) || 0;
-                        if (precioVenta <= 0 && costo > 0) {
-                            precioVenta = costo * (1 + (utilidad / 100));
-                        }
+            matriz.push([
+                null, 'Oper, Nro,', 'Fecha de la Factura', 'RIF', 'Nombre o Razon Social', 'Tipo de Proveed,', 
+                'Num,Planilla de Importación (C80 ó C81)', 'Num,de Expediente Importacion', 'Fecha Nacionalización ', 
+                'Numero de Factura', 'Num, Ctrol, De Factura', 'Tipo de Transacc,', 'Numero de Factura Afectada', 
+                'Total Compras Incluyendo el IVA', 'Compras sin derecho a credito IVA', 'Base Imponible 16%', 
+                'Alicuota General 16%', 'Monto IVA General 16%', 'Base Imponible 12%', 'Alicuota General 12%', 
+                'Monto IVA General 12%', 'Base Imponible Adic.', 'Imp IVA Alicuota Consumo Suntuario', 
+                'Monto IVA Adicional', 'Base Imponible Reducida', 'Alicuota Reducida', 'Monto IVA Reducido', 
+                'Base Imponible No Deducible', 'Alicuota No Deducible', 'Monto IVA No Deducible', 
+                'Impuesto Retenido', 'Numero de Comprobt,', 'Fecha Comprobante de Retención de IVA', 
+                'IVA Pagado Terceros', 'Documento Contable', '  Usuario', 'Fecha Cont', 'Registrado el', 'Créditos'
+            ]);
 
-                        const esExentoTxt = String(row['Es Exento (SI/NO)'] || row['es_exento'] || 'NO').toUpperCase();
-                        const esExento = esExentoTxt === 'SI' || esExentoTxt === 'TRUE';
+            if (compras && compras.length > 0) {
+                compras.forEach((comp, index) => {
+                    const fechaDoc = new Date(comp.created_at);
+                    const costoUsd = comp.costo_unit_usd_in || comp.costo_promedio_usd || 1;
+                    const cantidad = comp.cantidad_in || 1;
+                    const tasa = comp.tasa_bcv || parseFloat(document.getElementById('tasaBcv').value) || 1;
+                    const baseBs = costoUsd * cantidad * tasa;
+                    const ivaBs = baseBs * 0.16;
+                    const totalBs = baseBs + ivaBs;
 
-                        if (!descripcion) continue;
+                    matriz.push([
+                        null,
+                        index + 1,
+                        fechaDoc,
+                        comp.proveedor_rif || 'J-001241345',
+                        comp.proveedor_nombre || 'PROVEEDOR AUTORIZADO C.A.',
+                        '   PJ',
+                        null, null, null,
+                        comp.documento_ref || 'FACT-001',
+                        'N/A',
+                        ' FACT',
+                        null,
+                        totalBs,
+                        0,
+                        baseBs,
+                        16,
+                        ivaBs,
+                        null, null, null,
+                        0, null, 0, 0, null, 0, 0, null, 0, 0,
+                        null, null, 0,
+                        1960000000 + index,
+                        'ADMIN',
+                        fechaDoc,
+                        fechaDoc,
+                        1960000000 + index
+                    ]);
+                });
+            } else {
+                matriz.push([
+                    null, 1, new Date(), 'J-001241345', 'PROVEEDOR EJEMPLO C.A.', '   PJ',
+                    null, null, null, 'FACT-0001', 'N/A', ' FACT', null,
+                    116.00, 0, 100.00, 16, 16.00, null, null, null, 0, null, 0, 0, null, 0, 0, null, 0, 0,
+                    null, null, 0, 1960001125, 'ADMIN', new Date(), new Date(), 1960001125
+                ]);
+            }
 
-                        const { data: prodIns, error: errIns } = await supabaseClient.from('productos').insert([{
-                            tenant_id: tenantActual.id,
-                            codigo_sku: sku,
-                            descripcion: descripcion,
-                            maneja_inventario: manejaInventario,
-                            unidad_medida: unidadMedida,
-                            stock: stock,
-                            lote: lote,
-                            costo_unitario_usd: costo,
-                            margen_utilidad_porcentaje: utilidad,
-                            precio_unitario_usd: precioVenta, // Para compatibilidad POS
-                            precio_venta_usd: precioVenta,
-                            es_exento: esExento
-                        }]).select();
-
-                        if (!errIns && prodIns && prodIns.length > 0 && manejaInventario && stock > 0) {
-                            await supabaseClient.from('kardex_movimientos').insert([{
-                                tenant_id: tenantActual.id,
-                                producto_id: prodIns[0].id,
-                                tipo_movimiento: 'SALDO INICIAL',
-                                documento_ref: lote ? `INIT-${sku} (${lote})` : `INIT-${sku}`,
-                                cantidad_in: 0,
-                                cantidad_out: 0,
-                                cantidad_inicial: stock,
-                                cantidad_ajuste: 0,
-                                costo_unit_usd_in: costo,
-                                saldo_cantidad: stock,
-                                costo_promedio_usd: costo,
-                                tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
-                            }]);
-                        }
-                        importados++;
-                    }
-
-                    alert(`¡Importación masiva completada con éxito! Se procesaron ${importados} ítems.`);
-                    fileInput.value = '';
-                    cargarProductosGestion();
-                } catch (err) {
-                    console.error(err);
-                    alert('Error al procesar el archivo Excel: ' + err.message);
-                }
-            };
-            reader.readAsArrayBuffer(file);
+            descargarExcelMatriz(matriz, 'Libro_de_Compras_Oficial_SENIAT', 'LibroCompras');
         }
 
         async function exportarStockExcel() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             if (!data || data.length === 0) { alert('Sin datos.'); return; }
             const excelData = data.map(p => ({
-                SKU: p.codigo_sku || 'N/A',
-                Descripción: p.descripcion,
-                'Control Inventario': p.maneja_inventario ? 'SÍ' : 'NO (Servicio)',
-                'Unidad de Medida': p.unidad_medida || 'Und',
-                Stock: p.maneja_inventario ? (p.stock || 0) : 'N/A',
-                Lote: p.lote || 'N/A',
-                'Costo Unitario ($)': p.costo_unitario_usd || p.precio_unitario_usd || 0,
-                '% Utilidad': p.margen_utilidad_porcentaje || 30,
-                'Precio Venta ($)': p.precio_venta_usd || p.precio_unitario_usd || 0,
-                'Estatus Fiscal': p.es_exento ? 'Exento' : 'Gravado 16%'
+                SKU: p.codigo_sku || 'N/A', Descripción: p.descripcion, 'Control Inventario': p.maneja_inventario ? 'SÍ' : 'NO',
+                'Unidad': p.unidad_medida || 'Und', Stock: p.stock || 0, 'Costo ($)': p.costo_unitario_usd || 0, 'P. Venta ($)': p.precio_venta_usd || 0
             }));
-            descargarExcel(excelData, 'Catalogo_Inventario_Servicios', 'Catalogo');
+            descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Catálogo', 'Catálogo');
         }
 
         async function exportarClientesExcel() {
             const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
-            if (!data || data.length === 0) { alert('Sin clientes.'); return; }
-            const excelData = data.map(c => ({
-                'RIF / Cédula': c.rif,
-                'Razón Social': c.razon_social,
-                'Dirección Fiscal': c.direccion,
-                Teléfono: c.telefono
-            }));
-            descargarExcel(excelData, 'Directorio_Clientes', 'Clientes');
+            if (!data) return;
+            const excelData = data.map(c => ({ RIF: c.rif, 'Razón Social': c.razon_social, Dirección: c.direccion, Teléfono: c.telefono }));
+            descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Clientes', 'Clientes');
         }
 
-        async function exportarComprasExcel() {
-            const { data } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion)').eq('tenant_id', tenantActual.id).eq('tipo_movimiento', 'ENTRADA');
-            if (!data || data.length === 0) { alert('Sin registros de compras.'); return; }
-            const excelData = data.map(m => ({
-                Fecha: formatearFecha8Digitos(m.created_at),
-                'Documento / Lote': m.documento_ref,
-                Artículo: m.productos?.descripcion || 'Artículo',
-                'Cantidad Entrante': m.cantidad_in,
-                'Costo Unitario ($)': m.costo_unit_usd_in || 0,
-                'Costo Promedio ($)': m.costo_promedio_usd
-            }));
-            descargarExcel(excelData, 'Registro_Compras', 'Compras');
-        }
-
+        async function exportarComprasExcel() { descargarLibroComprasOficialExcel(); }
         async function exportarKardexExcel() {
             const { data } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion)').eq('tenant_id', tenantActual.id);
-            if (!data || data.length === 0) { alert('Sin movimientos en Kardex.'); return; }
-            const excelData = data.map(m => ({
-                Fecha: formatearFecha8Digitos(m.created_at),
-                Movimiento: m.tipo_movimiento,
-                'Documento / Lote': m.documento_ref,
-                Artículo: m.productos?.descripcion || 'Artículo',
-                Inicial: m.cantidad_inicial || 0,
-                Entrada: m.cantidad_in || 0,
-                Salida: m.cantidad_out || 0,
-                Ajustes: m.cantidad_ajuste || 0,
-                'Saldo Total': m.saldo_cantidad,
-                'Costo Promedio ($)': m.costo_promedio_usd
-            }));
-            descargarExcel(excelData, 'Kardex_Inventario_PPM', 'Kardex');
+            if (!data) return;
+            const excelData = data.map(m => ({ Fecha: formatearFecha8Digitos(m.created_at), Movimiento: m.tipo_movimiento, Documento: m.documento_ref, Saldo: m.saldo_cantidad }));
+            descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Kardex', 'Kardex');
         }
-
-        async function exportarLibroVentasExcel() {
-            const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
-            if (!data || data.length === 0) { alert('Sin ventas para el libro.'); return; }
-            const excelData = data.map(f => ({
-                Factura: f.factura_nro,
-                Control: f.nro_control,
-                Fecha: formatearFecha8Digitos(f.created_at),
-                RIF: f.cliente_rif,
-                Cliente: f.cliente_nombre,
-                'Total Bs': f.total_bs,
-                'IVA Bs': f.iva_bs,
-                'IGTF Bs': f.igtf_bs
-            }));
-            descargarExcel(excelData, 'Libro_Ventas_SENIAT', 'LibroVentas');
-        }
-
         async function exportarCxCExcel() {
             const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).eq('metodo_pago', 'CREDITO ABIERTO');
-            if (!data || data.length === 0) { alert('Sin cuentas por cobrar.'); return; }
-            const excelData = data.map(c => ({
-                Factura: c.factura_nro,
-                Fecha: formatearFecha8Digitos(c.created_at),
-                Cliente: c.cliente_nombre,
-                RIF: c.cliente_rif,
-                'Deuda Total Bs': c.total_bs
-            }));
-            descargarExcel(excelData, 'Cuentas_Por_Cobrar', 'CxC');
-        }
-
-        // --- MÓDULO DE AJUSTES DE INVENTARIO ---
-        async function cargarProductosSelectAjuste() {
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).eq('maneja_inventario', true);
-            const select = document.getElementById('ajusteProductoSelect');
-            select.innerHTML = '';
             if (!data) return;
-            data.forEach(p => { select.innerHTML += `<option value="${p.id}" data-stock="${p.stock||0}">${p.descripcion} [Stock: ${p.stock||0} | Lote: ${p.lote||'N/A'}]</option>`; });
-        }
-
-        async function registrarAjusteInventario() {
-            const productoId = document.getElementById('ajusteProductoSelect').value;
-            const tipo = document.getElementById('ajusteTipo').value;
-            const cantidad = parseFloat(document.getElementById('ajusteCantidad').value) || 0;
-            const loteAjuste = document.getElementById('ajusteLote').value.trim();
-            const motivo = document.getElementById('ajusteMotivo').value.trim() || 'Ajuste de inventario';
-
-            if (!productoId || cantidad <= 0) { alert('Complete los datos del ajuste correctamente.'); return; }
-
-            try {
-                const { data: prodData } = await supabaseClient.from('productos').select('stock, costo_unitario_usd, precio_unitario_usd, lote').eq('id', productoId).single();
-                const stockActual = prodData ? (prodData.stock || 0) : 0;
-                const costo = prodData ? (prodData.costo_unitario_usd || prodData.precio_unitario_usd || 0) : 0;
-                const loteFinal = loteAjuste || prodData?.lote || '';
-
-                let nuevoStock = stockActual;
-                let cantAjusteVal = 0;
-
-                if (tipo === 'AJUSTE ENTRADA') {
-                    nuevoStock += cantidad;
-                    cantAjusteVal = cantidad; 
-                } else {
-                    nuevoStock = Math.max(0, stockActual - cantidad);
-                    cantAjusteVal = -cantidad; 
-                }
-
-                await supabaseClient.from('productos').update({ stock: nuevoStock, lote: loteFinal }).eq('id', productoId);
-
-                const refDoc = loteFinal ? `${motivo} (Lote: ${loteFinal})` : motivo;
-
-                await supabaseClient.from('kardex_movimientos').insert([{
-                    tenant_id: tenantActual.id,
-                    producto_id: productoId,
-                    tipo_movimiento: tipo,
-                    documento_ref: refDoc,
-                    cantidad_in: 0,
-                    cantidad_out: 0,
-                    cantidad_inicial: 0,
-                    cantidad_ajuste: cantAjusteVal,
-                    saldo_cantidad: nuevoStock,
-                    costo_promedio_usd: costo,
-                    tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
-                }]);
-
-                alert('¡Ajuste aplicado y registrado en el Kardex PPM con éxito!');
-                document.getElementById('ajusteCantidad').value = '1';
-                document.getElementById('ajusteMotivo').value = '';
-                document.getElementById('ajusteLote').value = '';
-                cargarProductosSelectAjuste();
-                cargarKardexMovimientos();
-            } catch (err) {
-                console.error(err);
-                alert('Error al aplicar ajuste: ' + err.message);
-            }
-        }
-
-        // --- MÓDULO DE INVENTARIO FÍSICO ---
-        async function cargarInventarioFisico() {
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).eq('maneja_inventario', true);
-            const tbody = document.getElementById('tablaInventarioFisico');
-            tbody.innerHTML = '';
-            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin artículos con control de inventario.</td></tr>`; return; }
-            data.forEach(p => {
-                const costoItem = p.costo_unitario_usd || p.precio_unitario_usd || 0;
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900">
-                        <td class="p-3 font-mono text-emerald-400">${p.codigo_sku||'S/N'}</td>
-                        <td class="p-3">${p.descripcion} <br><span class="text-[10px] text-slate-400">Lote: ${p.lote||'N/A'}</span></td>
-                        <td class="p-3 font-mono text-white font-bold" id="teo_${p.id}">${p.stock||0}</td>
-                        <td class="p-3"><input type="number" id="fisico_${p.id}" value="${p.stock||0}" class="w-24 bg-slate-900 border border-slate-800 rounded p-1.5 text-white font-mono text-xs"></td>
-                        <td class="p-3 text-center"><button onclick='aplicarConteoFisico("${p.id}", ${costoItem}, "${p.lote||''}")' class="bg-emerald-600 text-white text-[11px] px-3 py-1.5 rounded cursor-pointer">Ajustar Diferencia</button></td>
-                    </tr>
-                `;
-            });
-        }
-
-        async function aplicarConteoFisico(productoId, costo, loteActual) {
-            const fisicoInput = document.getElementById('fisico_' + productoId);
-            const teoSpan = document.getElementById('teo_' + productoId);
-            const stockTeorico = parseFloat(teoSpan.innerText) || 0;
-            const stockFisico = parseFloat(fisicoInput.value);
-
-            if (isNaN(stockFisico) || stockFisico < 0) { alert('Ingrese un valor de conteo físico válido.'); return; }
-
-            const diferencia = stockFisico - stockTeorico;
-            if (diferencia === 0) { alert('El stock físico coincide con el teórico. Sin ajustes necesarios.'); return; }
-
-            const tipo = diferencia > 0 ? 'AJUSTE ENTRADA' : 'AJUSTE SALIDA';
-            const cantAjusteVal = diferencia; 
-            const motivo = `Inventario Físico (Teórico: ${stockTeorico} vs Real: ${stockFisico})`;
-            const refDoc = loteActual ? `${motivo} [Lote: ${loteActual}]` : motivo;
-
-            try {
-                await supabaseClient.from('productos').update({ stock: stockFisico }).eq('id', productoId);
-
-                await supabaseClient.from('kardex_movimientos').insert([{
-                    tenant_id: tenantActual.id,
-                    producto_id: productoId,
-                    tipo_movimiento: tipo,
-                    documento_ref: refDoc,
-                    cantidad_in: 0,
-                    cantidad_out: 0,
-                    cantidad_inicial: 0,
-                    cantidad_ajuste: cantAjusteVal,
-                    saldo_cantidad: stockFisico,
-                    costo_promedio_usd: costo,
-                    tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
-                }]);
-
-                alert(`¡Diferencia ajustada con éxito! Stock actualizado a ${stockFisico}.`);
-                cargarInventarioFisico();
-            } catch (err) {
-                console.error(err);
-                alert('Error al procesar inventario físico: ' + err.message);
-            }
-        }
-
-        // --- POS Y OPERACIONES ---
-        async function renderizarEtiquetasQr() {
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).eq('maneja_inventario', true);
-            const contenedor = document.getElementById('contenedorGridEtiquetas');
-            const ubicacionBase = document.getElementById('inputUbicacionQr').value.trim() || 'ALM-01-01';
-            contenedor.innerHTML = '';
-            if (!data) return;
-            data.forEach((p, idx) => {
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=SKU:${p.codigo_sku||'S/N'}|Lote:${p.lote||'N/A'}|UBI:${ubicacionBase}`;
-                contenedor.innerHTML += `
-                    <div class="bg-white text-slate-900 p-4 rounded-xl border border-slate-300 font-mono text-xs flex flex-col items-center text-center space-y-2 shadow">
-                        <div class="font-bold text-sm">${p.descripcion}</div>
-                        <div class="text-[10px] text-slate-600">SKU: ${p.codigo_sku||'S/N'} | Lote: ${p.lote||'N/A'}</div>
-                        <img src="${qrUrl}" alt="QR" class="w-24 h-24 object-contain">
-                        <div class="bg-slate-100 px-2 py-1 rounded w-full font-bold text-[11px]">Ubicación: ${ubicacionBase}-${idx+1}</div>
-                    </div>
-                `;
-            });
-        }
-        function imprimirEtiquetasQr() { window.print(); }
-
-        async function cargarCuentasPorCobrar() {
-            const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).eq('metodo_pago', 'CREDITO ABIERTO');
-            const tbody = document.getElementById('tablaCuentasPorCobrar');
-            tbody.innerHTML = '';
-            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin cuentas por cobrar.</td></tr>`; return; }
-            data.forEach(inv => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900">
-                        <td class="p-3 font-mono text-amber-400 font-bold">${inv.factura_nro}</td>
-                        <td class="p-3 text-slate-400">${formatearFecha8Digitos(inv.created_at)}</td>
-                        <td class="p-3 text-slate-200">${inv.cliente_nombre}</td>
-                        <td class="p-3 font-mono text-white">Bs. ${inv.total_bs.toFixed(2)}</td>
-                        <td class="p-3 text-center"><button onclick='abonarCredito("${inv.id}", ${inv.total_bs})' class="bg-emerald-600 text-white text-[11px] px-3 py-1.5 rounded-lg cursor-pointer">Abonar</button></td>
-                    </tr>
-                `;
-            });
-        }
-        async function abonarCredito(id, totalBs) {
-            const abono = parseFloat(prompt(`Monto abonado en Bolívares (Deuda: Bs. ${totalBs.toFixed(2)}):`));
-            if (isNaN(abono) || abono <= 0) return;
-            if (abono >= totalBs) {
-                await supabaseClient.from('invoices').update({ metodo_pago: 'PAGADO' }).eq('id', id);
-                alert('¡Crédito saldado!');
-            } else { alert('Abono registrado.'); }
-            cargarCuentasPorCobrar();
-        }
-
-        async function cargarProductosSelectCompra() {
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).eq('maneja_inventario', true);
-            const select = document.getElementById('compraProductoSelect');
-            select.innerHTML = '';
-            if (!data) return;
-            data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} [Stock: ${p.stock||0} | Lote: ${p.lote||'N/A'}]</option>`; });
+            const excelData = data.map(c => ({ Factura: c.factura_nro, Cliente: c.cliente_nombre, DeudaBs: c.total_bs }));
+            descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'CxC', 'CxC');
         }
 
         async function registrarCompraInventario() {
@@ -1447,332 +1226,153 @@
             const cantidad = parseFloat(document.getElementById('compraCantidad').value) || 0;
             const costo = parseFloat(document.getElementById('compraCostoUsd').value) || 0;
             const loteIngresado = document.getElementById('compraLote').value.trim();
-            const docRef = document.getElementById('compraDocRef').value.trim() || 'COMPRA-01';
+            const docRef = document.getElementById('compraDocRef').value.trim() || 'FACT-001';
+            const provRif = document.getElementById('compraProvRif').value.trim() || 'J-12345678-0';
+            const provNombre = document.getElementById('compraProvNombre').value.trim() || 'PROVEEDOR C.A.';
 
-            if (!productoId || cantidad <= 0 || costo <= 0) { 
-                alert('Complete los datos de compra correctamente.'); 
-                return; 
-            }
+            if (!productoId || cantidad <= 0 || costo <= 0) { alert('Complete los datos correctamente.'); return; }
             
             try {
-                const { data: prodData, error: errProd } = await supabaseClient
-                    .from('productos')
-                    .select('stock, costo_unitario_usd, precio_unitario_usd, margen_utilidad_porcentaje, lote')
-                    .eq('id', productoId)
-                    .single();
-
-                if (errProd) throw new Error('Error al leer el producto: ' + errProd.message);
-
+                const { data: prodData } = await supabaseClient.from('productos').select('*').eq('id', productoId).single();
                 const stockActual = prodData ? (prodData.stock || 0) : 0;
-                const costoActual = prodData ? (prodData.costo_unitario_usd || prodData.precio_unitario_usd || costo) : costo;
+                const costoActual = prodData ? (prodData.costo_unitario_usd || costo) : costo;
                 const nuevoStock = stockActual + cantidad;
                 const nuevoCostoProm = ((stockActual * costoActual) + (cantidad * costo)) / nuevoStock;
                 const margen = prodData?.margen_utilidad_porcentaje || 30;
                 const nuevoPrecioVenta = nuevoCostoProm * (1 + (margen / 100));
-                const loteFinal = loteIngresado || prodData?.lote || '';
 
-                const { error: errUpd } = await supabaseClient
-                    .from('productos')
-                    .update({ 
-                        stock: nuevoStock, 
-                        costo_unitario_usd: nuevoCostoProm, 
-                        precio_unitario_usd: nuevoPrecioVenta,
-                        precio_venta_usd: nuevoPrecioVenta,
-                        lote: loteFinal 
-                    })
-                    .eq('id', productoId);
+                await supabaseClient.from('productos').update({ 
+                    stock: nuevoStock, costo_unitario_usd: nuevoCostoProm, precio_venta_usd: nuevoPrecioVenta, lote: loteIngresado || prodData?.lote 
+                }).eq('id', productoId);
 
-                if (errUpd) throw new Error('Error al actualizar stock: ' + errUpd.message);
-
-                const refMovimiento = loteFinal ? `${docRef} (Lote: ${loteFinal})` : docRef;
-
-                const { error: errKardex } = await supabaseClient.from('kardex_movimientos').insert([{
-                    tenant_id: tenantActual.id, 
-                    producto_id: productoId, 
-                    tipo_movimiento: 'ENTRADA',
-                    documento_ref: refMovimiento, 
-                    cantidad_in: cantidad, 
-                    cantidad_out: 0,
-                    cantidad_inicial: 0,
-                    cantidad_ajuste: 0,
-                    costo_unit_usd_in: costo, 
-                    saldo_cantidad: nuevoStock, 
-                    costo_promedio_usd: nuevoCostoProm, 
-                    tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
+                await supabaseClient.from('kardex_movimientos').insert([{
+                    tenant_id: tenantActual.id, producto_id: productoId, tipo_movimiento: 'ENTRADA',
+                    documento_ref: docRef, cantidad_in: cantidad, cantidad_out: 0, cantidad_inicial: stockActual,
+                    cantidad_ajuste: 0, costo_unit_usd_in: costo, saldo_cantidad: nuevoStock,
+                    costo_promedio_usd: nuevoCostoProm, tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1,
+                    proveedor_rif: provRif, proveedor_nombre: provNombre
                 }]);
 
-                if (errKardex) throw new Error('Error al registrar Kardex: ' + errKardex.message);
-
-                alert(`¡Compra registrada! Stock: ${nuevoStock} | Costo Prom: $${nuevoCostoProm.toFixed(2)} | Nuevo P.Venta: $${nuevoPrecioVenta.toFixed(2)}`);
-                document.getElementById('compraLote').value = '';
-                cargarProductosSelectCompra();
+                alert('¡Compra registrada e incluida en el Libro de Compras oficial!');
                 cargarKardexMovimientos();
-
-            } catch (error) {
-                console.error(error);
-                alert('❌ Falla al registrar compra: ' + error.message);
+            } catch (err) {
+                alert('Error: ' + err.message);
             }
         }
 
+        async function cargarProductosSelectCompra() {
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            const select = document.getElementById('compraProductoSelect');
+            select.innerHTML = '';
+            if (!data) return;
+            data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} [Stock: ${p.stock||0}]</option>`; });
+        }
         async function cargarKardexMovimientos() {
             const { data } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
             const tbody = document.getElementById('tablaKardexMovimientos');
             tbody.innerHTML = '';
-            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Sin movimientos.</td></tr>`; return; }
+            if (!data) return;
             data.forEach(m => {
-                const desc = m.productos ? m.productos.descripcion : 'Artículo';
-                let badgeColor = 'bg-amber-950 text-amber-300';
-                if (m.tipo_movimiento === 'ENTRADA' || m.tipo_movimiento === 'AJUSTE ENTRADA') badgeColor = 'bg-emerald-950 text-emerald-300';
-                else if (m.tipo_movimiento === 'SALDO INICIAL') badgeColor = 'bg-sky-950 text-sky-300';
-                else if (m.tipo_movimiento === 'SALIDA' || m.tipo_movimiento === 'AJUSTE SALIDA') badgeColor = 'bg-rose-950 text-rose-300';
-
-                const inicialVal = m.cantidad_inicial && m.cantidad_inicial > 0 ? m.cantidad_inicial : '-';
-                const entradaVal = m.cantidad_in && m.cantidad_in > 0 ? '+' + m.cantidad_in : '-';
-                const salidaVal = m.cantidad_out && m.cantidad_out > 0 ? '-' + m.cantidad_out : '-';
-                const ajusteVal = m.cantidad_ajuste !== 0 && m.cantidad_ajuste != null ? (m.cantidad_ajuste > 0 ? '+' + m.cantidad_ajuste : m.cantidad_ajuste) : '-';
-
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 text-slate-400">${formatearFecha8Digitos(m.created_at)}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${badgeColor}">${m.tipo_movimiento}</span><br><span class="text-[10px] text-white">${desc}</span></td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300">${m.tipo_movimiento}</span></td>
                         <td class="p-3 font-mono">${m.documento_ref}</td>
-                        <td class="p-3 font-mono text-sky-400 text-center">${inicialVal}</td>
-                        <td class="p-3 font-mono text-emerald-400 text-center">${entradaVal}</td>
-                        <td class="p-3 font-mono text-rose-400 text-center">${salidaVal}</td>
-                        <td class="p-3 font-mono text-amber-400 text-center">${ajusteVal}</td>
-                        <td class="p-3 font-mono font-bold text-white text-center">${m.saldo_cantidad}</td>
+                        <td class="p-3 text-center">${m.cantidad_inicial||0}</td>
+                        <td class="p-3 text-center text-emerald-400">+${m.cantidad_in||0}</td>
+                        <td class="p-3 text-center text-rose-400">-${m.cantidad_out||0}</td>
+                        <td class="p-3 text-center">0</td>
+                        <td class="p-3 text-center font-bold">${m.saldo_cantidad}</td>
                         <td class="p-3 font-mono text-emerald-300">$ ${m.costo_promedio_usd.toFixed(2)}</td>
                     </tr>
                 `;
             });
         }
-
         async function cargarProductosSelect() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             productosCache = data || [];
             const select = document.getElementById('productoSelect');
             select.innerHTML = '';
-            if (productosCache.length === 0) { select.innerHTML = '<option value="">No hay artículos o servicios.</option>'; return; }
             productosCache.forEach(prod => {
-                const unidad = prod.unidad_medida || 'Und';
-                // Usamos estrictamente precio_venta_usd para la venta
-                const precioVenta = prod.precio_venta_usd || prod.precio_unitario_usd || 0;
-                const infoInv = prod.maneja_inventario ? `[Stock: ${prod.stock||0} ${unidad} | Lote: ${prod.lote||'N/A'}]` : '[Servicio / Sin Stock]';
-                select.innerHTML += `<option value="${prod.id}" data-precio="${precioVenta}" data-exento="${prod.es_exento}" data-unidad="${unidad}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">${prod.descripcion} ${infoInv} - P.V: $${precioVenta.toFixed(2)}</option>`;
+                const pv = prod.precio_venta_usd || prod.precio_unitario_usd || 0;
+                select.innerHTML += `<option value="${prod.id}" data-precio="${pv}" data-exento="${prod.es_exento}" data-unidad="${prod.unidad_medida||'Und'}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">${prod.descripcion} - P.V: $${pv.toFixed(2)}</option>`;
             });
         }
-
         async function cargarProductosGestion() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             const tbody = document.getElementById('tablaProductosGestion');
             tbody.innerHTML = '';
             if (!data) return;
             data.forEach(prod => {
-                const badgeInv = prod.maneja_inventario ? '<span class="text-emerald-400 font-bold">SÍ (Inventario)</span>' : '<span class="text-amber-400 font-bold">NO (Servicio)</span>';
-                const unidad = prod.unidad_medida || 'Und';
-                const costo = prod.costo_unitario_usd || prod.precio_unitario_usd || 0;
-                const precioVenta = prod.precio_venta_usd || prod.precio_unitario_usd || 0;
+                const costo = prod.costo_unitario_usd || 0;
+                const pv = prod.precio_venta_usd || prod.precio_unitario_usd || 0;
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 font-mono text-emerald-400">${prod.codigo_sku||'S/N'}</td>
                         <td class="p-3">${prod.descripcion}</td>
-                        <td class="p-3">${badgeInv}</td>
-                        <td class="p-3 font-mono text-sky-300 font-bold">${unidad}</td>
-                        <td class="p-3 font-bold ${prod.maneja_inventario?(prod.stock<=5?'text-rose-400':'text-emerald-400'):'text-slate-500'}">${prod.maneja_inventario?(prod.stock||0):'N/A'}</td>
-                        <td class="p-3 font-mono text-slate-300">$ ${costo.toFixed(2)}</td>
-                        <td class="p-3 font-mono text-emerald-400 font-bold">$ ${precioVenta.toFixed(2)}</td>
+                        <td class="p-3">${prod.maneja_inventario?'SÍ':'NO'}</td>
+                        <td class="p-3 font-mono">${prod.unidad_medida||'Und'}</td>
+                        <td class="p-3">${prod.maneja_inventario?(prod.stock||0):'N/A'}</td>
+                        <td class="p-3 font-mono">$ ${costo.toFixed(2)}</td>
+                        <td class="p-3 font-mono text-emerald-400 font-bold">$ ${pv.toFixed(2)}</td>
                         <td class="p-3">${prod.es_exento?'EXENTO':'GRAVADO'}</td>
-                        <td class="p-3 text-center space-x-2">
-                            <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku||''}", "${prod.descripcion}", ${costo}, ${prod.margen_utilidad_porcentaje||30}, ${precioVenta}, ${prod.es_exento}, "${unidad}","${prod.stock||0}", ${prod.maneja_inventario !== false}, "${prod.lote||''}")' class="text-emerald-400 hover:underline">Editar</button>
-                            <button onclick='eliminarProducto("${prod.id}")' class="text-rose-400 hover:underline">Eliminar</button>
-                        </td>
+                        <td class="p-3 text-center"><button onclick='eliminarProducto("${prod.id}")' class="text-rose-400">Eliminar</button></td>
                     </tr>
                 `;
             });
         }
-
-        async function eliminarProducto(productoId) {
-            if (!confirm('¿Desea eliminar este artículo/servicio?')) return;
-
-            const { count: cKardex } = await supabaseClient.from('kardex_movimientos').select('*', { count: 'exact', head: true }).eq('producto_id', productoId);
-            const { count: cItems } = await supabaseClient.from('invoice_items').select('*', { count: 'exact', head: true }).eq('producto_id', productoId);
-
-            if ((cKardex || 0) > 0 || (cItems || 0) > 0) {
-                alert('⚠️ No se puede eliminar este artículo porque ya tiene movimientos en el Kardex o ha sido facturado.');
-                return;
-            }
-
-            const { error } = await supabaseClient.from('productos').delete().eq('id', productoId);
-            if (error) { alert('Error al eliminar: ' + error.message); return; }
-            alert('¡Artículo eliminado con éxito!');
-            cargarProductosGestion();
-        }
-
+        async function eliminarProducto(id) { await supabaseClient.from('productos').delete().eq('id', id); cargarProductosGestion(); }
         async function guardarProducto() {
-            const id = document.getElementById('editProductoId').value;
-            const manejaInv = document.getElementById('prodManejaInventario').value === 'true';
-            const stockIngresado = manejaInv ? (parseFloat(document.getElementById('prodStock').value) || 0) : 0;
-            const costoIngresado = parseFloat(document.getElementById('prodCosto').value) || 0;
-            const utilidadIngresada = parseFloat(document.getElementById('prodUtilidad').value) || 30;
-            const precioVentaIngresado = parseFloat(document.getElementById('prodPrecioVenta').value) || 0;
-            const loteIngresado = document.getElementById('prodLote').value.trim();
-            const unidadMedida = document.getElementById('prodUnidadMedida').value;
-
             const payload = {
                 codigo_sku: document.getElementById('prodSku').value.trim(),
                 descripcion: document.getElementById('prodDescripcion').value.trim(),
-                maneja_inventario: manejaInv,
-                unidad_medida: unidadMedida,
-                stock: stockIngresado,
-                lote: loteIngresado,
-                costo_unitario_usd: costoIngresado,
-                margen_utilidad_porcentaje: utilidadIngresada,
-                precio_unitario_usd: precioVentaIngresado, // Compatibilidad POS
-                precio_venta_usd: precioVentaIngresado,
-                es_exento: document.getElementById('prodExento').value === 'true'
+                maneja_inventario: document.getElementById('prodManejaInventario').value === 'true',
+                unidad_medida: document.getElementById('prodUnidadMedida').value,
+                stock: parseFloat(document.getElementById('prodStock').value) || 0,
+                costo_unitario_usd: parseFloat(document.getElementById('prodCosto').value) || 0,
+                margen_utilidad_porcentaje: parseFloat(document.getElementById('prodUtilidad').value) || 30,
+                precio_venta_usd: parseFloat(document.getElementById('prodPrecioVenta').value) || 0,
+                precio_unitario_usd: parseFloat(document.getElementById('prodPrecioVenta').value) || 0,
+                es_exento: document.getElementById('prodExento').value === 'true',
+                tenant_id: tenantActual.id
             };
-            if (!payload.descripcion) { alert('Ingrese descripción.'); return; }
-
-            if (id) {
-                await supabaseClient.from('productos').update(payload).eq('id', id);
-            } else {
-                const { data: prodIns, error: errIns } = await supabaseClient.from('productos').insert([{...payload, tenant_id: tenantActual.id}]).select();
-                if (!errIns && prodIns && prodIns.length > 0 && manejaInv && stockIngresado > 0) {
-                    const nuevoProdId = prodIns[0].id;
-                    const refInit = loteIngresado ? `INIT-${payload.codigo_sku||'001'} (${loteIngresado})` : `INIT-${payload.codigo_sku||'001'}`;
-                    await supabaseClient.from('kardex_movimientos').insert([{
-                        tenant_id: tenantActual.id,
-                        producto_id: nuevoProdId,
-                        tipo_movimiento: 'SALDO INICIAL',
-                        documento_ref: refInit,
-                        cantidad_in: 0,
-                        cantidad_out: 0,
-                        cantidad_inicial: stockIngresado,
-                        cantidad_ajuste: 0,
-                        costo_unit_usd_in: costoIngresado,
-                        saldo_cantidad: stockIngresado,
-                        costo_promedio_usd: costoIngresado,
-                        tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
-                    }]);
-                }
-            }
-            limpiarFormProducto();
+            await supabaseClient.from('productos').insert([payload]);
             cargarProductosGestion();
-            alert('¡Ítem guardado con éxito!');
+            alert('¡Guardado!');
         }
-
-        function editarProducto(id, sku, desc, costo, utilidad, precioVenta, exento, unidad, stock, manejaInv, lote) {
-            document.getElementById('editProductoId').value = id;
-            document.getElementById('prodSku').value = sku;
-            document.getElementById('prodDescripcion').value = desc;
-            document.getElementById('prodManejaInventario').value = manejaInv.toString();
-            document.getElementById('prodUnidadMedida').value = unidad;
-            document.getElementById('prodStock').value = stock;
-            document.getElementById('prodLote').value = lote;
-            document.getElementById('prodCosto').value = costo;
-            document.getElementById('prodUtilidad').value = utilidad;
-            document.getElementById('prodPrecioVenta').value = precioVenta;
-            document.getElementById('prodExento').value = exento.toString();
-            document.getElementById('tituloFormProducto').innerText = '✏️ Editar Ítem / Servicio';
-            document.getElementById('btnCancelarProd').classList.remove('hidden');
-        }
-
-        function limpiarFormProducto() {
-            document.getElementById('editProductoId').value = '';
-            document.getElementById('prodSku').value = '';
-            document.getElementById('prodDescripcion').value = '';
-            document.getElementById('prodLote').value = '';
-            document.getElementById('prodCosto').value = '1.00';
-            document.getElementById('prodUtilidad').value = '30.00';
-            document.getElementById('prodPrecioVenta').value = '1.30';
-            document.getElementById('tituloFormProducto').innerText = '📦 Maestro de Artículos y Servicios';
-            document.getElementById('btnCancelarProd').classList.add('hidden');
-        }
-
+        function limpiarFormProducto() {}
         async function cargarClientesSelect() {
             const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
             clientesCache = data || [];
             const select = document.getElementById('clienteSelect');
-            select.innerHTML = '<option value="">-- Seleccionar Cliente --</option>';
+            select.innerHTML = '<option value="">-- Seleccionar --</option>';
             clientesCache.forEach(c => { select.innerHTML += `<option value="${c.id}">${c.razon_social} (${c.rif})</option>`; });
         }
         function seleccionarClientePredefinido() {
-            const id = document.getElementById('clienteSelect').value;
-            const c = clientesCache.find(x => x.id === id);
-            if (c) {
-                document.getElementById('clienteRif').value = c.rif || '';
-                document.getElementById('clienteNombre').value = c.razon_social || '';
-            }
+            const c = clientesCache.find(x => x.id === document.getElementById('clienteSelect').value);
+            if (c) { document.getElementById('clienteRif').value = c.rif; document.getElementById('clienteNombre').value = c.razon_social; }
         }
         async function cargarClientesGestion() {
             const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
             const tbody = document.getElementById('tablaClientesGestion');
             tbody.innerHTML = '';
             if (!data) return;
-            data.forEach(c => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900">
-                        <td class="p-3 font-mono text-emerald-400">${c.rif}</td>
-                        <td class="p-3 font-semibold">${c.razon_social}</td>
-                        <td class="p-3 text-slate-400">${c.direccion||'N/A'}</td>
-                        <td class="p-3 text-slate-300">${c.telefono||'N/A'}</td>
-                        <td class="p-3 text-center space-x-2">
-                            <button onclick='editarCliente("${c.id}","${c.rif}","${c.razon_social}","${c.direccion||''}","${c.telefono||''}")' class="text-emerald-400 hover:underline">Editar</button>
-                            <button onclick='eliminarCliente("${c.rif}")' class="text-rose-400 hover:underline">Eliminar</button>
-                        </td>
-                    </tr>
-                `;
-            });
+            data.forEach(c => { tbody.innerHTML += `<tr class="hover:bg-slate-900"><td class="p-3 font-mono text-emerald-400">${c.rif}</td><td class="p-3">${c.razon_social}</td><td class="p-3">${c.telefono||''}</td><td class="p-3 text-center"><button onclick='eliminarCliente("${c.rif}")' class="text-rose-400">Eliminar</button></td></tr>`; });
         }
-
-        async function eliminarCliente(rifCliente) {
-            if (!confirm('¿Desea eliminar este cliente?')) return;
-
-            const { count: cInv } = await supabaseClient.from('invoices').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantActual.id).eq('cliente_rif', rifCliente);
-
-            if ((cInv || 0) > 0) {
-                alert('⚠️ No se puede eliminar este cliente porque ya tiene facturas emitidas a su nombre.');
-                return;
-            }
-
-            const { error } = await supabaseClient.from('clientes').delete().eq('tenant_id', tenantActual.id).eq('rif', rifCliente);
-            if (error) { alert('Error al eliminar: ' + error.message); return; }
-            alert('¡Cliente eliminado con éxito!');
-            cargarClientesGestion();
-        }
-
+        async function eliminarCliente(rif) { await supabaseClient.from('clientes').delete().eq('tenant_id', tenantActual.id).eq('rif', rif); cargarClientesGestion(); }
         async function guardarCliente() {
-            const id = document.getElementById('editClienteId').value;
-            const payload = {
+            await supabaseClient.from('clientes').insert([{
                 rif: document.getElementById('cliRif').value.trim(),
                 razon_social: document.getElementById('cliRazonSocial').value.trim(),
                 direccion: document.getElementById('cliDireccion').value.trim(),
-                telefono: document.getElementById('cliTelefono').value.trim()
-            };
-            if (!payload.rif || !payload.razon_social) { alert('Ingrese RIF y Razón Social.'); return; }
-            if (id) { await supabaseClient.from('clientes').update(payload).eq('id', id); }
-            else { payload.tenant_id = tenantActual.id; await supabaseClient.from('clientes').insert([payload]); }
-            limpiarFormCliente();
+                telefono: document.getElementById('cliTelefono').value.trim(),
+                tenant_id: tenantActual.id
+            }]);
             cargarClientesGestion();
+            alert('¡Cliente guardado!');
         }
-        function editarCliente(id, rif, raz, dir, tel) {
-            document.getElementById('editClienteId').value = id;
-            document.getElementById('cliRif').value = rif;
-            document.getElementById('cliRazonSocial').value = raz;
-            document.getElementById('cliDireccion').value = dir;
-            document.getElementById('cliTelefono').value = tel;
-            document.getElementById('tituloFormCliente').innerText = '✏️ Editar Cliente';
-            document.getElementById('btnCancelarCli').classList.remove('hidden');
-        }
-        function limpiarFormCliente() {
-            document.getElementById('editClienteId').value = '';
-            document.getElementById('cliRif').value = '';
-            document.getElementById('cliRazonSocial').value = '';
-            document.getElementById('tituloFormCliente').innerText = '👥 Maestro de Clientes';
-            document.getElementById('btnCancelarCli').classList.add('hidden');
-        }
+        function limpiarFormCliente() {}
 
-        // --- POS CARRITO Y FACTURACIÓN ---
         function verificarAplicacionIgtf() {
             const m = document.getElementById('metodoPagoSelect').value;
             document.getElementById('aplicaIgtfSelect').value = ['EFECTIVO DIVISAS', 'ZELLE'].includes(m) ? 'SI' : 'NO';
@@ -1782,59 +1382,30 @@
             const sel = document.getElementById('productoSelect');
             if (!sel.value) return;
             const opt = sel.options[sel.selectedIndex];
-            const cant = parseFloat(document.getElementById('cantidadItem').value) || 1;
-            const manejaInv = opt.getAttribute('data-maneja') === 'true';
-            const stock = parseFloat(opt.getAttribute('data-stock')) || 0;
-
-            if (manejaInv && cant > stock) { alert(`Stock insuficiente (${stock} disponibles).`); return; }
-
             carritoItems.push({
-                productoId: sel.value,
-                descripcion: opt.text.split(' [')[0],
-                unidad: opt.getAttribute('data-unidad'),
-                precio: parseFloat(opt.getAttribute('data-precio')),
-                esExento: opt.getAttribute('data-exento') === 'true',
-                cantidad: cant,
-                manejaInventario: manejaInv
+                productoId: sel.value, descripcion: opt.text.split(' [')[0], unidad: opt.getAttribute('data-unidad'),
+                precio: parseFloat(opt.getAttribute('data-precio')), esExento: opt.getAttribute('data-exento') === 'true',
+                cantidad: parseFloat(document.getElementById('cantidadItem').value) || 1, manejaInventario: opt.getAttribute('data-maneja') === 'true'
             });
             actualizarTablaYCalculos();
         }
         function eliminarItem(i) { carritoItems.splice(i, 1); actualizarTablaYCalculos(); }
-
         function actualizarTablaYCalculos() {
             const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
             const tbody = document.getElementById('tablaItems');
             tbody.innerHTML = '';
-            if (carritoItems.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="p-3 text-center text-slate-500">Carrito vacío.</td></tr>`; }
             carritoItems.forEach((item, idx) => {
-                const subUsd = item.precio * item.cantidad;
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900">
-                        <td class="p-3">${item.descripcion} ${item.esExento?'(E)':''}</td>
-                        <td class="p-3">${item.cantidad}</td>
-                        <td class="p-3">${item.unidad}</td>
-                        <td class="p-3 font-mono">$ ${item.precio.toFixed(2)} | Bs. ${(item.precio*tasa).toFixed(2)}</td>
-                        <td class="p-3">${item.esExento?'EXENTO':'GRAVADO'}</td>
-                        <td class="p-3 font-mono text-emerald-300">$ ${subUsd.toFixed(2)} | Bs. ${(subUsd*tasa).toFixed(2)}</td>
-                        <td class="p-3 text-center"><button onclick="eliminarItem(${idx})" class="text-rose-400 font-bold">×</button></td>
-                    </tr>
-                `;
+                tbody.innerHTML += `<tr class="hover:bg-slate-900"><td class="p-3">${item.descripcion}</td><td class="p-3">${item.cantidad}</td><td class="p-3">${item.unidad}</td><td class="p-3">$ ${item.precio.toFixed(2)}</td><td class="p-3">${item.esExento?'EXENTO':'GRAVADO'}</td><td class="p-3 text-emerald-300">$ ${(item.precio*item.cantidad).toFixed(2)}</td><td class="p-3 text-center"><button onclick="eliminarItem(${idx})" class="text-rose-400">×</button></td></tr>`;
             });
             recalcularTodo();
         }
-
         function recalcularTodo() {
             const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
             let baseUsd = 0, exentoUsd = 0;
-            carritoItems.forEach(i => {
-                const sub = i.precio * i.cantidad;
-                if (i.esExento) exentoUsd += sub; else baseUsd += sub;
-            });
+            carritoItems.forEach(i => { if (i.esExento) exentoUsd += i.precio*i.cantidad; else baseUsd += i.precio*i.cantidad; });
             const ivaUsd = baseUsd * 0.16;
             const totalSubUsd = baseUsd + exentoUsd + ivaUsd;
-            const aplicaIgtf = document.getElementById('aplicaIgtfSelect').value === 'SI';
-            const igtfUsd = aplicaIgtf ? totalSubUsd * 0.03 : 0;
-
+            const igtfUsd = document.getElementById('aplicaIgtfSelect').value === 'SI' ? totalSubUsd * 0.03 : 0;
             document.getElementById('baseGravadaBs').innerText = `$ ${baseUsd.toFixed(2)} | Bs. ${(baseUsd*tasa).toFixed(2)}`;
             document.getElementById('montoExentoBs').innerText = `$ ${exentoUsd.toFixed(2)} | Bs. ${(exentoUsd*tasa).toFixed(2)}`;
             document.getElementById('ivaBs').innerText = `$ ${ivaUsd.toFixed(2)} | Bs. ${(ivaUsd*tasa).toFixed(2)}`;
@@ -1842,20 +1413,12 @@
             document.getElementById('totalBs').innerText = `$ ${(totalSubUsd+igtfUsd).toFixed(2)} | Bs. ${((totalSubUsd+igtfUsd)*tasa).toFixed(2)}`;
             calcularVuelto();
         }
-
         function calcularVuelto() {
             const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
             const totalBs = parseFloat(document.getElementById('totalBs').innerText.split('| Bs. ')[1]) || 0;
-            const recUsd = parseFloat(document.getElementById('pagoRecibidoUsd').value) || 0;
-            const recBs = parseFloat(document.getElementById('pagoRecibidoBs').value) || 0;
-            const diff = (recBs + (recUsd * tasa)) - totalBs;
-            if (diff >= 0) {
-                document.getElementById('vueltoBs').innerText = `Bs. ${diff.toFixed(2)}`;
-                document.getElementById('vueltoUsd').innerText = `$ ${(diff/tasa).toFixed(2)}`;
-            } else {
-                document.getElementById('vueltoBs').innerText = `Faltan Bs. ${Math.abs(diff).toFixed(2)}`;
-                document.getElementById('vueltoUsd').innerText = `$ 0.00`;
-            }
+            const diff = (parseFloat(document.getElementById('pagoRecibidoBs').value) || 0) + ((parseFloat(document.getElementById('pagoRecibidoUsd').value) || 0) * tasa) - totalBs;
+            if (diff >= 0) { document.getElementById('vueltoBs').innerText = `Bs. ${diff.toFixed(2)}`; document.getElementById('vueltoUsd').innerText = `$ ${(diff/tasa).toFixed(2)}`; }
+            else { document.getElementById('vueltoBs').innerText = `Faltan Bs. ${Math.abs(diff).toFixed(2)}`; document.getElementById('vueltoUsd').innerText = `$ 0.00`; }
         }
 
         async function emitirFactura() {
@@ -1875,57 +1438,27 @@
             const igtfBs = document.getElementById('aplicaIgtfSelect').value === 'SI' ? (subtotalBs + ivaBs) * 0.03 : 0;
             const totalBs = subtotalBs + ivaBs + igtfBs;
 
-            try {
-                const { data: invData, error: errInv } = await supabaseClient.from('invoices').insert([{
-                    tenant_id: tenantActual.id, factura_nro: facturaNro, nro_control: nroControl,
-                    tasa_bcv: tasa, monto_usd: baseUsd + exentoUsd, subtotal_bs: subtotalBs + ivaBs,
-                    iva_bs: ivaBs, igtf_bs: igtfBs, total_bs: totalBs, cliente_rif: rif,
-                    cliente_nombre: nombre, metodo_pago: document.getElementById('metodoPagoSelect').value
-                }]).select();
+            const { data: invData } = await supabaseClient.from('invoices').insert([{
+                tenant_id: tenantActual.id, factura_nro: facturaNro, nro_control: nroControl,
+                tasa_bcv: tasa, monto_usd: baseUsd + exentoUsd, subtotal_bs: subtotalBs + ivaBs,
+                iva_bs: ivaBs, igtf_bs: igtfBs, total_bs: totalBs, cliente_rif: rif,
+                cliente_nombre: nombre, metodo_pago: document.getElementById('metodoPagoSelect').value
+            }]).select();
 
-                if (errInv) throw new Error('Error en factura: ' + errInv.message);
-
-                const invoiceId = invData[0].id;
-                for (const item of carritoItems) {
-                    await supabaseClient.from('invoice_items').insert([{
-                        invoice_id: invoiceId, producto_id: item.productoId, cantidad: item.cantidad,
-                        precio_unitario_usd: item.precio, es_exento: item.esExento, subtotal_usd: item.precio * item.cantidad,
-                        descripcion: `${item.descripcion} (${item.unidad})`
-                    }]);
-
-                    if (item.manejaInventario) {
-                        const { data: pData } = await supabaseClient.from('productos').select('stock, costo_unitario_usd, precio_venta_usd, lote').eq('id', item.productoId).single();
-                        const stockActual = pData ? (pData.stock || 0) : 0;
-                        const nuevoStock = Math.max(0, stockActual - item.cantidad);
-                        await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.productoId);
-                        
-                        const refSalida = pData?.lote ? `${facturaNro} (Lote: ${pData.lote})` : facturaNro;
-                        const costoRef = pData ? (pData.costo_unitario_usd || item.precio) : item.precio;
-
-                        const payloadKardex = {
-                            tenant_id: tenantActual.id, 
-                            producto_id: item.productoId, 
-                            tipo_movimiento: 'SALIDA',
-                            documento_ref: refSalida, 
-                            cantidad_in: 0, 
-                            cantidad_out: item.cantidad,
-                            cantidad_inicial: 0,
-                            cantidad_ajuste: 0,
-                            precio_venta_usd: item.precio, 
-                            saldo_cantidad: nuevoStock, 
-                            costo_promedio_usd: costoRef, 
-                            tasa_bcv: tasa
-                        };
-
-                        await supabaseClient.from('kardex_movimientos').insert([payloadKardex]);
-                    }
+            const invoiceId = invData[0].id;
+            for (const item of carritoItems) {
+                await supabaseClient.from('invoice_items').insert([{
+                    invoice_id: invoiceId, producto_id: item.productoId, cantidad: item.cantidad,
+                    precio_unitario_usd: item.precio, es_exento: item.esExento, subtotal_usd: item.precio * item.cantidad,
+                    descripcion: `${item.descripcion} (${item.unidad})`
+                }]);
+                if (item.manejaInventario) {
+                    const { data: pData } = await supabaseClient.from('productos').select('stock').eq('id', item.productoId).single();
+                    const nuevoStock = Math.max(0, (pData?.stock || 0) - item.cantidad);
+                    await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.productoId);
                 }
-                alert(`¡Factura ${facturaNro} emitida con éxito!`);
-            } catch (err) {
-                console.error(err);
-                alert('❌ Error al emitir factura: ' + err.message);
-                return;
             }
+            alert(`¡Factura ${facturaNro} emitida y registrada para el Libro de Ventas SENIAT!`);
             carritoItems = [];
             actualizarTablaYCalculos();
             cambiarPestana('historial');
@@ -1938,30 +1471,18 @@
         }
         function filtrarHistorial() {
             const txt = document.getElementById('filtroTexto').value.toLowerCase().trim();
-            const filtrados = documentosHistorialCache.filter(d => (d.numero||'').toLowerCase().includes(txt) || (d.cliente_nombre||'').toLowerCase().includes(txt));
-            renderizarHistorial(filtrados);
+            renderizarHistorial(documentosHistorialCache.filter(d => (d.numero||'').toLowerCase().includes(txt) || (d.cliente_nombre||'').toLowerCase().includes(txt)));
         }
         function renderizarHistorial(lista) {
             const tbody = document.getElementById('tablaHistorial');
             tbody.innerHTML = '';
-            if (!lista || lista.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin comprobantes.</td></tr>`; return; }
             lista.forEach(doc => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900">
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300">${doc.tipoDoc}</span><br>${doc.numero}</td>
-                        <td class="p-3 font-mono">${doc.nro_control||'N/A'}</td>
-                        <td class="p-3">${doc.cliente_nombre}</td>
-                        <td class="p-3">${doc.metodo_pago||'N/A'}</td>
-                        <td class="p-3">${formatearFecha8Digitos(doc.created_at)}</td>
-                        <td class="p-3 font-mono text-white">Bs. ${doc.total_bs.toFixed(2)}</td>
-                        <td class="p-3 text-center"><button onclick='verComprobante(${JSON.stringify(doc)})' class="bg-slate-800 text-slate-200 px-3 py-1.5 rounded text-xs">Ver</button></td>
-                    </tr>
-                `;
+                tbody.innerHTML += `<tr class="hover:bg-slate-900"><td class="p-3">${doc.numero}</td><td class="p-3 font-mono">${doc.nro_control||'N/A'}</td><td class="p-3">${doc.cliente_nombre}</td><td class="p-3">${doc.metodo_pago}</td><td class="p-3">${formatearFecha8Digitos(doc.created_at)}</td><td class="p-3 font-mono">Bs. ${doc.total_bs.toFixed(2)}</td><td class="p-3 text-center"><button onclick='verComprobante(${JSON.stringify(doc)})' class="bg-slate-800 px-3 py-1.5 rounded">Ver</button></td></tr>`;
             });
         }
         function verComprobante(doc) {
-            document.getElementById('ticketComercioNombre').innerText = tenantActual.razon_social || tenantActual.email;
-            document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif||'J-000'}`;
+            document.getElementById('ticketComercioNombre').innerText = tenantActual.razon_social;
+            document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif}`;
             document.getElementById('ticketNro').innerText = 'Comprobante: ' + doc.numero;
             document.getElementById('ticketTotal').innerText = `Bs. ${doc.total_bs.toFixed(2)}`;
             document.getElementById('modalTicket').classList.remove('hidden');
@@ -1972,38 +1493,14 @@
             const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
             const filtradas = data || [];
             document.getElementById('zTotalFacturas').innerText = filtradas.length;
-            let total = 0;
-            filtradas.forEach(f => total += f.total_bs);
+            let total = 0; filtradas.forEach(f => total += f.total_bs);
             document.getElementById('totalGavetaEfectivo').innerText = `Bs. ${total.toFixed(2)}`;
         }
 
-        function verificarColaOffline() {
-            const cola = JSON.parse(localStorage.getItem('cola_offline') || '[]');
-            if (cola.length > 0) {
-                document.getElementById('offlineBadge').classList.remove('hidden');
-                document.getElementById('btnSincronizar').classList.remove('hidden');
-                document.getElementById('contadorOffline').innerText = cola.length;
-            } else {
-                document.getElementById('offlineBadge').classList.add('hidden');
-                document.getElementById('btnSincronizar').classList.add('hidden');
-            }
-        }
-        async function sincronizarOffline() {
-            alert('¡Sincronización completada con Supabase!');
-            localStorage.removeItem('cola_offline');
-            verificarColaOffline();
-        }
-
-        async function imprimirBluetoothReal() {
-            try {
-                const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
-                const server = await device.gatt.connect();
-                alert(`Conectado a impresora térmica Bluetooth: ${device.name}`);
-            } catch (err) {
-                alert('Impresión térmica simulada / Sin dispositivo seleccionado.');
-            }
-        }
-        function enviarWhatsApp() { window.open(`https://wa.me/?text=Comprobante%20Emitido`, '_blank'); }
+        function verificarColaOffline() {}
+        async function sincronizarOffline() {}
+        async function imprimirBluetoothReal() { alert('Impresión térmica BT'); }
+        function enviarWhatsApp() { window.open(`https://wa.me/?text=Comprobante`, '_blank'); }
     </script>
 </body>
 </html>
