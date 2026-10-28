@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiFacturaDigital.com.ve - Sistema Fiscal Integrado</title>
+    <title>MiFacturaDigital.com.ve - Sistema Fiscal Integrado SENIAT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1033,7 +1033,7 @@
         }
 
         async function descargarLibroVentasOficialExcel() {
-            const { data: invoices } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: true });
+            const { data: invoices } = await supabaseClient.from('invoices').select('*, invoice_items(*)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: true });
             if (!invoices || invoices.length === 0) { alert('Sin ventas registradas.'); return; }
 
             const razSocial = tenantActual.razon_social || 'CONTRIBUYENTE';
@@ -1065,15 +1065,34 @@
 
             invoices.forEach((inv, index) => {
                 const fechaDoc = new Date(inv.created_at);
+                const tasa = inv.tasa_bcv || 1;
                 const totalConIva = inv.total_bs || 0;
                 const ivaGen16 = inv.iva_bs || 0;
-                const baseImp = inv.subtotal_bs ? inv.subtotal_bs - ivaGen16 : (totalConIva - ivaGen16);
-                const esExento = baseImp <= 0 && ivaGen16 === 0;
-                const ventasExentas = esExento ? totalConIva : 0;
-                const baseGravable = esExento ? 0 : baseImp;
+
+                let ventasExentasBs = 0;
+                let baseGravableBs = 0;
+
+                if (inv.invoice_items && inv.invoice_items.length > 0) {
+                    inv.invoice_items.forEach(item => {
+                        const subUsd = item.subtotal_usd || (item.precio_unitario_usd * item.cantidad);
+                        const subBs = subUsd * tasa;
+                        if (item.es_exento) {
+                            ventasExentasBs += subBs;
+                        } else {
+                            baseGravableBs += subBs;
+                        }
+                    });
+                } else {
+                    const subtotalGen = inv.subtotal_bs ? (inv.subtotal_bs - ivaGen16) : (totalConIva - ivaGen16);
+                    if (ivaGen16 <= 0 && subtotalGen > 0) {
+                        ventasExentasBs = totalConIva;
+                    } else {
+                        baseGravableBs = subtotalGen > 0 ? subtotalGen : 0;
+                    }
+                }
 
                 const nroDocumentoTrazabilidad = inv.factura_nro || ('DOC-' + (index + 1));
-                const ventasNetasValor = baseGravable + ventasExentas;
+                const ventasNetasValor = baseGravableBs + ventasExentasBs;
                 const debitosValor = ivaGen16;
 
                 matriz.push([
@@ -1091,20 +1110,20 @@
                     '01-Reg',
                     '',
                     totalConIva,
-                    ventasExentas,
+                    ventasExentasBs,            // Columna de Ventas Internas No Gravadas (Exentas)
                     0,
-                    baseGravable,
-                    baseGravable > 0 ? 16 : 0,
+                    baseGravableBs,
+                    baseGravableBs > 0 ? 16 : 0,
                     0,
                     0,
                     ivaGen16,
                     0,
-                    '',                         // Columna W: Sin centro asignado
-                    nroDocumentoTrazabilidad,   // Columna X: Número de documento de trazabilidad real
+                    '',                         // Columna W: Sin centro
+                    nroDocumentoTrazabilidad,   // Columna X: Trazabilidad real
                     0, 0, 0,
                     fechaDoc,                   // Columna AB: Fecha de registro
-                    ventasNetasValor,           // Columna AC: Ventas netas reales del registro
-                    debitosValor                // Columna AD: Débitos fiscales reales del registro
+                    ventasNetasValor,           // Columna AC: Ventas netas reales
+                    debitosValor                // Columna AD: Débitos fiscales reales
                 ]);
             });
 
