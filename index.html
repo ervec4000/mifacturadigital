@@ -94,9 +94,10 @@
                     <div>
                         <div class="flex justify-between items-center mb-1.5">
                             <label class="block text-xs font-semibold text-slate-300">Tasa BCV Oficial (Bs. / $)</label>
-                            <button onclick="consultarTasaBcvApi()" class="text-[10px] text-emerald-400 hover:underline cursor-pointer">🔄 Consultar API</button>
+                            <button onclick="consultarTasaBcvApi()" class="text-[10px] text-emerald-400 hover:underline cursor-pointer">🔄 Consultar BCV (XML)</button>
                         </div>
-                        <input type="text" id="tasaBcv" value="887.30" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500 font-mono text-sm" oninput="recalcularTodo()">
+                        <input type="number" step="0.0001" id="tasaBcv" value="888.1183" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500 font-mono text-sm" oninput="recalcularTodo()">
+                        <p class="text-[10px] text-slate-400 mt-1">💡 Se extrae de bcv.org.ve o puedes editarla manualmente.</p>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1.5">Seleccionar Cliente Rápido</label>
@@ -633,15 +634,46 @@
             return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
         }
 
+        // Función inteligente para consultar BCV (Método robusto web scraping / API)
         async function consultarTasaBcvApi() {
             try {
+                // Intento 1: API de respaldo rápida
                 const res = await fetch('https://pydolarvenezuela-api.valtx.workers.dev/api/v1/dollar/bcv');
                 const json = await res.json();
                 if (json?.monitors?.usd?.price) {
-                    document.getElementById('tasaBcv').value = json.monitors.usd.price.toFixed(2);
+                    let tasaVal = parseFloat(json.monitors.usd.price);
+                    document.getElementById('tasaBcv').value = tasaVal.toFixed(4);
                     recalcularTodo();
+                    alert('¡Tasa BCV oficial obtenida con éxito!');
+                    return;
                 }
-            } catch (e) { console.warn('BCV API offline'); }
+            } catch (e) { console.warn('API principal offline, probando raspado directo...'); }
+
+            // Intento 2: Raspado directo simulando ImportXML desde bcv.org.ve mediante proxy CORS
+            try {
+                const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent('https://www.bcv.org.ve');
+                const resProxy = await fetch(proxyUrl);
+                const dataProxy = await resProxy.json();
+                if (dataProxy && dataProxy.contents) {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(dataProxy.contents, 'text/html');
+                    const strongElem = doc.querySelector('#dolar strong') || doc.querySelector('.view-tipo-cambio-referencia strong') || doc.querySelector('.dinero strong');
+                    if (strongElem) {
+                        let tasaTxt = strongElem.textContent.trim().replace(/\./g, '').replace(',', '.');
+                        let tasaNum = parseFloat(tasaTxt);
+                        if (!isNaN(tasaNum)) {
+                            document.getElementById('tasaBcv').value = tasaNum.toFixed(4);
+                            recalcularTodo();
+                            alert('¡Tasa BCV extraída directamente de bcv.org.ve!');
+                            return;
+                        }
+                    }
+                }
+            } catch (errProxy) {
+                console.warn('Raspado directo no disponible:', errProxy);
+            }
+
+            alert('No se pudo conectar automáticamente. Puedes escribir la tasa del BCV de forma manual en la casilla.');
         }
 
         async function iniciarSesionTenant() {
@@ -706,7 +738,7 @@
             if (pestana === 'cuentas') cargarCuentasPorCobrar();
             if (pestana === 'productos') cargarProductosGestion();
             if (pestana === 'clientes') cargarClientesGestion();
-            if (pestana === 'pos') { consultarTasaBcvApi(); cargarProductosSelect(); cargarClientesSelect(); }
+            if (pestana === 'pos') { cargarProductosSelect(); cargarClientesSelect(); }
         }
 
         function abrirModalPerfil() {
@@ -743,7 +775,7 @@
             cerrarModalSuscripcion();
         }
 
-        // --- FUNCIONES DE EXPORTACIÓN EXCEL (.xlsx) ---
+        // --- EXPORTACIÓN EXCEL (.xlsx) ---
         function descargarExcel(datos, nombreArchivo, nombreHoja) {
             const worksheet = XLSX.utils.json_to_sheet(datos);
             const workbook = XLSX.utils.book_new();
@@ -905,27 +937,62 @@
             if (!data) return;
             data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} (Stock: ${p.stock||0})</option>`; });
         }
+
         async function registrarCompraInventario() {
             const productoId = document.getElementById('compraProductoSelect').value;
             const cantidad = parseFloat(document.getElementById('compraCantidad').value) || 0;
             const costo = parseFloat(document.getElementById('compraCostoUsd').value) || 0;
             const docRef = document.getElementById('compraDocRef').value.trim() || 'COMPRA-01';
-            if (!productoId || cantidad <= 0 || costo <= 0) { alert('Complete los datos.'); return; }
-            
-            const { data: prodData } = await supabaseClient.from('productos').select('stock, precio_unitario_usd').eq('id', productoId).single();
-            const stockActual = prodData ? (prodData.stock || 0) : 0;
-            const costoActual = prodData ? (prodData.precio_unitario_usd || costo) : costo;
-            const nuevoStock = stockActual + cantidad;
-            const nuevoCostoProm = ((stockActual * costoActual) + (cantidad * costo)) / nuevoStock;
 
-            await supabaseClient.from('productos').update({ stock: nuevoStock, precio_unitario_usd: nuevoCostoProm }).eq('id', productoId);
-            await supabaseClient.from('kardex_movimientos').insert([{
-                tenant_id: tenantActual.id, producto_id: productoId, tipo_movimiento: 'ENTRADA',
-                documento_ref: docRef, cantidad_in: cantidad, costo_unit_usd_in: costo,
-                saldo_cantidad: nuevoStock, costo_promedio_usd: nuevoCostoProm, tasa_bcv: parseFloat(document.getElementById('tasaBcv').value)||1
-            }]);
-            alert('¡Compra registrada con éxito!');
-            cargarProductosSelectCompra();
+            if (!productoId || cantidad <= 0 || costo <= 0) { 
+                alert('Complete los datos de compra correctamente.'); 
+                return; 
+            }
+            
+            try {
+                const { data: prodData, error: errProd } = await supabaseClient
+                    .from('productos')
+                    .select('stock, precio_unitario_usd')
+                    .eq('id', productoId)
+                    .single();
+
+                if (errProd) throw new Error('Error al leer el producto: ' + errProd.message);
+
+                const stockActual = prodData ? (prodData.stock || 0) : 0;
+                const costoActual = prodData ? (prodData.precio_unitario_usd || costo) : costo;
+                const nuevoStock = stockActual + cantidad;
+                const nuevoCostoProm = ((stockActual * costoActual) + (cantidad * costo)) / nuevoStock;
+
+                const { error: errUpd } = await supabaseClient
+                    .from('productos')
+                    .update({ stock: nuevoStock, precio_unitario_usd: nuevoCostoProm })
+                    .eq('id', productoId);
+
+                if (errUpd) throw new Error('Error al actualizar stock: ' + errUpd.message);
+
+                const { error: errKardex } = await supabaseClient.from('kardex_movimientos').insert([{
+                    tenant_id: tenantActual.id, 
+                    producto_id: productoId, 
+                    tipo_movimiento: 'ENTRADA',
+                    documento_ref: docRef, 
+                    cantidad_in: cantidad, 
+                    cantidad_out: 0,
+                    costo_unit_usd_in: costo, 
+                    saldo_cantidad: nuevoStock, 
+                    costo_promedio_usd: nuevoCostoProm, 
+                    tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
+                }]);
+
+                if (errKardex) throw new Error('Error al registrar Kardex: ' + errKardex.message);
+
+                alert(`¡Compra registrada con éxito! Stock actual: ${nuevoStock} | Costo Promedio: $${nuevoCostoProm.toFixed(2)}`);
+                cargarProductosSelectCompra();
+                cargarKardexMovimientos();
+
+            } catch (error) {
+                console.error(error);
+                alert('❌ Falla al registrar en Supabase: ' + error.message);
+            }
         }
 
         async function cargarKardexMovimientos() {
@@ -934,10 +1001,11 @@
             tbody.innerHTML = '';
             if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin movimientos.</td></tr>`; return; }
             data.forEach(m => {
+                const desc = m.productos ? m.productos.descripcion : 'Artículo';
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 text-slate-400">${formatearFecha8Digitos(m.created_at)}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${m.tipo_movimiento==='ENTRADA'?'bg-emerald-950 text-emerald-300':'bg-amber-950 text-amber-300'}">${m.tipo_movimiento}</span></td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${m.tipo_movimiento==='ENTRADA'?'bg-emerald-950 text-emerald-300':'bg-amber-950 text-amber-300'}">${m.tipo_movimiento}</span><br><span class="text-[10px] text-white">${desc}</span></td>
                         <td class="p-3 font-mono">${m.documento_ref}</td>
                         <td class="p-3 font-mono text-emerald-400">${m.cantidad_in||'-'}</td>
                         <td class="p-3 font-mono text-rose-400">${m.cantidad_out||'-'}</td>
@@ -1198,9 +1266,8 @@
                         saldo_cantidad: nuevoStock, costo_promedio_usd: pData ? pData.precio_unitario_usd : item.precio, tasa_bcv: tasa
                     }]);
                 }
-                alert(`¡Factura ${facturaNro} emitida con éxito!`);
+                alert(`¡Factura ${facturaNro} emitida con éxito a tasa de Bs. ${tasa}!`);
             } catch (err) {
-                // Almacenamiento local offline si falla Supabase
                 const colaOffline = JSON.parse(localStorage.getItem('cola_offline') || '[]');
                 colaOffline.push({ facturaNro, totalBs, rif, nombre });
                 localStorage.setItem('cola_offline', JSON.stringify(colaOffline));
@@ -1275,7 +1342,6 @@
             verificarColaOffline();
         }
 
-        // Conexión real Bluetooth Térmica (ESC/POS)
         async function imprimirBluetoothReal() {
             try {
                 const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
