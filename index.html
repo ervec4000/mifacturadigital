@@ -387,7 +387,7 @@
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                                 <tr>
                                     <th class="p-3">Fecha</th>
-                                    <th class="p-3">Artículo</th>
+                                    <th class="p-3">Artículo / Proveedor / Cliente</th>
                                     <th class="p-3">Movimiento</th>
                                     <th class="p-3">Documento / Ref</th>
                                     <th class="p-3 text-center">Inicial</th>
@@ -567,7 +567,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 9: CLIENTES (CON AUTOREPARACIÓN DE TENANT) -->
+            <!-- SECCIÓN 9: CLIENTES -->
             <div id="seccionClientes" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
@@ -577,7 +577,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="block text-xs text-slate-400 mb-1">RIF / Cédula</label><input type="text" id="cliRif" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" placeholder="J-12345678-0"></div>
                         <div><label class="block text-xs text-slate-400 mb-1">Teléfono</label><input type="text" id="cliTelefono" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" placeholder="0414-1234567"></div>
-                        <div class="md:col-span-2"><label class="block text-xs text-slate-400 mb-1">Razón Social</label><input type="text" id="cliRazonSocial" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" placeholder="BOKKATAS RESTAURANT C.A."></div>
+                        <div class="md:col-span-2"><label class="block text-xs text-slate-400 mb-1">Razón Social</label><input type="text" id="cliRazonSocial" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" placeholder="CLIENTE C.A."></div>
                         <div class="md:col-span-2"><label class="block text-xs text-slate-400 mb-1">Dirección</label><input type="text" id="cliDireccion" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" placeholder="San Felipe, Yaracuy"></div>
                     </div>
                     <button onclick="guardarCliente()" class="bg-emerald-600 text-white py-2.5 px-5 rounded-xl font-semibold cursor-pointer text-xs shadow">Guardar Cliente</button>
@@ -952,7 +952,7 @@
         }
 
         async function descargarLibroComprasOficialExcel() {
-            const { data: compras } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion)').eq('tenant_id', tenantActual.id).eq('tipo_movimiento', 'ENTRADA');
+            const { data: compras } = await supabaseClient.from('kardex_movimientos').select('*').eq('tenant_id', tenantActual.id).eq('tipo_movimiento', 'ENTRADA');
             const matriz = [[null, 'COMPAÑÍA:', tenantActual.razon_social], [], [null, null, null, null, 'LIBRO DE COMPRAS SENIAT']];
             matriz.push([null, 'Oper', 'Fecha', 'RIF Prov', 'Proveedor', 'Factura', 'Total Compras', 'Base Imponible', 'IVA']);
             if (compras) {
@@ -980,7 +980,7 @@
 
         async function exportarComprasExcel() { descargarLibroComprasOficialExcel(); }
         async function exportarKardexExcel() {
-            const { data } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion)').eq('tenant_id', tenantActual.id);
+            const { data } = await supabaseClient.from('kardex_movimientos').select('*').eq('tenant_id', tenantActual.id);
             if (!data) return;
             const excelData = data.map(m => ({ Fecha: formatearFecha8Digitos(m.created_at), Movimiento: m.tipo_movimiento, Documento: m.documento_ref, Saldo: m.saldo_cantidad }));
             descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Kardex', 'Kardex');
@@ -1038,47 +1038,29 @@
             data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} [Stock: ${p.stock||0}]</option>`; });
         }
 
-        // --- CONSULTA Y CARGA DE MOVIMIENTOS EN KARDEX (CON RESPALDO DE HISTORIAL) ---
+        // --- KARDEX PPM ROBUSTO (SIN FALLOS DE JOIN) ---
         async function cargarKardexMovimientos() {
-            let { data, error } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion, codigo_sku)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
+            const { data, error } = await supabaseClient.from('kardex_movimientos').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
             
-            // Si el kardex está vacío pero hay facturas (ventas), auto-generamos registros en el kardex para que el cliente vea su trazabilidad
-            if ((!data || data.length === 0) && tenantActual) {
-                const { data: invs } = await supabaseClient.from('invoices').select('*, invoice_items(*, productos(*))').eq('tenant_id', tenantActual.id);
-                if (invs && invs.length > 0) {
-                    for (const inv of invs) {
-                        if (inv.invoice_items) {
-                            for (const item of inv.invoice_items) {
-                                if (item.producto_id) {
-                                    await supabaseClient.from('kardex_movimientos').insert([{
-                                        tenant_id: tenantActual.id, producto_id: item.producto_id, tipo_movimiento: 'SALIDA',
-                                        documento_ref: inv.factura_nro, cantidad_in: 0, cantidad_out: item.cantidad,
-                                        cantidad_inicial: item.productos?.stock || 100, saldo_cantidad: Math.max(0, (item.productos?.stock || 100) - item.cantidad),
-                                        costo_promedio_usd: item.productos?.costo_unitario_usd || 1, tasa_bcv: inv.tasa_bcv || 1,
-                                        proveedor_rif: inv.cliente_rif, proveedor_nombre: inv.cliente_nombre
-                                    }]);
-                                }
-                            }
-                        }
-                    }
-                    const resReintentar = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion, codigo_sku)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
-                    data = resReintentar.data;
-                }
-            }
-
             const tbody = document.getElementById('tablaKardexMovimientos');
             tbody.innerHTML = '';
-            if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex todavía. Realiza ventas o compras.</td></tr>`;
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex todavía. Registra compras o ventas.</td></tr>`;
                 return;
             }
-            data.forEach(m => {
-                const descProd = m.productos?.descripcion || 'Artículo / Servicio';
-                const skuProd = m.productos?.codigo_sku || 'S/N';
+
+            for (const m of data) {
+                let nombreArticulo = 'Artículo / Servicio';
+                if (m.producto_id) {
+                    const { data: prod } = await supabaseClient.from('productos').select('descripcion, codigo_sku').eq('id', m.producto_id).single();
+                    if (prod) nombreArticulo = `${prod.codigo_sku || 'S/N'} - ${prod.descripcion}`;
+                }
+                const entidad = m.proveedor_nombre || m.proveedor_rif || 'Operación Interna';
+
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 text-slate-400">${formatearFecha8Digitos(m.created_at)}</td>
-                        <td class="p-3 font-mono text-emerald-400">${skuProd} - ${descProd}</td>
+                        <td class="p-3 font-mono text-emerald-400">${nombreArticulo}<br><span class="text-[10px] text-slate-400">${entidad}</span></td>
                         <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${m.tipo_movimiento==='ENTRADA'?'bg-emerald-950 text-emerald-300':'bg-rose-950 text-rose-300'}">${m.tipo_movimiento}</span></td>
                         <td class="p-3 font-mono">${m.documento_ref}</td>
                         <td class="p-3 text-center">${m.cantidad_inicial||0}</td>
@@ -1088,7 +1070,7 @@
                         <td class="p-3 font-mono text-emerald-300">$ ${(m.costo_promedio_usd||0).toFixed(2)}</td>
                     </tr>
                 `;
-            });
+            }
         }
 
         async function cargarProductosSelect() {
@@ -1187,11 +1169,10 @@
             cargarProductosGestion();
         }
 
-        // --- CLIENTES CON AUTOREPARACIÓN Y VINCULACIÓN DE FACTURAS ---
+        // --- CLIENTES ---
         async function cargarClientesSelect() {
             let { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
             if (!data || data.length === 0) {
-                // Auto-extraer clientes de las facturas emitidas si la tabla de clientes está vacía para este tenant
                 const { data: invs } = await supabaseClient.from('invoices').select('cliente_rif, cliente_nombre').eq('tenant_id', tenantActual.id);
                 if (invs && invs.length > 0) {
                     const unicos = {};
@@ -1216,18 +1197,6 @@
 
         async function cargarClientesGestion() {
             let { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
-            if (!data || data.length === 0) {
-                const { data: invs } = await supabaseClient.from('invoices').select('cliente_rif, cliente_nombre').eq('tenant_id', tenantActual.id);
-                if (invs && invs.length > 0) {
-                    const unicos = {};
-                    invs.forEach(i => { if (i.cliente_rif) unicos[i.cliente_rif] = i.cliente_nombre; });
-                    for (const [rif, nombre] of Object.entries(unicos)) {
-                        await supabaseClient.from('clientes').insert([{ tenant_id: tenantActual.id, rif, razon_social: nombre, direccion: 'San Felipe, Yaracuy', telefono: '0414-0000000' }]);
-                    }
-                    const resReintentar = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
-                    data = resReintentar.data;
-                }
-            }
             const tbody = document.getElementById('tablaClientesGestion');
             tbody.innerHTML = '';
             if (!data || data.length === 0) {
@@ -1256,6 +1225,93 @@
         }
 
         // --- POS Y EMISIÓN ---
+        function agregarItem() {
+            const select = document.getElementById('productoSelect');
+            const prodId = select.value;
+            if (!prodId) { alert('Seleccione un producto.'); return; }
+            const opt = select.options[select.selectedIndex];
+            const desc = opt.text.split(' - ')[0];
+            const precio = parseFloat(opt.dataset.precio) || 0;
+            const esExento = opt.dataset.exento === 'true';
+            const unidad = opt.dataset.unidad || 'UND';
+            const manejaInventario = opt.dataset.maneja === 'true';
+            const cantidad = parseFloat(document.getElementById('cantidadItem').value) || 1;
+
+            carritoItems.push({ productoId: prodId, descripcion: desc, precio, cantidad, esExento, unidad, manejaInventario });
+            actualizarTablaYCalculos();
+        }
+
+        function eliminarItemCarrito(index) {
+            carritoItems.splice(index, 1);
+            actualizarTablaYCalculos();
+        }
+
+        function actualizarTablaYCalculos() {
+            const tbody = document.getElementById('tablaItems');
+            tbody.innerHTML = '';
+            let baseGravada = 0, montoExento = 0;
+
+            carritoItems.forEach((item, idx) => {
+                const sub = item.precio * item.cantidad;
+                if (item.esExento) montoExento += sub; else baseGravada += sub;
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900">
+                        <td class="p-3">${item.descripcion}</td>
+                        <td class="p-3 font-mono">${item.cantidad}</td>
+                        <td class="p-3">${item.unidad}</td>
+                        <td class="p-3 font-mono">$ ${item.precio.toFixed(2)}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${item.esExento?'bg-sky-950 text-sky-300':'bg-emerald-950 text-emerald-300'}">${item.esExento?'Exento':'Gravado'}</span></td>
+                        <td class="p-3 font-mono font-bold">$ ${sub.toFixed(2)}</td>
+                        <td class="p-3 text-center"><button onclick="eliminarItemCarrito(${idx})" class="text-rose-400 hover:underline">Quitar</button></td>
+                    </tr>
+                `;
+            });
+
+            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
+            const iva = baseGravada * 0.16;
+            const aplicaIgtf = document.getElementById('aplicaIgtfSelect').value === 'SI';
+            const igtf = aplicaIgtf ? (baseGravada + montoExento + iva) * 0.03 : 0;
+            const totalUsd = baseGravada + montoExento + iva + igtf;
+
+            document.getElementById('baseGravadaBs').innerText = `$ ${baseGravada.toFixed(2)} | Bs. ${(baseGravada*tasa).toFixed(2)}`;
+            document.getElementById('montoExentoBs').innerText = `$ ${montoExento.toFixed(2)} | Bs. ${(montoExento*tasa).toFixed(2)}`;
+            document.getElementById('ivaBs').innerText = `$ ${iva.toFixed(2)} | Bs. ${(iva*tasa).toFixed(2)}`;
+            document.getElementById('igtfBs').innerText = `$ ${igtf.toFixed(2)} | Bs. ${(igtf*tasa).toFixed(2)}`;
+            document.getElementById('totalBs').innerText = `$ ${totalUsd.toFixed(2)} | Bs. ${(totalUsd*tasa).toFixed(2)}`;
+        }
+
+        function recalcularTodo() { actualizarTablaYCalculos(); }
+        function verificarAplicacionIgtf() {
+            const metodo = document.getElementById('metodoPagoSelect').value;
+            const selectIgtf = document.getElementById('aplicaIgtfSelect');
+            if (metodo === 'EFECTIVO DIVISAS' || metodo === 'ZELLE') {
+                selectIgtf.value = 'SI';
+            } else {
+                selectIgtf.value = 'NO';
+            }
+            recalcularTodo();
+        }
+
+        function calcularVuelto() {
+            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
+            const totalUsdText = document.getElementById('totalBs').innerText;
+            const totalUsd = parseFloat(totalUsdText.split('|')[0].replace('$', '').trim()) || 0;
+            const totalBs = totalUsd * tasa;
+
+            const recUsd = parseFloat(document.getElementById('pagoRecibidoUsd').value) || 0;
+            const recBs = parseFloat(document.getElementById('pagoRecibidoBs').value) || 0;
+            const totalRecibidoBs = (recUsd * tasa) + recBs;
+
+            const diffBs = totalRecibidoBs - totalBs;
+            if (diffBs >= 0) {
+                document.getElementById('vueltoBs').innerText = `Bs. ${diffBs.toFixed(2)}`;
+                document.getElementById('vueltoUsd`').innerText = `$ ${(diffBs / tasa).toFixed(2)}`;
+            } else {
+                document.getElementById('vueltoBs').innerText = `Bs. 0.00 (Faltan Bs. ${Math.abs(diffBs).toFixed(2)})`;
+                document.getElementById('vueltoUsd').innerText = `$ 0.00`;
+            }
+        }
+
         async function emitirFactura() {
             if (carritoItems.length === 0) { alert('Carrito vacío.'); return; }
             const rif = document.getElementById('clienteRif').value.trim();
@@ -1306,7 +1362,6 @@
                 }
             }
 
-            // Guardar cliente automáticamente si no existe
             const { data: cliExist } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id).eq('rif', rif).single();
             if (!cliExist) {
                 await supabaseClient.from('clientes').insert([{ tenant_id: tenantActual.id, rif, razon_social: nombre, direccion: 'San Felipe', telefono: '0414-0000000' }]);
@@ -1378,6 +1433,107 @@
 
         async function imprimirBluetoothReal() { alert('Impresión térmica BT'); }
         function enviarWhatsApp() { window.open(`https://wa.me/?text=Comprobante`, '_blank'); }
+
+        // Módulos complementarios de Inventario Físico, Etiquetas QR y CxC
+        async function cargarInventarioFisico() {
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            inventarioFisicoCache = data || [];
+            const tbody = document.getElementById('tablaInventarioFisico');
+            tbody.innerHTML = '';
+            inventarioFisicoCache.forEach(p => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900">
+                        <td class="p-3 font-mono">${p.codigo_sku||'S/N'}</td>
+                        <td class="p-3">${p.descripcion}</td>
+                        <td class="p-3">${p.categoria||'N/A'}</td>
+                        <td class="p-3 font-mono">${p.ubicacion||'DEP'}</td>
+                        <td class="p-3 text-center">${p.stock||0}</td>
+                        <td class="p-3 text-center"><input type="number" id="conteo_${p.id}" value="${p.stock||0}" class="w-20 bg-slate-900 border border-slate-800 rounded p-1 text-center font-mono"></td>
+                        <td class="p-3 text-center" id="diff_${p.id}">0</td>
+                        <td class="p-3 text-center"><button onclick="aplicarConteoUnico('${p.id}', ${p.stock||0})" class="text-emerald-400 hover:underline">Aplicar</button></td>
+                    </tr>
+                `;
+            });
+        }
+        function filtrarInventarioFisico() {}
+        async function aplicarConteoUnico(prodId, stockTeorico) {
+            const real = parseFloat(document.getElementById(`conteo_${prodId}`).value) || 0;
+            const diff = real - stockTeorico;
+            await supabaseClient.from('productos').update({ stock: real }).eq('id', prodId);
+            alert(`¡Stock actualizado a ${real} (Diferencia: ${diff})!`);
+            cargarInventarioFisico();
+        }
+        async function guardarTodoInventarioFisico() {
+            for (const p of inventarioFisicoCache) {
+                const real = parseFloat(document.getElementById(`conteo_${p.id}`).value);
+                if (!isNaN(real) && real !== p.stock) {
+                    await supabaseClient.from('productos').update({ stock: real }).eq('id', p.id);
+                }
+            }
+            alert('¡Todos los ajustes de inventario físico han sido aplicados!');
+            cargarInventarioFisico();
+        }
+        function imprimirInventarioFisicoPDF() { window.print(); }
+        async function exportarInventarioFisicoExcel() {
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            if (!data) return;
+            const excelData = data.map(p => ({ SKU: p.codigo_sku, Descripción: p.descripcion, StockTeórico: p.stock }));
+            descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Inventario_Fisico', 'Fisico');
+        }
+
+        async function renderizarEtiquetasQr() {
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            const container = document.getElementById('contenedorGridEtiquetas');
+            container.innerHTML = '';
+            if (!data || data.length === 0) { container.innerHTML = '<p class="text-slate-500">Sin artículos.</p>'; return; }
+            data.forEach((p, idx) => {
+                container.innerHTML += `
+                    <div class="bg-white text-slate-900 p-4 rounded-xl border border-slate-300 flex items-center justify-between font-mono text-xs">
+                        <div>
+                            <p class="font-bold">${p.codigo_sku||'SKU'}</p>
+                            <p class="text-sm font-bold text-slate-800">${p.descripcion}</p>
+                            <p class="text-[10px] text-slate-600">Ubicación: ${p.ubicacion||'DEP'} | Lote: ${p.lote||'N/A'}</p>
+                        </div>
+                        <div id="qr_box_${idx}" class="w-20 h-20 bg-slate-100 flex items-center justify-center border">QR</div>
+                    </div>
+                `;
+            });
+            data.forEach((p, idx) => {
+                const box = document.getElementById(`qr_box_${idx}`);
+                box.innerHTML = '';
+                try {
+                    new QRCode(box, { text: `SKU:${p.codigo_sku}|DESC:${p.descripcion}|LOTE:${p.lote||'N/A'}`, width: 75, height: 75 });
+                } catch(e) { box.innerText = 'QR Code'; }
+            });
+        }
+        function imprimirEtiquetasQr() { window.print(); }
+
+        async function cargarCuentasPorCobrar() {
+            const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).eq('metodo_pago', 'CREDITO ABIERTO');
+            const tbody = document.getElementById('tablaCuentasPorCobrar');
+            tbody.innerHTML = '';
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin créditos pendientes (CxC).</td></tr>`;
+                return;
+            }
+            data.forEach(c => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900">
+                        <td class="p-3 font-mono">${c.factura_nro}</td>
+                        <td class="p-3 text-slate-400">${formatearFecha8Digitos(c.created_at)}</td>
+                        <td class="p-3">${c.cliente_nombre}</td>
+                        <td class="p-3 font-mono text-amber-400 font-bold">Bs. ${c.total_bs.toFixed(2)}</td>
+                        <td class="p-3 text-center"><button onclick="abonarCuentaPorCobrar('${c.id}')" class="bg-emerald-600 px-3 py-1 rounded text-white cursor-pointer">Registrar Abono</button></td>
+                    </tr>
+                `;
+            });
+        }
+        async function abonarCuentaPorCobrar(id) {
+            if (!confirm('¿Registrar pago total y cerrar esta cuenta por cobrar?')) return;
+            await supabaseClient.from('invoices').update({ metodo_pago: 'CREDITO PAGADO' }).eq('id', id);
+            alert('¡Cuenta saldada con éxito!');
+            cargarCuentasPorCobrar();
+        }
     </script>
 </body>
 </html>
