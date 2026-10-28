@@ -6,7 +6,7 @@
     <title>MiFacturaDigital.com.ve - Sistema Fiscal Integrado SENIAT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Librería SheetJS para generar archivos Excel (.xlsx) profesionales -->
+    <!-- Librería SheetJS para generar y leer archivos Excel (.xlsx) profesionales -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         @media print {
@@ -78,6 +78,8 @@
             <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📊 Reporte Z & Libro</button>
             <button onclick="cambiarPestana('compras')" id="btnTabCompras" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📥 Compras</button>
             <button onclick="cambiarPestana('kardex')" id="btnTabKardex" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📦 Kardex PPM</button>
+            <button onclick="cambiarPestana('ajustes')" id="btnTabAjustes" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">⚖️ Ajustes</button>
+            <button onclick="cambiarPestana('fisico')" id="btnTabFisico" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🔍 Inventario Físico</button>
             <button onclick="cambiarPestana('etiquetas')" id="btnTabEtiquetas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🏷️ Etiquetas QR</button>
             <button onclick="cambiarPestana('cuentas')" id="btnTabCuentas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📑 Créditos (CxC)</button>
             <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📦 Stock / Artículos</button>
@@ -330,7 +332,10 @@
             <div id="seccionKardex" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Kardex - Movimientos de Inventario</h3>
+                        <div>
+                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Kardex PPM - Control de Inventario</h3>
+                            <p class="text-xs text-slate-400">Fórmula: Saldo Inicial + Entradas - Salidas (Ventas) ± Ajustes = Total</p>
+                        </div>
                         <div class="flex gap-2">
                             <button onclick="exportarKardexExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Kardex (Excel)</button>
                             <button onclick="cargarKardexMovimientos()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Actualizar</button>
@@ -343,13 +348,73 @@
                                     <th class="p-3">Fecha</th>
                                     <th class="p-3">Movimiento</th>
                                     <th class="p-3">Documento</th>
-                                    <th class="p-3">Entrada</th>
-                                    <th class="p-3">Salida</th>
-                                    <th class="p-3">Saldo</th>
+                                    <th class="p-3">Entrada (+)</th>
+                                    <th class="p-3">Salida (-)</th>
+                                    <th class="p-3">Saldo Total (=)</th>
                                     <th class="p-3">Costo Prom ($)</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaKardexMovimientos" class="divide-y divide-slate-800/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN: AJUSTES DE INVENTARIO -->
+            <div id="seccionAjustes" class="hidden tab-admin space-y-6">
+                <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
+                    <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">⚖️ Módulo de Ajustes de Inventario (Mermas / Sobrantes)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Artículo</label>
+                            <select id="ajusteProductoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Tipo de Ajuste</label>
+                            <select id="ajusteTipo" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+                                <option value="AJUSTE ENTRADA">Sobrante / Entrada (+)</option>
+                                <option value="AJUSTE SALIDA">Merma / Daño / Salida (-)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Cantidad</label>
+                            <input type="number" id="ajusteCantidad" min="1" value="1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-slate-400 mb-1">Motivo / Justificación</label>
+                            <input type="text" id="ajusteMotivo" placeholder="Ej. Conteo físico por rotura de empaque" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="registrarAjusteInventario()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs cursor-pointer shadow">
+                                Aplicar Ajuste y Sincronizar Kardex
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN: INVENTARIO FÍSICO -->
+            <div id="seccionFisico" class="hidden tab-admin space-y-6">
+                <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🔍 Inventario Físico / Toma de Conteo</h3>
+                            <p class="text-xs text-slate-400">Verifica el stock teórico vs real y ajusta desviaciones automáticamente.</p>
+                        </div>
+                        <button onclick="cargarInventarioFisico()" class="bg-slate-800 hover:bg-slate-700 text-xs px-4 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Cargar Artículos</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                                <tr>
+                                    <th class="p-3">SKU</th>
+                                    <th class="p-3">Descripción</th>
+                                    <th class="p-3">Stock Teórico</th>
+                                    <th class="p-3">Conteo Físico Real</th>
+                                    <th class="p-3 text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaInventarioFisico" class="divide-y divide-slate-800/60"></tbody>
                         </table>
                     </div>
                 </div>
@@ -407,8 +472,34 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 8: STOCK / PRODUCTOS -->
+            <!-- SECCIÓN 8: STOCK / PRODUCTOS & IMPORTACIÓN MASIVA -->
             <div id="seccionProductos" class="hidden tab-admin space-y-6">
+                
+                <!-- Módulo de Importación Masiva (Excel) -->
+                <div class="bg-emerald-950/20 border border-emerald-700/50 p-5 rounded-2xl space-y-4 shadow-lg">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-3">
+                        <div>
+                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📥 Módulo de Importación Masiva de Artículos (Excel / CSV)</h3>
+                            <p class="text-xs text-slate-300">Ideal para subir cientos de materiales y su stock inicial de golpe.</p>
+                        </div>
+                        <button onclick="descargarPlantillaExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-600/40 text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow flex items-center gap-2">
+                            📄 Descargar Plantilla Excel Modelo
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end pt-2">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-slate-300 mb-1">Seleccionar Archivo Excel (.xlsx / .csv)</label>
+                            <input type="file" id="archivoImportacionExcel" accept=".xlsx, .xls, .csv" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono cursor-pointer">
+                        </div>
+                        <div>
+                            <button onclick="procesarImportacionMasiva()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-3 px-4 rounded-xl shadow cursor-pointer">
+                                ⚡ Importar Catálogo y Stock Inicial
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulario Individual -->
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Maestro de Artículos y Stock</h3>
@@ -608,7 +699,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT GENERAL Y DE EXPORTACIÓN EXCEL -->
+    <!-- SCRIPT GENERAL Y MÓDULOS -->
     <script>
         const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji'; 
@@ -687,7 +778,7 @@
         }
 
         function cambiarPestana(pestana) {
-            const tabs = ['pos', 'historial', 'cierrez', 'compras', 'kardex', 'etiquetas', 'cuentas', 'productos', 'clientes', 'inquilinosMaster'];
+            const tabs = ['pos', 'historial', 'cierrez', 'compras', 'kardex', 'ajustes', 'fisico', 'etiquetas', 'cuentas', 'productos', 'clientes', 'inquilinosMaster'];
             tabs.forEach(t => {
                 const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
                 const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -709,6 +800,8 @@
             }
             if (pestana === 'compras') cargarProductosSelectCompra();
             if (pestana === 'kardex') cargarKardexMovimientos();
+            if (pestana === 'ajustes') cargarProductosSelectAjuste();
+            if (pestana === 'fisico') cargarInventarioFisico();
             if (pestana === 'etiquetas') renderizarEtiquetasQr();
             if (pestana === 'cuentas') cargarCuentasPorCobrar();
             if (pestana === 'productos') cargarProductosGestion();
@@ -750,12 +843,92 @@
             cerrarModalSuscripcion();
         }
 
-        // --- EXPORTACIÓN EXCEL (.xlsx) ---
+        // --- EXPORTACIÓN E IMPORTACIÓN MASIVA EXCEL (.xlsx) ---
         function descargarExcel(datos, nombreArchivo, nombreHoja) {
             const worksheet = XLSX.utils.json_to_sheet(datos);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, nombreHoja);
             XLSX.writeFile(workbook, `${nombreArchivo}_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        function descargarPlantillaExcel() {
+            const plantillaEjemplo = [
+                { SKU: "SKU-001", Descripción: "Detergente Lavaplatos 1L", "Unidad de Medida": "L", "Stock Inicial": 50, "Precio Unitario ($)": 5.00, "Es Exento (SI/NO)": "NO" },
+                { SKU: "SKU-002", Descripción: "Cloro Doméstico 1L", "Unidad de Medida": "L", "Stock Inicial": 100, "Precio Unitario ($)": 2.50, "Es Exento (SI/NO)": "SI" }
+            ];
+            descargarExcel(plantillaEjemplo, 'Plantilla_Importacion_Articulos', 'Articulos');
+        }
+
+        async function procesarImportacionMasiva() {
+            const fileInput = document.getElementById('archivoImportacionExcel');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Por favor seleccione un archivo Excel (.xlsx o .csv).');
+                return;
+            }
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonRows = XLSX.utils.sheet_to_json(worksheet);
+
+                    if (!jsonRows || jsonRows.length === 0) {
+                        alert('El archivo Excel está vacío o no tiene el formato correcto.');
+                        return;
+                    }
+
+                    let importados = 0;
+                    for (const row of jsonRows) {
+                        const sku = String(row['SKU'] || row['sku'] || 'S/N').trim();
+                        const descripcion = String(row['Descripción'] || row['Descripcion'] || row['descripcion'] || '').trim();
+                        const unidad = String(row['Unidad de Medida'] || row['unidad_medida'] || 'Und').trim();
+                        const stock = parseFloat(row['Stock Inicial'] || row['stock'] || 0) || 0;
+                        const precio = parseFloat(row['Precio Unitario ($)'] || row['precio'] || 0) || 0;
+                        const esExentoTxt = String(row['Es Exento (SI/NO)'] || row['es_exento'] || 'NO').toUpperCase();
+                        const esExento = esExentoTxt === 'SI' || esExentoTxt === 'TRUE';
+
+                        if (!descripcion) continue;
+
+                        const { data: prodIns, error: errIns } = await supabaseClient.from('productos').insert([{
+                            tenant_id: tenantActual.id,
+                            codigo_sku: sku,
+                            descripcion: descripcion,
+                            unidad_medida: unidad,
+                            stock: stock,
+                            precio_unitario_usd: precio,
+                            es_exento: esExento
+                        }]).select();
+
+                        if (!errIns && prodIns && prodIns.length > 0 && stock > 0) {
+                            await supabaseClient.from('kardex_movimientos').insert([{
+                                tenant_id: tenantActual.id,
+                                producto_id: prodIns[0].id,
+                                tipo_movimiento: 'SALDO INICIAL',
+                                documento_ref: 'MASIVO-' + sku,
+                                cantidad_in: stock,
+                                cantidad_out: 0,
+                                costo_unit_usd_in: precio,
+                                saldo_cantidad: stock,
+                                costo_promedio_usd: precio,
+                                tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
+                            }]);
+                        }
+                        importados++;
+                    }
+
+                    alert(`¡Importación masiva completada con éxito! Se procesaron ${importados} artículos.`);
+                    fileInput.value = '';
+                    cargarProductosGestion();
+                } catch (err) {
+                    console.error(err);
+                    alert('Error al procesar el archivo Excel: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
         }
 
         async function exportarStockExcel() {
@@ -808,10 +981,10 @@
                 Artículo: m.productos?.descripcion || 'Artículo',
                 Entrada: m.cantidad_in || 0,
                 Salida: m.cantidad_out || 0,
-                Saldo: m.saldo_cantidad,
+                'Saldo Total': m.saldo_cantidad,
                 'Costo Promedio ($)': m.costo_promedio_usd
             }));
-            descargarExcel(excelData, 'Kardex_Inventario', 'Kardex');
+            descargarExcel(excelData, 'Kardex_Inventario_PPM', 'Kardex');
         }
 
         async function exportarHistorialExcel() {
@@ -855,6 +1028,120 @@
                 'Deuda Total Bs': c.total_bs
             }));
             descargarExcel(excelData, 'Cuentas_Por_Cobrar', 'CxC');
+        }
+
+        // --- MÓDULO DE AJUSTES DE INVENTARIO ---
+        async function cargarProductosSelectAjuste() {
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            const select = document.getElementById('ajusteProductoSelect');
+            select.innerHTML = '';
+            if (!data) return;
+            data.forEach(p => { select.innerHTML += `<option value="${p.id}" data-stock="${p.stock||0}" data-precio="${p.precio_unitario_usd||0}">${p.descripcion} [Stock Actual: ${p.stock||0}]</option>`; });
+        }
+
+        async function registrarAjusteInventario() {
+            const productoId = document.getElementById('ajusteProductoSelect').value;
+            const tipo = document.getElementById('ajusteTipo').value;
+            const cantidad = parseFloat(document.getElementById('ajusteCantidad').value) || 0;
+            const motivo = document.getElementById('ajusteMotivo').value.trim() || 'Ajuste de inventario';
+
+            if (!productoId || cantidad <= 0) { alert('Complete los datos del ajuste correctamente.'); return; }
+
+            try {
+                const { data: prodData } = await supabaseClient.from('productos').select('stock, precio_unitario_usd').eq('id', productoId).single();
+                const stockActual = prodData ? (prodData.stock || 0) : 0;
+                const costo = prodData ? (prodData.precio_unitario_usd || 0) : 0;
+
+                let nuevoStock = stockActual;
+                let cantIn = 0, cantOut = 0;
+
+                if (tipo === 'AJUSTE ENTRADA') {
+                    nuevoStock += cantidad;
+                    cantIn = cantidad;
+                } else {
+                    nuevoStock = Math.max(0, stockActual - cantidad);
+                    cantOut = cantidad;
+                }
+
+                await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', productoId);
+
+                await supabaseClient.from('kardex_movimientos').insert([{
+                    tenant_id: tenantActual.id,
+                    producto_id: productoId,
+                    tipo_movimiento: tipo,
+                    documento_ref: motivo,
+                    cantidad_in: cantIn,
+                    cantidad_out: cantOut,
+                    saldo_cantidad: nuevoStock,
+                    costo_promedio_usd: costo,
+                    tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
+                }]);
+
+                alert('¡Ajuste aplicado y registrado en el Kardex PPM con éxito!');
+                document.getElementById('ajusteCantidad').value = '1';
+                document.getElementById('ajusteMotivo').value = '';
+                cargarProductosSelectAjuste();
+            } catch (err) {
+                console.error(err);
+                alert('Error al aplicar ajuste: ' + err.message);
+            }
+        }
+
+        // --- MÓDULO DE INVENTARIO FÍSICO ---
+        async function cargarInventarioFisico() {
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            const tbody = document.getElementById('tablaInventarioFisico');
+            tbody.innerHTML = '';
+            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin artículos registrados.</td></tr>`; return; }
+            data.forEach(p => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900">
+                        <td class="p-3 font-mono text-emerald-400">${p.codigo_sku||'S/N'}</td>
+                        <td class="p-3">${p.descripcion}</td>
+                        <td class="p-3 font-mono text-white font-bold" id="teo_${p.id}">${p.stock||0}</td>
+                        <td class="p-3"><input type="number" id="fisico_${p.id}" value="${p.stock||0}" class="w-24 bg-slate-900 border border-slate-800 rounded p-1.5 text-white font-mono text-xs"></td>
+                        <td class="p-3 text-center"><button onclick='aplicarConteoFisico("${p.id}", ${p.precio_unitario_usd||0})' class="bg-emerald-600 text-white text-[11px] px-3 py-1.5 rounded cursor-pointer">Ajustar Diferencia</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function aplicarConteoFisico(productoId, costo) {
+            const fisicoInput = document.getElementById('fisico_' + productoId);
+            const teoSpan = document.getElementById('teo_' + productoId);
+            const stockTeorico = parseFloat(teoSpan.innerText) || 0;
+            const stockFisico = parseFloat(fisicoInput.value);
+
+            if (isNaN(stockFisico) || stockFisico < 0) { alert('Ingrese un valor de conteo físico válido.'); return; }
+
+            const diferencia = stockFisico - stockTeorico;
+            if (diferencia === 0) { alert('El stock físico coincide con el teórico. Sin ajustes necesarios.'); return; }
+
+            const tipo = diferencia > 0 ? 'AJUSTE ENTRADA' : 'AJUSTE SALIDA';
+            const cantidad = Math.abs(diferencia);
+            const motivo = `Toma de Inventario Físico (Teórico: ${stockTeorico} vs Real: ${stockFisico})`;
+
+            try {
+                await supabaseClient.from('productos').update({ stock: stockFisico }).eq('id', productoId);
+
+                await supabaseClient.from('kardex_movimientos').insert([{
+                    tenant_id: tenantActual.id,
+                    producto_id: productoId,
+                    tipo_movimiento: tipo,
+                    documento_ref: motivo,
+                    cantidad_in: diferencia > 0 ? cantidad : 0,
+                    cantidad_out: diferencia < 0 ? cantidad : 0,
+                    saldo_cantidad: stockFisico,
+                    costo_promedio_usd: costo,
+                    tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
+                }]);
+
+                alert(`¡Diferencia ajustada con éxito! Stock actualizado a ${stockFisico}.`);
+                cargarInventarioFisico();
+            } catch (err) {
+                console.error(err);
+                alert('Error al procesar inventario físico: ' + err.message);
+            }
         }
 
         // --- POS Y OPERACIONES ---
@@ -977,13 +1264,18 @@
             if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin movimientos.</td></tr>`; return; }
             data.forEach(m => {
                 const desc = m.productos ? m.productos.descripcion : 'Artículo';
+                let badgeColor = 'bg-amber-950 text-amber-300';
+                if (m.tipo_movimiento === 'ENTRADA' || m.tipo_movimiento === 'AJUSTE ENTRADA') badgeColor = 'bg-emerald-950 text-emerald-300';
+                else if (m.tipo_movimiento === 'SALDO INICIAL') badgeColor = 'bg-sky-950 text-sky-300';
+                else if (m.tipo_movimiento === 'SALIDA' || m.tipo_movimiento === 'AJUSTE SALIDA') badgeColor = 'bg-rose-950 text-rose-300';
+
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 text-slate-400">${formatearFecha8Digitos(m.created_at)}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${m.tipo_movimiento==='ENTRADA'?'bg-emerald-950 text-emerald-300':'bg-amber-950 text-amber-300'}">${m.tipo_movimiento}</span><br><span class="text-[10px] text-white">${desc}</span></td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${badgeColor}">${m.tipo_movimiento}</span><br><span class="text-[10px] text-white">${desc}</span></td>
                         <td class="p-3 font-mono">${m.documento_ref}</td>
-                        <td class="p-3 font-mono text-emerald-400">${m.cantidad_in||'-'}</td>
-                        <td class="p-3 font-mono text-rose-400">${m.cantidad_out||'-'}</td>
+                        <td class="p-3 font-mono text-emerald-400">${m.cantidad_in > 0 ? '+' + m.cantidad_in : '-'}</td>
+                        <td class="p-3 font-mono text-rose-400">${m.cantidad_out > 0 ? '-' + m.cantidad_out : '-'}</td>
                         <td class="p-3 font-mono font-bold text-white">${m.saldo_cantidad}</td>
                         <td class="p-3 font-mono text-emerald-300">$ ${m.costo_promedio_usd.toFixed(2)}</td>
                     </tr>
@@ -1001,6 +1293,7 @@
                 select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${prod.unidad_medida||'Und'}" data-stock="${prod.stock||0}">${prod.descripcion} [Stock: ${prod.stock||0}] - $${prod.precio_unitario_usd.toFixed(2)}</option>`;
             });
         }
+
         async function cargarProductosGestion() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             const tbody = document.getElementById('tablaProductosGestion');
@@ -1020,22 +1313,46 @@
                 `;
             });
         }
+
         async function guardarProducto() {
             const id = document.getElementById('editProductoId').value;
+            const stockIngresado = parseFloat(document.getElementById('prodStock').value) || 0;
+            const precioIngresado = parseFloat(document.getElementById('prodPrecio').value) || 0;
             const payload = {
                 codigo_sku: document.getElementById('prodSku').value.trim(),
                 descripcion: document.getElementById('prodDescripcion').value.trim(),
                 unidad_medida: document.getElementById('prodUnidad').value,
-                stock: parseFloat(document.getElementById('prodStock').value) || 0,
-                precio_unitario_usd: parseFloat(document.getElementById('prodPrecio').value) || 0,
+                stock: stockIngresado,
+                precio_unitario_usd: precioIngresado,
                 es_exento: document.getElementById('prodExento').value === 'true'
             };
             if (!payload.descripcion) { alert('Ingrese descripción.'); return; }
-            if (id) { await supabaseClient.from('productos').update(payload).eq('id', id); }
-            else { payload.tenant_id = tenantActual.id; await supabaseClient.from('productos').insert([payload]); }
+
+            if (id) {
+                await supabaseClient.from('productos').update(payload).eq('id', id);
+            } else {
+                const { data: prodIns, error: errIns } = await supabaseClient.from('productos').insert([{...payload, tenant_id: tenantActual.id}]).select();
+                if (!errIns && prodIns && prodIns.length > 0 && stockIngresado > 0) {
+                    const nuevoProdId = prodIns[0].id;
+                    await supabaseClient.from('kardex_movimientos').insert([{
+                        tenant_id: tenantActual.id,
+                        producto_id: nuevoProdId,
+                        tipo_movimiento: 'SALDO INICIAL',
+                        documento_ref: 'INIT-' + (payload.codigo_sku || '001'),
+                        cantidad_in: stockIngresado,
+                        cantidad_out: 0,
+                        costo_unit_usd_in: precioIngresado,
+                        saldo_cantidad: stockIngresado,
+                        costo_promedio_usd: precioIngresado,
+                        tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
+                    }]);
+                }
+            }
             limpiarFormProducto();
             cargarProductosGestion();
+            alert('¡Artículo guardado y sincronizado con el Kardex con éxito!');
         }
+
         function editarProducto(id, sku, desc, precio, exento, unidad, stock) {
             document.getElementById('editProductoId').value = id;
             document.getElementById('prodSku').value = sku;
@@ -1047,6 +1364,7 @@
             document.getElementById('tituloFormProducto').innerText = '✏️ Editar Artículo';
             document.getElementById('btnCancelarProd').classList.remove('hidden');
         }
+
         function limpiarFormProducto() {
             document.getElementById('editProductoId').value = '';
             document.getElementById('prodSku').value = '';
@@ -1235,9 +1553,10 @@
                     const { data: pData } = await supabaseClient.from('productos').select('stock, precio_unitario_usd').eq('id', item.productoId).single();
                     const nuevoStock = Math.max(0, (pData.stock || 0) - item.cantidad);
                     await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.productoId);
+                    
                     await supabaseClient.from('kardex_movimientos').insert([{
                         tenant_id: tenantActual.id, producto_id: item.productoId, tipo_movimiento: 'SALIDA',
-                        documento_ref: facturaNro, cantidad_out: item.cantidad, precio_venta_usd: item.precio,
+                        documento_ref: facturaNro, cantidad_in: 0, cantidad_out: item.cantidad, precio_venta_usd: item.precio,
                         saldo_cantidad: nuevoStock, costo_promedio_usd: pData ? pData.precio_unitario_usd : item.precio, tasa_bcv: tasa
                     }]);
                 }
