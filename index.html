@@ -216,10 +216,10 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 2: HISTORIAL -->
+            <!-- SECCIÓN 2: HISTORIAL / COMPROBANTES (ACTUALIZADO PARA INCLUIR NC Y ND) -->
             <div id="seccionHistorial" class="hidden space-y-6">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-3">
-                    <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📋 Historial de Comprobantes Fiscales</h3>
+                    <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📋 Historial de Comprobantes Fiscales (Facturas, NC y ND)</h3>
                     <div class="flex gap-2">
                         <button onclick="exportarHistorialExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Comprobantes (Excel)</button>
                         <button onclick="cargarHistorial()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Actualizar</button>
@@ -228,15 +228,15 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-950/40 p-4 rounded-2xl border border-slate-800">
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Filtrar por Nro / Cliente</label>
-                        <input type="text" id="filtroTexto" placeholder="Ej. FAC-0001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarHistorial()">
+                        <input type="text" id="filtroTexto" placeholder="Ej. FAC-0001, NC-, ND-" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarHistorial()">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Tipo de Comprobante</label>
                         <select id="filtroTipo" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs" onchange="filtrarHistorial()">
-                            <option value="TODOS">Todos</option>
+                            <option value="TODOS">Todos (Facturas, NC, ND)</option>
                             <option value="FACTURA">Facturas</option>
-                            <option value="NOTA CREDITO">Notas de Crédito</option>
-                            <option value="NOTA DEBITO">Notas de Débito</option>
+                            <option value="NOTA CREDITO">Notas de Crédito (NC)</option>
+                            <option value="NOTA DEBITO">Notas de Débito (ND)</option>
                         </select>
                     </div>
                 </div>
@@ -247,7 +247,7 @@
                                 <th class="p-3">Documento</th>
                                 <th class="p-3">Nro Control</th>
                                 <th class="p-3">Cliente</th>
-                                <th class="p-3">Método / Motivo</th>
+                                <th class="p-3">Método / Motivo / Afectada</th>
                                 <th class="p-3">Fecha</th>
                                 <th class="p-3">Total</th>
                                 <th class="p-3 text-center">Acciones</th>
@@ -456,7 +456,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN: INVENTARIO FÍSICO Y CONCILIACIÓN (ACTUALIZADO CON HISTÓRICO) -->
+            <!-- SECCIÓN: INVENTARIO FÍSICO Y CONCILIACIÓN -->
             <div id="seccionFisico" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-3">
@@ -722,7 +722,7 @@
         </footer>
     </div>
 
-    <!-- MODAL TICKET / COMPROBANTE FISCAL RIGUROSO -->
+    <!-- MODAL TICKET / COMPROBANTE FISCAL RIGUROSO SENIAT -->
     <div id="modalTicket" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
         <div class="bg-white text-slate-900 w-full max-w-md rounded-2xl p-6 shadow-2xl relative font-mono text-xs space-y-3 max-h-[90vh] overflow-y-auto">
             <div class="text-center border-b border-dashed border-slate-400 pb-3 space-y-1">
@@ -1007,7 +1007,7 @@
             cargarInquilinosMaster();
         }
 
-        // --- NOTAS DE DÉBITO Y CRÉDITO ---
+        // --- NOTAS DE DÉBITO Y CRÉDITO (REQUISITOS SENIAT VÁLIDOS) ---
         async function cargarFacturasAfectadasSelect() {
             const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
             const select = document.getElementById('facturaAfectadaSelect');
@@ -1015,15 +1015,18 @@
             select.innerHTML = '';
             if (!data || data.length === 0) { select.innerHTML = '<option value="">Sin facturas emitidas</option>'; return; }
             data.forEach(f => {
-                select.innerHTML += `<option value="${f.factura_nro}">Factura: ${f.factura_nro} | ${f.cliente_nombre} | Bs. ${f.total_bs.toFixed(2)}</option>`;
+                if (!(f.factura_nro || '').startsWith('NC') && !(f.factura_nro || '').startsWith('ND')) {
+                    select.innerHTML += `<option value="${f.factura_nro}">Factura: ${f.factura_nro} | ${f.cliente_nombre} | Bs. ${f.total_bs.toFixed(2)}</option>`;
+                }
             });
         }
+
         async function emitirNotaFiscal() {
             const tipoNota = document.getElementById('tipoNotaSelect').value;
             const facturaAfectada = document.getElementById('facturaAfectadaSelect').value;
             const montoUsd = parseFloat(document.getElementById('montoNotaUsd').value) || 0;
             const motivo = document.getElementById('motivoNota').value.trim();
-            if (!facturaAfectada || montoUsd <= 0 || !motivo) { alert('Complete todos los campos.'); return; }
+            if (!facturaAfectada || montoUsd <= 0 || !motivo) { alert('Complete todos los campos obligatorios.'); return; }
 
             const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
             const nroNota = (tipoNota === 'NOTA CREDITO' ? 'NC-' : 'ND-') + Math.floor(1000 + Math.random() * 9000);
@@ -1033,10 +1036,17 @@
             const { data: invOriginal } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).eq('factura_nro', facturaAfectada).single();
 
             await supabaseClient.from('invoices').insert([{
-                tenant_id: tenantActual.id, factura_nro: nroNota, nro_control: nroControl, tasa_bcv: tasa,
-                monto_usd: montoUsd, subtotal_bs: montoBs, iva_bs: montoBs * 0.16, total_bs: montoBs * 1.16,
-                cliente_rif: invOriginal?.cliente_rif || 'V-0', cliente_nombre: invOriginal?.cliente_nombre || 'CLIENTE',
-                metodo_pago: `${tipoNota} - AFECTA FACTURA: ${facturaAfectada} | MOTIVO: ${motivo}`
+                tenant_id: tenantActual.id, 
+                factura_nro: nroNota, 
+                nro_control: nroControl, 
+                tasa_bcv: tasa,
+                monto_usd: montoUsd, 
+                subtotal_bs: montoBs, 
+                iva_bs: montoBs * 0.16, 
+                total_bs: montoBs * 1.16,
+                cliente_rif: invOriginal?.cliente_rif || 'V-0', 
+                cliente_nombre: invOriginal?.cliente_nombre || 'CLIENTE',
+                metodo_pago: `${tipoNota} | AFECTA FAC: ${facturaAfectada} | MOTIVO: ${motivo}`
             }]);
 
             alert(`¡${tipoNota} emitida con éxito (${nroNota}) conforme a Providencia SENIAT!`);
@@ -1171,10 +1181,8 @@
             const fechaConteo = document.getElementById('fisicoFecha').value || new Date().toISOString().slice(0,10);
             const prod = inventarioFisicoCache.find(x => x.id === prodId);
 
-            // Actualizar stock en productos
             await supabaseClient.from('productos').update({ stock: real }).eq('id', prodId);
 
-            // Guardar en histórico de Supabase
             await supabaseClient.from('inventario_fisico_historico').insert([{
                 tenant_id: tenantActual.id, fecha_conteo: fechaConteo, producto_id: prodId,
                 sku: prod?.codigo_sku || 'S/N', descripcion: prod?.descripcion || 'Artículo',
@@ -1293,7 +1301,7 @@
             const { data: invoices } = await supabaseClient.from('invoices').select('*, invoice_items(*)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: true });
             if (!invoices || invoices.length === 0) { alert('Sin ventas.'); return; }
             const matriz = [[null, 'COMPAÑÍA:', tenantActual.razon_social], [], [null, null, null, null, 'LIBRO DE VENTAS SENIAT']];
-            matriz.push([null, 'Oper', 'Fecha', 'RIF', 'Cliente', 'Factura', 'Nro Control', 'Total', 'IVA', 'Base Imponible']);
+            matriz.push([null, 'Oper', 'Fecha', 'RIF', 'Cliente', 'Documento', 'Nro Control', 'Total', 'IVA', 'Base Imponible']);
             invoices.forEach((inv, i) => {
                 matriz.push([null, i+1, new Date(inv.created_at), inv.cliente_rif, inv.cliente_nombre, inv.factura_nro, inv.nro_control, inv.total_bs, inv.iva_bs, inv.subtotal_bs]);
             });
@@ -1728,18 +1736,50 @@
 
         async function cargarHistorial() {
             const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
-            documentosHistorialCache = (data || []).map(f => ({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
+            documentosHistorialCache = (data || []).map(f => {
+                let tDoc = 'FACTURA';
+                if ((f.factura_nro || '').startsWith('NC')) tDoc = 'NOTA CREDITO';
+                if ((f.factura_nro || '').startsWith('ND')) tDoc = 'NOTA DEBITO';
+                return {...f, tipoDoc: tDoc, numero: f.factura_nro};
+            });
             renderizarHistorial(documentosHistorialCache);
         }
+
         function filtrarHistorial() {
             const txt = document.getElementById('filtroTexto').value.toLowerCase().trim();
-            renderizarHistorial(documentosHistorialCache.filter(d => (d.numero||'').toLowerCase().includes(txt) || (d.cliente_nombre||'').toLowerCase().includes(txt)));
+            const tipoSel = document.getElementById('filtroTipo').value;
+
+            const filtrados = documentosHistorialCache.filter(d => {
+                const matchTexto = (d.numero||'').toLowerCase().includes(txt) || (d.cliente_nombre||'').toLowerCase().includes(txt) || (d.metodo_pago||'').toLowerCase().includes(txt);
+                const matchTipo = (tipoSel === 'TODOS') || (d.tipoDoc === tipoSel);
+                return matchTexto && matchTipo;
+            });
+            renderizarHistorial(filtrados);
         }
+
         function renderizarHistorial(lista) {
             const tbody = document.getElementById('tablaHistorial');
             tbody.innerHTML = '';
+            if (!lista.length) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin comprobantes registrados.</td></tr>`;
+                return;
+            }
             lista.forEach(doc => {
-                tbody.innerHTML += `<tr class="hover:bg-slate-900"><td class="p-3">${doc.numero}</td><td class="p-3 font-mono">${doc.nro_control||'N/A'}</td><td class="p-3">${doc.cliente_nombre}</td><td class="p-3">${doc.metodo_pago}</td><td class="p-3">${formatearFecha8Digitos(doc.created_at)}</td><td class="p-3 font-mono">Bs. ${doc.total_bs.toFixed(2)}</td><td class="p-3 text-center"><button onclick='verComprobante(${JSON.stringify(doc)})' class="bg-slate-800 px-3 py-1.5 rounded cursor-pointer text-xs">Ver</button></td></tr>`;
+                let badgeColor = 'bg-emerald-950 text-emerald-300';
+                if (doc.tipoDoc === 'NOTA CREDITO') badgeColor = 'bg-sky-950 text-sky-300';
+                if (doc.tipoDoc === 'NOTA DEBITO') badgeColor = 'bg-amber-950 text-amber-300';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900">
+                        <td class="p-3 font-mono font-bold text-white"><span class="px-2 py-0.5 rounded text-[10px] ${badgeColor} mr-1">${doc.tipoDoc}</span> ${doc.numero}</td>
+                        <td class="p-3 font-mono">${doc.nro_control||'N/A'}</td>
+                        <td class="p-3">${doc.cliente_nombre}</td>
+                        <td class="p-3 text-slate-300">${doc.metodo_pago}</td>
+                        <td class="p-3 text-slate-400">${formatearFecha8Digitos(doc.created_at)}</td>
+                        <td class="p-3 font-mono text-emerald-400 font-bold">Bs. ${doc.total_bs.toFixed(2)}</td>
+                        <td class="p-3 text-center"><button onclick='verComprobante(${JSON.stringify(doc)})' class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded cursor-pointer text-xs text-slate-200">Ver</button></td>
+                    </tr>
+                `;
             });
         }
 
@@ -1760,7 +1800,7 @@
             document.getElementById('ticketTasa').innerText = doc.tasa_bcv || 1;
             document.getElementById('ticketCliente').innerText = 'Cliente: ' + (doc.cliente_nombre || 'CONSUMIDOR FINAL');
             document.getElementById('ticketClienteRif').innerText = 'RIF/Cédula: ' + (doc.cliente_rif || 'V-0');
-            document.getElementById('ticketMetodoPago').innerText = 'Método: ' + (doc.metodo_pago || 'EFECTIVO');
+            document.getElementById('ticketMetodoPago').innerText = 'Detalle: ' + (doc.metodo_pago || 'EFECTIVO');
             
             const refExtra = document.getElementById('ticketReferenciaExtra');
             if (doc.metodo_pago && (doc.metodo_pago.includes('NOTA') || doc.metodo_pago.includes('AFECTA'))) {
@@ -1771,7 +1811,6 @@
             }
 
             const tasa = doc.tasa_bcv || 1;
-            
             const { data: items } = await supabaseClient.from('invoice_items').select('*').eq('invoice_id', doc.id);
             let baseGravadaUsd = 0;
             let montoExentoUsd = 0;
@@ -1782,16 +1821,12 @@
             if (items && items.length > 0) {
                 items.forEach(it => {
                     const subUsd = it.subtotal_usd || (it.cantidad * (it.precio_unitario_usd || 0));
-                    if (it.es_exento) {
-                        montoExentoUsd += subUsd;
-                    } else {
-                        baseGravadaUsd += subUsd;
-                    }
-                    container.innerHTML += `<div class="flex justify-between border-b border-dotted border-slate-300 py-0.5"><span>${it.cantidad}x ${it.descripcion} ${it.es_exento?'(Exento)':''}</span><span>$ ${subUsd.toFixed(2)} | Bs. ${(subUsd*tasa).toFixed(2)}</span></div>`;
+                    if (it.es_exento) montoExentoUsd += subUsd; else baseGravadaUsd += subUsd;
+                    container.innerHTML += `<div class="flex justify-between border-b border-dotted border-slate-300 py-0.5"><span>${it.cantidad}x ${it.descripcion}</span><span>$ ${subUsd.toFixed(2)} | Bs. ${(subUsd*tasa).toFixed(2)}</span></div>`;
                 });
             } else {
                 baseGravadaUsd = doc.monto_usd || 0;
-                container.innerHTML = `<div class="py-1">1x ${doc.metodo_pago} | Total: Bs. ${(doc.total_bs||0).toFixed(2)}</div>`;
+                container.innerHTML = `<div class="py-1">1x Ajuste / Nota Fiscal | Total: Bs. ${(doc.total_bs||0).toFixed(2)}</div>`;
             }
 
             const baseGravadaBs = baseGravadaUsd * tasa;
@@ -1814,7 +1849,10 @@
             const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
             const filtradas = data || [];
             document.getElementById('zTotalFacturas').innerText = filtradas.length;
-            let total = 0; filtradas.forEach(f => total += f.total_bs);
+            let total = 0; filtradas.forEach(f => {
+                if ((f.factura_nro || '').startsWith('NC')) total -= f.total_bs;
+                else total += f.total_bs;
+            });
             document.getElementById('totalGavetaEfectivo').innerText = `Bs. ${total.toFixed(2)}`;
         }
 
