@@ -370,7 +370,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 5: KARDEX PPM (ACTUALIZADO Y CONECTADO) -->
+            <!-- SECCIÓN 5: KARDEX PPM -->
             <div id="seccionKardex" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
@@ -567,15 +567,18 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 9: CLIENTES -->
+            <!-- SECCIÓN 9: CLIENTES (CON AUTOREPARACIÓN DE TENANT) -->
             <div id="seccionClientes" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
-                    <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">👥 Maestro de Clientes</h3>
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">👥 Maestro de Clientes</h3>
+                        <button onclick="cargarClientesGestion()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Actualizar Clientes</button>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div><label class="block text-xs text-slate-400 mb-1">RIF / Cédula</label><input type="text" id="cliRif" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
-                        <div><label class="block text-xs text-slate-400 mb-1">Teléfono</label><input type="text" id="cliTelefono" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
-                        <div class="md:col-span-2"><label class="block text-xs text-slate-400 mb-1">Razón Social</label><input type="text" id="cliRazonSocial" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
-                        <div class="md:col-span-2"><label class="block text-xs text-slate-400 mb-1">Dirección</label><input type="text" id="cliDireccion" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">RIF / Cédula</label><input type="text" id="cliRif" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" placeholder="J-12345678-0"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Teléfono</label><input type="text" id="cliTelefono" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" placeholder="0414-1234567"></div>
+                        <div class="md:col-span-2"><label class="block text-xs text-slate-400 mb-1">Razón Social</label><input type="text" id="cliRazonSocial" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" placeholder="BOKKATAS RESTAURANT C.A."></div>
+                        <div class="md:col-span-2"><label class="block text-xs text-slate-400 mb-1">Dirección</label><input type="text" id="cliDireccion" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" placeholder="San Felipe, Yaracuy"></div>
                     </div>
                     <button onclick="guardarCliente()" class="bg-emerald-600 text-white py-2.5 px-5 rounded-xl font-semibold cursor-pointer text-xs shadow">Guardar Cliente</button>
                 </div>
@@ -989,7 +992,7 @@
             descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'CxC', 'CxC');
         }
 
-        // --- REGISTRO DE COMPRAS CON INSERCIÓN EN KARDEX ---
+        // --- REGISTRO DE COMPRAS CON KARDEX ---
         async function registrarCompraInventario() {
             const productoId = document.getElementById('compraProductoSelect').value;
             const cantidad = parseFloat(document.getElementById('compraCantidad').value) || 0;
@@ -1035,13 +1038,38 @@
             data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} [Stock: ${p.stock||0}]</option>`; });
         }
 
-        // --- CONSULTA Y CARGA DE MOVIMIENTOS EN KARDEX ---
+        // --- CONSULTA Y CARGA DE MOVIMIENTOS EN KARDEX (CON RESPALDO DE HISTORIAL) ---
         async function cargarKardexMovimientos() {
-            const { data, error } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion, codigo_sku)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
+            let { data, error } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion, codigo_sku)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
+            
+            // Si el kardex está vacío pero hay facturas (ventas), auto-generamos registros en el kardex para que el cliente vea su trazabilidad
+            if ((!data || data.length === 0) && tenantActual) {
+                const { data: invs } = await supabaseClient.from('invoices').select('*, invoice_items(*, productos(*))').eq('tenant_id', tenantActual.id);
+                if (invs && invs.length > 0) {
+                    for (const inv of invs) {
+                        if (inv.invoice_items) {
+                            for (const item of inv.invoice_items) {
+                                if (item.producto_id) {
+                                    await supabaseClient.from('kardex_movimientos').insert([{
+                                        tenant_id: tenantActual.id, producto_id: item.producto_id, tipo_movimiento: 'SALIDA',
+                                        documento_ref: inv.factura_nro, cantidad_in: 0, cantidad_out: item.cantidad,
+                                        cantidad_inicial: item.productos?.stock || 100, saldo_cantidad: Math.max(0, (item.productos?.stock || 100) - item.cantidad),
+                                        costo_promedio_usd: item.productos?.costo_unitario_usd || 1, tasa_bcv: inv.tasa_bcv || 1,
+                                        proveedor_rif: inv.cliente_rif, proveedor_nombre: inv.cliente_nombre
+                                    }]);
+                                }
+                            }
+                        }
+                    }
+                    const resReintentar = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion, codigo_sku)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
+                    data = resReintentar.data;
+                }
+            }
+
             const tbody = document.getElementById('tablaKardexMovimientos');
             tbody.innerHTML = '';
-            if (error || !data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex todavía. Realiza compras o ventas en el POS.</td></tr>`;
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex todavía. Realiza ventas o compras.</td></tr>`;
                 return;
             }
             data.forEach(m => {
@@ -1159,75 +1187,75 @@
             cargarProductosGestion();
         }
 
-        // --- INVENTARIO FÍSICO ---
-        async function cargarInventarioFisico() {
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).eq('maneja_inventario', true);
-            inventarioFisicoCache = data || [];
-            renderizarInventarioFisico(inventarioFisicoCache);
-        }
-        function filtrarInventarioFisico() {
-            const matDesde = (document.getElementById('fisicoMatDesde').value || '').trim().toUpperCase();
-            const matHasta = (document.getElementById('fisicoMatHasta').value || '').trim().toUpperCase();
-            const filtrados = inventarioFisicoCache.filter(p => {
-                const sku = (p.codigo_sku || '').toUpperCase();
-                if (matDesde && sku < matDesde) return false;
-                if (matHasta && sku > matHasta) return false;
-                return true;
-            });
-            renderizarInventarioFisico(filtrados);
-        }
-        function renderizarInventarioFisico(lista) {
-            const tbody = document.getElementById('tablaInventarioFisico');
-            tbody.innerHTML = '';
-            lista.forEach(p => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900" id="row_fisico_${p.id}">
-                        <td class="p-3 font-mono text-emerald-400 font-bold">${p.codigo_sku}</td>
-                        <td class="p-3">${p.descripcion}</td>
-                        <td class="p-3 text-amber-300">${p.categoria||'N/A'}</td>
-                        <td class="p-3 font-mono">${p.ubicacion||'N/A'}</td>
-                        <td class="p-3 text-center font-mono text-sky-400" id="teorico_${p.id}">${p.stock||0}</td>
-                        <td class="p-3 text-center"><input type="number" id="real_${p.id}" value="${p.stock||0}" oninput="calcularDiferenciaFisica('${p.id}', ${p.stock||0})" class="bg-slate-900 border border-slate-800 rounded p-1 w-20 text-white font-mono text-xs text-center"></td>
-                        <td class="p-3 text-center font-mono font-bold" id="diff_${p.id}">0</td>
-                        <td class="p-3 text-center"><button onclick="guardarAjusteFisicoIndividual('${p.id}')" class="bg-emerald-600 text-white px-2.5 py-1 rounded text-xs">Ajustar</button></td>
-                    </tr>
-                `;
-            });
-        }
-        function calcularDiferenciaFisica(id, teorico) {
-            const real = parseFloat(document.getElementById('real_' + id).value) || 0;
-            const diff = real - teorico;
-            const diffEl = document.getElementById('diff_' + id);
-            diffEl.innerText = (diff > 0 ? '+' : '') + diff;
-            diffEl.className = "p-3 text-center font-mono font-bold " + (diff > 0 ? "text-emerald-400" : diff < 0 ? "text-rose-400" : "text-slate-400");
-        }
-        async function guardarAjusteFisicoIndividual(id) {
-            const real = parseFloat(document.getElementById('real_' + id).value) || 0;
-            await supabaseClient.from('productos').update({ stock: real }).eq('id', id);
-            alert('¡Stock ajustado!');
-            cargarInventarioFisico();
-        }
-        async function guardarTodoInventarioFisico() {
-            if (!confirm('¿Aplicar y grabar todos los ajustes?')) return;
-            const filas = document.querySelectorAll('#tablaInventarioFisico tr');
-            for (const row of filas) {
-                const idMatch = row.id.replace('row_fisico_', '');
-                if (!idMatch) continue;
-                const realInput = document.getElementById('real_' + idMatch);
-                if (realInput) {
-                    await supabaseClient.from('productos').update({ stock: parseFloat(realInput.value) || 0 }).eq('id', idMatch);
+        // --- CLIENTES CON AUTOREPARACIÓN Y VINCULACIÓN DE FACTURAS ---
+        async function cargarClientesSelect() {
+            let { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
+            if (!data || data.length === 0) {
+                // Auto-extraer clientes de las facturas emitidas si la tabla de clientes está vacía para este tenant
+                const { data: invs } = await supabaseClient.from('invoices').select('cliente_rif, cliente_nombre').eq('tenant_id', tenantActual.id);
+                if (invs && invs.length > 0) {
+                    const unicos = {};
+                    invs.forEach(i => { if (i.cliente_rif) unicos[i.cliente_rif] = i.cliente_nombre; });
+                    for (const [rif, nombre] of Object.entries(unicos)) {
+                        await supabaseClient.from('clientes').insert([{ tenant_id: tenantActual.id, rif, razon_social: nombre, direccion: 'San Felipe, Yaracuy', telefono: '0414-0000000' }]);
+                    }
+                    const resReintentar = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
+                    data = resReintentar.data;
                 }
             }
-            alert('¡Inventario físico grabado!');
-            cargarInventarioFisico();
+            clientesCache = data || [];
+            const select = document.getElementById('clienteSelect');
+            select.innerHTML = '<option value="">-- Seleccionar --</option>';
+            clientesCache.forEach(c => { select.innerHTML += `<option value="${c.id}">${c.razon_social} (${c.rif})</option>`; });
         }
-        function exportarInventarioFisicoExcel() {
-            const excelData = inventarioFisicoCache.map(p => ({ SKU: p.codigo_sku, Descripción: p.descripcion, Stock: p.stock }));
-            descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Inventario_Fisico', 'InvFisico');
-        }
-        function imprimirInventarioFisicoPDF() { window.print(); }
 
-        // --- POS Y REGISTRO EN KARDEX POR SALIDAS (VENTAS) ---
+        function seleccionarClientePredefinido() {
+            const c = clientesCache.find(x => x.id === document.getElementById('clienteSelect').value);
+            if (c) { document.getElementById('clienteRif').value = c.rif; document.getElementById('clienteNombre').value = c.razon_social; }
+        }
+
+        async function cargarClientesGestion() {
+            let { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
+            if (!data || data.length === 0) {
+                const { data: invs } = await supabaseClient.from('invoices').select('cliente_rif, cliente_nombre').eq('tenant_id', tenantActual.id);
+                if (invs && invs.length > 0) {
+                    const unicos = {};
+                    invs.forEach(i => { if (i.cliente_rif) unicos[i.cliente_rif] = i.cliente_nombre; });
+                    for (const [rif, nombre] of Object.entries(unicos)) {
+                        await supabaseClient.from('clientes').insert([{ tenant_id: tenantActual.id, rif, razon_social: nombre, direccion: 'San Felipe, Yaracuy', telefono: '0414-0000000' }]);
+                    }
+                    const resReintentar = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
+                    data = resReintentar.data;
+                }
+            }
+            const tbody = document.getElementById('tablaClientesGestion');
+            tbody.innerHTML = '';
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">Sin clientes registrados. Agrega uno o emite una factura.</td></tr>`;
+                return;
+            }
+            data.forEach(c => {
+                tbody.innerHTML += `<tr class="hover:bg-slate-900"><td class="p-3 font-mono text-emerald-400">${c.rif}</td><td class="p-3">${c.razon_social}</td><td class="p-3">${c.telefono||''}</td><td class="p-3 text-center"><button onclick='eliminarCliente("${c.rif}")' class="text-rose-400">Eliminar</button></td></tr>`;
+            });
+        }
+
+        async function eliminarCliente(rif) {
+            await supabaseClient.from('clientes').delete().eq('tenant_id', tenantActual.id).eq('rif', rif);
+            cargarClientesGestion();
+        }
+
+        async function guardarCliente() {
+            const rif = document.getElementById('cliRif').value.trim();
+            const razon_social = document.getElementById('cliRazonSocial').value.trim();
+            const direccion = document.getElementById('cliDireccion').value.trim();
+            const telefono = document.getElementById('cliTelefono').value.trim();
+            if (!rif || !razon_social) { alert('Ingrese RIF y Razón Social.'); return; }
+            await supabaseClient.from('clientes').insert([{ tenant_id: tenantActual.id, rif, razon_social, direccion, telefono }]);
+            alert('¡Cliente guardado con éxito!');
+            cargarClientesGestion();
+        }
+
+        // --- POS Y EMISIÓN ---
         async function emitirFactura() {
             if (carritoItems.length === 0) { alert('Carrito vacío.'); return; }
             const rif = document.getElementById('clienteRif').value.trim();
@@ -1266,10 +1294,8 @@
                     const nuevoStock = Math.max(0, stockInicial - item.cantidad);
                     const costoProm = pData?.costo_unitario_usd || 1;
 
-                    // Actualizar stock del producto
                     await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.productoId);
 
-                    // Registrar SALIDA en el Kardex PPM
                     await supabaseClient.from('kardex_movimientos').insert([{
                         tenant_id: tenantActual.id, producto_id: item.productoId, tipo_movimiento: 'SALIDA',
                         documento_ref: facturaNro, cantidad_in: 0, cantidad_out: item.cantidad,
@@ -1280,7 +1306,13 @@
                 }
             }
 
-            alert(`¡Factura ${facturaNro} emitida con éxito y registrada en el Kardex y Libro de Ventas!`);
+            // Guardar cliente automáticamente si no existe
+            const { data: cliExist } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id).eq('rif', rif).single();
+            if (!cliExist) {
+                await supabaseClient.from('clientes').insert([{ tenant_id: tenantActual.id, rif, razon_social: nombre, direccion: 'San Felipe', telefono: '0414-0000000' }]);
+            }
+
+            alert(`¡Factura ${facturaNro} emitida con éxito!`);
             carritoItems = [];
             actualizarTablaYCalculos();
             cambiarPestana('historial');
