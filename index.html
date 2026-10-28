@@ -216,7 +216,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 2: HISTORIAL / COMPROBANTES (ACTUALIZADO PARA INCLUIR NC Y ND) -->
+            <!-- SECCIÓN 2: HISTORIAL / COMPROBANTES (ACTUALIZADO CON SOPORTE NC Y ND ROBUSTO) -->
             <div id="seccionHistorial" class="hidden space-y-6">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                     <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📋 Historial de Comprobantes Fiscales (Facturas, NC y ND)</h3>
@@ -1015,7 +1015,8 @@
             select.innerHTML = '';
             if (!data || data.length === 0) { select.innerHTML = '<option value="">Sin facturas emitidas</option>'; return; }
             data.forEach(f => {
-                if (!(f.factura_nro || '').startsWith('NC') && !(f.factura_nro || '').startsWith('ND')) {
+                const numUpper = (f.factura_nro || '').toUpperCase();
+                if (!numUpper.startsWith('NC') && !numUpper.startsWith('ND')) {
                     select.innerHTML += `<option value="${f.factura_nro}">Factura: ${f.factura_nro} | ${f.cliente_nombre} | Bs. ${f.total_bs.toFixed(2)}</option>`;
                 }
             });
@@ -1737,9 +1738,10 @@
         async function cargarHistorial() {
             const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
             documentosHistorialCache = (data || []).map(f => {
+                const numUpper = (f.factura_nro || '').toUpperCase();
                 let tDoc = 'FACTURA';
-                if ((f.factura_nro || '').startsWith('NC')) tDoc = 'NOTA CREDITO';
-                if ((f.factura_nro || '').startsWith('ND')) tDoc = 'NOTA DEBITO';
+                if (numUpper.startsWith('NC')) tDoc = 'NOTA CREDITO';
+                if (numUpper.startsWith('ND')) tDoc = 'NOTA DEBITO';
                 return {...f, tipoDoc: tDoc, numero: f.factura_nro};
             });
             renderizarHistorial(documentosHistorialCache);
@@ -1789,9 +1791,10 @@
             document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif}`;
             document.getElementById('ticketComercioDir').innerText = tenantActual.direccion || 'VENEZUELA';
             
+            const numUpper = (doc.numero || '').toUpperCase();
             let tituloDoc = 'FACTURA FISCAL DIGITAL';
-            if ((doc.numero || '').startsWith('NC')) tituloDoc = 'NOTA DE CRÉDITO FISCAL';
-            if ((doc.numero || '').startsWith('ND')) tituloDoc = 'NOTA DE DÉBITO FISCAL';
+            if (numUpper.startsWith('NC')) tituloDoc = 'NOTA DE CRÉDITO FISCAL';
+            if (numUpper.startsWith('ND')) tituloDoc = 'NOTA DE DÉBITO FISCAL';
             document.getElementById('ticketTipoDoc').innerText = tituloDoc;
 
             document.getElementById('ticketNro').innerText = 'Documento: ' + doc.numero;
@@ -1850,7 +1853,8 @@
             const filtradas = data || [];
             document.getElementById('zTotalFacturas').innerText = filtradas.length;
             let total = 0; filtradas.forEach(f => {
-                if ((f.factura_nro || '').startsWith('NC')) total -= f.total_bs;
+                const numUpper = (f.factura_nro || '').toUpperCase();
+                if (numUpper.startsWith('NC')) total -= f.total_bs;
                 else total += f.total_bs;
             });
             document.getElementById('totalGavetaEfectivo').innerText = `Bs. ${total.toFixed(2)}`;
