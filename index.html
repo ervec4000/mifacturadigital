@@ -82,8 +82,11 @@
             <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 📊 Reporte Z y Libro
             </button>
-            <button onclick="cambiarPestana('referidos')" id="btnTabReferidos" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                🤝 Referidos
+            <button onclick="cambiarPestana('compras')" id="btnTabCompras" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
+                📥 Compras / Entradas
+            </button>
+            <button onclick="cambiarPestana('kardex')" id="btnTabKardex" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
+                📋 Kardex Inventario
             </button>
             <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 📦 Stock
@@ -301,6 +304,62 @@
                         <div class="flex justify-between text-slate-300"><span>Tarjeta Crédito - POS (Bs.):</span><span id="arqCredito" class="font-bold">$ 0.00 | Bs. 0.00</span></div>
                         <div class="flex justify-between text-slate-300"><span>Efectivo Bolívares (Bs.):</span><span id="arqEfectivoBs" class="font-bold">$ 0.00 | Bs. 0.00</span></div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 3.5: COMPRAS / ENTRADAS AL INVENTARIO -->
+        <div id="seccionCompras" class="hidden tab-admin space-y-6">
+            <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
+                <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📥 Registrar Compra / Entrada de Mercancía (Kardex)</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Seleccionar Producto</label>
+                        <select id="compraProductoSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Cantidad Entrante</label>
+                        <input type="number" id="compraCantidad" min="1" value="10" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Costo Unitario Compra ($ USD)</label>
+                        <input type="number" id="compraCostoUsd" step="0.01" value="1.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Nro Factura / Proveedor</label>
+                        <input type="text" id="compraDocRef" placeholder="COMPRA-001" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white text-sm">
+                    </div>
+                    <div class="md:col-span-2 flex items-end">
+                        <button onclick="registrarCompraInventario()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-lg text-xs cursor-pointer shadow-lg">
+                            Registrar Entrada y Actualizar Costo Promedio (PPM)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 3.6: VISTA KARDEX -->
+        <div id="seccionKardex" class="hidden tab-admin space-y-6">
+            <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📋 Movimientos Históricos del Kardex</h3>
+                    <button onclick="cargarKardexMovimientos()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded-lg text-slate-200 cursor-pointer">🔄 Actualizar</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900 text-slate-400 uppercase">
+                            <tr>
+                                <th class="p-2">Fecha</th>
+                                <th class="p-2">Movimiento</th>
+                                <th class="p-2">Documento</th>
+                                <th class="p-2">Entrada</th>
+                                <th class="p-2">Salida</th>
+                                <th class="p-2">Saldo</th>
+                                <th class="p-2">Costo Prom ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaKardexMovimientos" class="divide-y divide-slate-700/50"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -817,7 +876,7 @@
         }
 
         function cambiarPestana(pestana) {
-            const tabs = ['pos', 'historial', 'cierrez', 'referidos', 'productos', 'clientes', 'inquilinosMaster'];
+            const tabs = ['pos', 'historial', 'cierrez', 'compras', 'kardex', 'referidos', 'productos', 'clientes', 'inquilinosMaster'];
             tabs.forEach(t => {
                 const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
                 const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -838,6 +897,8 @@
                 if (!document.getElementById('filtroFechaHasta').value) document.getElementById('filtroFechaHasta').value = hoy;
                 generarReporteZ();
             }
+            if (pestana === 'compras') cargarProductosSelectCompra();
+            if (pestana === 'kardex') cargarKardexMovimientos();
             if (pestana === 'productos') cargarProductosGestion();
             if (pestana === 'clientes') cargarClientesGestion();
             if (pestana === 'inquilinosMaster') cargarInquilinosMaster();
@@ -853,6 +914,109 @@
             inputRef.select();
             navigator.clipboard.writeText(inputRef.value);
             alert('¡Enlace de referido copiado!');
+        }
+
+        // --- MÓDULO DE COMPRAS / ENTRADAS Y KARDEX HISTÓRICO ---
+        async function cargarProductosSelectCompra() {
+            if (!supabaseClient || !tenantActual) return;
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            const select = document.getElementById('compraProductoSelect');
+            select.innerHTML = '';
+            if (!data || data.length === 0) { select.innerHTML = '<option value="">No hay productos.</option>'; return; }
+            data.forEach(p => {
+                select.innerHTML += `<option value="${p.id}" data-stock="${p.stock || 0}" data-precio="${p.precio_unitario_usd || 0}">${p.descripcion} (Stock actual: ${p.stock || 0})</option>`;
+            });
+        }
+
+        async function registrarCompraInventario() {
+            const productoId = document.getElementById('compraProductoSelect').value;
+            const cantidadEntrada = parseFloat(document.getElementById('compraCantidad').value) || 0;
+            const costoUnitUsd = parseFloat(document.getElementById('compraCostoUsd').value) || 0;
+            const docRef = document.getElementById('compraDocRef').value.trim() || 'COMPRA-01';
+
+            if (!productoId || cantidadEntrada <= 0 || costoUnitUsd <= 0) {
+                alert('Ingrese un producto, cantidad y costo válidos.');
+                return;
+            }
+
+            let tasaRaw = document.getElementById('tasaBcv').value.toString().replace(',', '.');
+            const tasa = parseFloat(tasaRaw) || 1;
+
+            try {
+                // Obtener stock y costo actual del producto
+                const { data: prodData } = await supabaseClient
+                    .from('productos')
+                    .select('stock, precio_unitario_usd')
+                    .eq('id', productoId)
+                    .single();
+
+                const stockActual = prodData ? (prodData.stock || 0) : 0;
+                const costoActual = prodData ? (prodData.precio_unitario_usd || costoUnitUsd) : costoUnitUsd;
+
+                // Cálculo Promedio Ponderado Móvil (PPM)
+                const nuevoStock = stockActual + cantidadEntrada;
+                const nuevoCostoPromedio = nuevoStock > 0 
+                    ? ((stockActual * costoActual) + (cantidadEntrada * costoUnitUsd)) / nuevoStock 
+                    : costoUnitUsd;
+
+                // Actualizar stock y costo unitario en productos
+                await supabaseClient.from('productos')
+                    .update({ stock: nuevoStock, precio_unitario_usd: nuevoCostoPromedio })
+                    .eq('id', productoId);
+
+                // Insertar movimiento ENTRADA en kardex_movimientos
+                await supabaseClient.from('kardex_movimientos').insert([{
+                    tenant_id: tenantActual.id,
+                    producto_id: productoId,
+                    tipo_movimiento: 'ENTRADA',
+                    documento_ref: docRef,
+                    cantidad_in: cantidadEntrada,
+                    costo_unit_usd_in: costoUnitUsd,
+                    saldo_cantidad: nuevoStock,
+                    costo_promedio_usd: nuevoCostoPromedio,
+                    tasa_bcv: tasa
+                }]);
+
+                alert(`¡Compra registrada con éxito! Nuevo stock: ${nuevoStock}, Nuevo costo promedio: $${nuevoCostoPromedio.toFixed(2)}`);
+                document.getElementById('compraCantidad').value = '10';
+                document.getElementById('compraCostoUsd').value = '1.00';
+                document.getElementById('compraDocRef').value = '';
+                cargarProductosSelectCompra();
+            } catch (err) {
+                alert('Error al registrar compra: ' + err.message);
+            }
+        }
+
+        async function cargarKardexMovimientos() {
+            if (!supabaseClient || !tenantActual) return;
+            const { data, error } = await supabaseClient
+                .from('kardex_movimientos')
+                .select('*, productos(descripcion)')
+                .eq('tenant_id', tenantActual.id)
+                .order('created_at', { ascending: false });
+
+            const tbody = document.getElementById('tablaKardexMovimientos');
+            tbody.innerHTML = '';
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No hay movimientos en el Kardex.</td></tr>`;
+                return;
+            }
+            data.forEach(m => {
+                const desc = m.productos ? m.productos.descripcion : 'Producto';
+                const fecha = formatearFecha8Digitos(m.created_at);
+                const badgeMov = m.tipo_movimiento === 'ENTRADA' ? 'text-emerald-400 bg-emerald-900/40' : 'text-amber-400 bg-amber-900/40';
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/50">
+                        <td class="p-2 text-slate-400">${fecha}</td>
+                        <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${badgeMov} font-bold">${m.tipo_movimiento}</span><br><span class="text-[10px] text-white">${desc}</span></td>
+                        <td class="p-2 font-mono">${m.documento_ref}</td>
+                        <td class="p-2 font-mono text-emerald-400">${m.cantidad_in > 0 ? '+' + m.cantidad_in : '-'}</td>
+                        <td class="p-2 font-mono text-rose-400">${m.cantidad_out > 0 ? '-' + m.cantidad_out : '-'}</td>
+                        <td class="p-2 font-mono font-bold text-white">${m.saldo_cantidad}</td>
+                        <td class="p-2 font-mono text-sky-300">$ ${m.costo_promedio_usd.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
         }
 
         // --- PERFIL Y USUARIOS TENANT ---
@@ -1003,7 +1167,7 @@
             } catch (err) { alert('Error al guardar: ' + err.message); }
         }
 
-        // --- PRODUCTOS / STOCK ---
+        // --- PRODUCTOS / STOCK CON ALERTA VISUAL ---
         async function cargarProductosSelect() {
             if (!supabaseClient || !tenantActual) return;
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
@@ -1015,7 +1179,8 @@
                 const unidad = prod.unidad_medida || 'Und';
                 const stock = prod.stock !== undefined && prod.stock !== null ? prod.stock : 0;
                 const tipoTexto = prod.es_exento ? 'EXENTO (E)' : 'GRAVADO 16%';
-                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${unidad}" data-stock="${stock}">${prod.descripcion} (${unidad}) [Stock: ${stock}] - $${prod.precio_unitario_usd.toFixed(2)} (${tipoTexto})</option>`;
+                const alertaStock = stock <= 5 ? ' ⚠️ [¡STOCK CRÍTICO!]' : '';
+                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${unidad}" data-stock="${stock}">${prod.descripcion} (${unidad}) [Stock: ${stock}]${alertaStock} - $${prod.precio_unitario_usd.toFixed(2)}</option>`;
             });
         }
 
@@ -1032,7 +1197,7 @@
                         <td class="p-2 font-mono text-emerald-400">${prod.codigo_sku || 'S/N'}</td>
                         <td class="p-2">${prod.descripcion}</td>
                         <td class="p-2 text-slate-300">${prod.unidad_medida || 'Und'}</td>
-                        <td class="p-2 font-bold ${stock <= 5 ? 'text-rose-400' : 'text-emerald-400'}">${stock}</td>
+                        <td class="p-2 font-bold ${stock <= 5 ? 'text-rose-400 animate-pulse' : 'text-emerald-400'}">${stock} ${stock <= 5 ? '⚠️' : ''}</td>
                         <td class="p-2 font-mono">$ ${prod.precio_unitario_usd.toFixed(2)}</td>
                         <td class="p-2"><span class="px-2 py-0.5 rounded text-[10px] ${prod.es_exento ? 'bg-amber-900/50 text-amber-300' : 'bg-emerald-900/50 text-emerald-300'}">${prod.es_exento ? 'EXENTO (E)' : 'GRAVADO'}</span></td>
                         <td class="p-2 text-center space-x-2">
