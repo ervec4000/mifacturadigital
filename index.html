@@ -637,7 +637,7 @@
                 <div id="ticketItemsContainer" class="space-y-1 text-[11px]"></div>
             </div>
             <div class="border-t border-dashed border-slate-400 pt-2 space-y-1 font-mono text-[11px]">
-                <div class="flex justify-between"><span>Base Imponible:</span><span id="ticketBase">$ 0.00 | Bs. 0.00</span></div>
+                <div class="flex justify-between"><span>Base Imponible Gravada:</span><span id="ticketBase">$ 0.00 | Bs. 0.00</span></div>
                 <div class="flex justify-between"><span>Monto Exento:</span><span id="ticketExento">$ 0.00 | Bs. 0.00</span></div>
                 <div class="flex justify-between"><span>IVA (16%):</span><span id="ticketIva">$ 0.00 | Bs. 0.00</span></div>
                 <div class="flex justify-between"><span>IGTF (3% Divisas):</span><span id="ticketIgtf">$ 0.00 | Bs. 0.00</span></div>
@@ -896,7 +896,7 @@
             cargarInquilinosMaster();
         }
 
-        // --- NOTAS DE DÉBITO Y CRÉDITO (CONFORME A PROVIDENCIA SENIAT) ---
+        // --- NOTAS DE DÉBITO Y CRÉDITO ---
         async function cargarFacturasAfectadasSelect() {
             const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
             const select = document.getElementById('facturaAfectadaSelect');
@@ -1402,7 +1402,6 @@
             document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif}`;
             document.getElementById('ticketComercioDir').innerText = tenantActual.direccion || 'VENEZUELA';
             
-            // Determinar tipo de documento estricto bajo providencia
             let tituloDoc = 'FACTURA FISCAL DIGITAL';
             if ((doc.numero || '').startsWith('NC')) tituloDoc = 'NOTA DE CRÉDITO FISCAL';
             if ((doc.numero || '').startsWith('ND')) tituloDoc = 'NOTA DE DÉBITO FISCAL';
@@ -1425,32 +1424,42 @@
             }
 
             const tasa = doc.tasa_bcv || 1;
-            const totalBs = doc.total_bs || 0;
-            const ivaBs = doc.iva_bs || 0;
-            const igtfBs = doc.igtf_bs || 0;
             
-            // Estimación de base gravada vs exenta para el ticket
-            const subtotalBs = doc.subtotal_bs || (totalBs - ivaBs - igtfBs);
-            const baseGravadaBs = subtotalBs; 
-            const exentoBs = 0; 
+            // Consultar ítems reales de la factura para separar Base Gravada y Exento con precisión quirúrgica
+            const { data: items } = await supabaseClient.from('invoice_items').select('*').eq('invoice_id', doc.id);
+            let baseGravadaUsd = 0;
+            let montoExentoUsd = 0;
 
-            document.getElementById('ticketBase').innerText = `$ ${(baseGravadaBs/tasa).toFixed(2)} | Bs. ${baseGravadaBs.toFixed(2)}`;
-            document.getElementById('ticketExento').innerText = `$ ${(exentoBs/tasa).toFixed(2)} | Bs. ${exentoBs.toFixed(2)}`;
+            const container = document.getElementById('ticketItemsContainer');
+            container.innerHTML = '';
+
+            if (items && items.length > 0) {
+                items.forEach(it => {
+                    const subUsd = it.subtotal_usd || (it.cantidad * (it.precio_unitario_usd || 0));
+                    if (it.es_exento) {
+                        montoExentoUsd += subUsd;
+                    } else {
+                        baseGravadaUsd += subUsd;
+                    }
+                    container.innerHTML += `<div class="flex justify-between border-b border-dotted border-slate-300 py-0.5"><span>${it.cantidad}x ${it.descripcion} ${it.es_exento?'(Exento)':''}</span><span>$ ${subUsd.toFixed(2)} | Bs. ${(subUsd*tasa).toFixed(2)}</span></div>`;
+                });
+            } else {
+                baseGravadaUsd = doc.monto_usd || 0;
+                container.innerHTML = `<div class="py-1">1x ${doc.metodo_pago} | Total: Bs. ${(doc.total_bs||0).toFixed(2)}</div>`;
+            }
+
+            const baseGravadaBs = baseGravadaUsd * tasa;
+            const montoExentoBs = montoExentoUsd * tasa;
+            const ivaBs = doc.iva_bs || (baseGravadaBs * 0.16);
+            const igtfBs = doc.igtf_bs || 0;
+            const totalBs = doc.total_bs || (baseGravadaBs + montoExentoBs + ivaBs + igtfBs);
+
+            document.getElementById('ticketBase').innerText = `$ ${baseGravadaUsd.toFixed(2)} | Bs. ${baseGravadaBs.toFixed(2)}`;
+            document.getElementById('ticketExento').innerText = `$ ${montoExentoUsd.toFixed(2)} | Bs. ${montoExentoBs.toFixed(2)}`;
             document.getElementById('ticketIva').innerText = `$ ${(ivaBs/tasa).toFixed(2)} | Bs. ${ivaBs.toFixed(2)}`;
             document.getElementById('ticketIgtf').innerText = `$ ${(igtfBs/tasa).toFixed(2)} | Bs. ${igtfBs.toFixed(2)}`;
             document.getElementById('ticketTotal').innerText = `$ ${(totalBs/tasa).toFixed(2)} | Bs. ${totalBs.toFixed(2)}`;
 
-            const container = document.getElementById('ticketItemsContainer');
-            container.innerHTML = '';
-            const { data: items } = await supabaseClient.from('invoice_items').select('*').eq('invoice_id', doc.id);
-            if (items && items.length > 0) {
-                items.forEach(it => {
-                    const subUsd = it.subtotal_usd || (it.cantidad * it.precio_unitario_usd);
-                    container.innerHTML += `<div class="flex justify-between border-b border-dotted border-slate-300 py-0.5"><span>${it.cantidad}x ${it.descripcion}</span><span>$ ${subUsd.toFixed(2)} | Bs. ${(subUsd*tasa).toFixed(2)}</span></div>`;
-                });
-            } else {
-                container.innerHTML = `<div class="py-1">1x ${doc.metodo_pago} | Total: Bs. ${totalBs.toFixed(2)}</div>`;
-            }
             document.getElementById('modalTicket').classList.remove('hidden');
         }
         function cerrarTicket() { document.getElementById('modalTicket').classList.add('hidden'); }
