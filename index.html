@@ -141,7 +141,7 @@
                     <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">🛒 Detalle de Artículos y Servicios</h3>
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
                         <div class="md:col-span-6">
-                            <label class="block text-xs text-slate-400 mb-1">Producto / Artículo</label>
+                            <label class="block text-xs text-slate-400 mb-1">Producto / Servicio</label>
                             <select id="productoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-emerald-500">
                                 <option value="">Cargando catálogo...</option>
                             </select>
@@ -304,7 +304,7 @@
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">Producto</label>
+                            <label class="block text-xs text-slate-400 mb-1">Producto / Artículo</label>
                             <select id="compraProductoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></select>
                         </div>
                         <div>
@@ -316,12 +316,16 @@
                             <input type="number" id="compraCostoUsd" step="0.01" value="1.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
                         </div>
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">Factura / Proveedor</label>
+                            <label class="block text-xs text-slate-400 mb-1">Número de Lote</label>
+                            <input type="text" id="compraLote" placeholder="LOTE-2026-A" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Factura / Proveedor Ref</label>
                             <input type="text" id="compraDocRef" placeholder="COMPRA-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
                         </div>
-                        <div class="md:col-span-2 flex items-end">
+                        <div class="md:col-span-3 flex items-end">
                             <button onclick="registrarCompraInventario()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs cursor-pointer shadow">
-                                Registrar Entrada y Actualizar Costo Promedio Ponderado
+                                Registrar Entrada, Lote y Actualizar Costo Promedio Ponderado
                             </button>
                         </div>
                     </div>
@@ -333,7 +337,7 @@
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Kardex PPM - Control de Inventario</h3>
+                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Kardex PPM - Control de Inventario & Lotes</h3>
                             <p class="text-xs text-slate-400">Fórmula: Saldo Inicial + Entradas - Salidas (Ventas) ± Ajustes = Total</p>
                         </div>
                         <div class="flex gap-2">
@@ -347,7 +351,7 @@
                                 <tr>
                                     <th class="p-3">Fecha</th>
                                     <th class="p-3">Movimiento</th>
-                                    <th class="p-3">Documento</th>
+                                    <th class="p-3">Documento / Lote</th>
                                     <th class="p-3 text-center">Inicial</th>
                                     <th class="p-3 text-center">Entradas (+)</th>
                                     <th class="p-3 text-center">Salidas (-)</th>
@@ -381,6 +385,10 @@
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Cantidad</label>
                             <input type="number" id="ajusteCantidad" min="1" value="1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Número de Lote (Opcional)</label>
+                            <input type="text" id="ajusteLote" placeholder="LOTE-A" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-xs text-slate-400 mb-1">Motivo / Justificación</label>
@@ -481,8 +489,8 @@
                 <div class="bg-emerald-950/20 border border-emerald-700/50 p-5 rounded-2xl space-y-4 shadow-lg">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                         <div>
-                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📥 Módulo de Importación Masiva de Artículos (Excel / CSV)</h3>
-                            <p class="text-xs text-slate-300">Ideal para subir cientos de materiales y su stock inicial de golpe.</p>
+                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📥 Módulo de Importación Masiva de Artículos & Servicios (Excel / CSV)</h3>
+                            <p class="text-xs text-slate-300">Ideal para subir inventario, lotes y servicios profesionales de golpe.</p>
                         </div>
                         <button onclick="descargarPlantillaExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-600/40 text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow flex items-center gap-2">
                             📄 Descargar Plantilla Excel Modelo
@@ -495,7 +503,7 @@
                         </div>
                         <div>
                             <button onclick="procesarImportacionMasiva()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-3 px-4 rounded-xl shadow cursor-pointer">
-                                ⚡ Importar Catálogo y Stock Inicial
+                                ⚡ Importar Catálogo Completo
                             </button>
                         </div>
                     </div>
@@ -504,22 +512,20 @@
                 <!-- Formulario Individual -->
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Maestro de Artículos y Stock</h3>
-                        <button onclick="exportarStockExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Stock (Excel)</button>
+                        <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Maestro de Artículos y Servicios</h3>
+                        <button onclick="exportarStockExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Catálogo (Excel)</button>
                     </div>
                     <input type="hidden" id="editProductoId">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">SKU</label>
-                            <input type="text" id="prodSku" placeholder="SKU-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+                            <label class="block text-xs text-slate-400 mb-1">SKU / Código</label>
+                            <input type="text" id="prodSku" placeholder="SRV-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
                         </div>
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">Unidad de Medida</label>
-                            <select id="prodUnidad" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
-                                <option value="Und">Unidad (Und)</option>
-                                <option value="L">Litro (L)</option>
-                                <option value="Kg">Kilogramo (Kg)</option>
-                                <option value="ml">Mililitro (ml)</option>
+                            <label class="block text-xs text-slate-400 mb-1">¿Maneja Inventario?</label>
+                            <select id="prodManejaInventario" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-emerald-400 font-semibold text-sm">
+                                <option value="true" selected>SÍ - Controla Stock / Kardex</option>
+                                <option value="false">NO - Solo Facturación (Servicios)</option>
                             </select>
                         </div>
                         <div>
@@ -527,12 +533,16 @@
                             <input type="number" id="prodStock" step="1" value="100" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
                         </div>
                         <div>
+                            <label class="block text-xs text-slate-400 mb-1">Número de Lote (Opcional)</label>
+                            <input type="text" id="prodLote" placeholder="LOTE-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-slate-400 mb-1">Descripción del Artículo / Servicio</label>
+                            <input type="text" id="prodDescripcion" placeholder="Servicios Contables / Lavacarros 1L" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+                        </div>
+                        <div>
                             <label class="block text-xs text-slate-400 mb-1">Precio Unitario ($ USD)</label>
                             <input type="number" id="prodPrecio" step="0.01" placeholder="15.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
-                        </div>
-                        <div class="md:col-span-3">
-                            <label class="block text-xs text-slate-400 mb-1">Descripción del Artículo</label>
-                            <input type="text" id="prodDescripcion" placeholder="Lavacarros 1L" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Estatus Fiscal</label>
@@ -543,17 +553,17 @@
                         </div>
                     </div>
                     <div class="flex space-x-2 pt-2">
-                        <button onclick="guardarProducto()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs cursor-pointer shadow">Guardar Artículo</button>
+                        <button onclick="guardarProducto()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs cursor-pointer shadow">Guardar Ítem / Servicio</button>
                         <button onclick="limpiarFormProducto()" id="btnCancelarProd" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-xl text-xs cursor-pointer">Cancelar</button>
                     </div>
                 </div>
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-3">
-                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider">Inventario Actual</h3>
+                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider">Catálogo Actual (Inventario & Servicios)</h3>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                                 <tr>
-                                    <th class="p-3">SKU</th><th class="p-3">Descripción</th><th class="p-3">Unidad</th><th class="p-3">Stock</th><th class="p-3">Precio ($)</th><th class="p-3">Tipo</th><th class="p-3 text-center">Acciones</th>
+                                    <th class="p-3">SKU</th><th class="p-3">Descripción</th><th class="p-3">Control Inv.</th><th class="p-3">Stock</th><th class="p-3">Lote</th><th class="p-3">Precio ($)</th><th class="p-3">Tipo</th><th class="p-3 text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaProductosGestion" class="divide-y divide-slate-800/60"></tbody>
@@ -589,8 +599,8 @@
                         </div>
                     </div>
                     <div class="flex space-x-2 pt-2">
-                        <button onclick="guardarCliente()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs cursor-pointer shadow">Guardar Cliente</button>
-                        <button onclick="limpiarFormCliente()" id="btnCancelarCli" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-xl text-xs cursor-pointer">Cancelar</button>
+                        <button onclick="guardarCliente()" class="bg-emerald-600 text-white py-2.5 px-5 rounded-xl font-semibold cursor-pointer text-xs shadow">Guardar Cliente</button>
+                        <button onclick="limpiarFormCliente()" id="btnCancelarCli" class="hidden bg-slate-800 text-slate-300 py-2.5 px-5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
                     </div>
                 </div>
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-3">
@@ -855,10 +865,10 @@
 
         function descargarPlantillaExcel() {
             const plantillaEjemplo = [
-                { SKU: "SKU-001", Descripción: "Detergente Lavaplatos 1L", "Unidad de Medida": "L", "Stock Inicial": 50, "Precio Unitario ($)": 5.00, "Es Exento (SI/NO)": "NO" },
-                { SKU: "SKU-002", Descripción: "Cloro Doméstico 1L", "Unidad de Medida": "L", "Stock Inicial": 100, "Precio Unitario ($)": 2.50, "Es Exento (SI/NO)": "SI" }
+                { SKU: "SRV-001", Descripción: "Servicios Contables", "Maneja Inventario (SI/NO)": "NO", "Stock Inicial": 0, Lote: "", "Precio Unitario ($)": 50.00, "Es Exento (SI/NO)": "SI" },
+                { SKU: "SKU-002", Descripción: "Detergente Lavaplatos 1L", "Maneja Inventario (SI/NO)": "SI", "Stock Inicial": 100, Lote: "LOTE-2026-A", "Precio Unitario ($)": 5.00, "Es Exento (SI/NO)": "NO" }
             ];
-            descargarExcel(plantillaEjemplo, 'Plantilla_Importacion_Articulos', 'Articulos');
+            descargarExcel(plantillaEjemplo, 'Plantilla_Importacion_Catalogo', 'Catalogo');
         }
 
         async function procesarImportacionMasiva() {
@@ -887,8 +897,10 @@
                     for (const row of jsonRows) {
                         const sku = String(row['SKU'] || row['sku'] || 'S/N').trim();
                         const descripcion = String(row['Descripción'] || row['Descripcion'] || row['descripcion'] || '').trim();
-                        const unidad = String(row['Unidad de Medida'] || row['unidad_medida'] || 'Und').trim();
-                        const stock = parseFloat(row['Stock Inicial'] || row['stock'] || 0) || 0;
+                        const manejaInvTxt = String(row['Maneja Inventario (SI/NO)'] || row['maneja_inventario'] || 'SI').toUpperCase();
+                        const manejaInventario = manejaInvTxt !== 'NO' && manejaInvTxt !== 'FALSE';
+                        const stock = manejaInventario ? (parseFloat(row['Stock Inicial'] || row['stock'] || 0) || 0) : 0;
+                        const lote = String(row['Lote'] || row['lote'] || '').trim();
                         const precio = parseFloat(row['Precio Unitario ($)'] || row['precio'] || 0) || 0;
                         const esExentoTxt = String(row['Es Exento (SI/NO)'] || row['es_exento'] || 'NO').toUpperCase();
                         const esExento = esExentoTxt === 'SI' || esExentoTxt === 'TRUE';
@@ -899,18 +911,19 @@
                             tenant_id: tenantActual.id,
                             codigo_sku: sku,
                             descripcion: descripcion,
-                            unidad_medida: unidad,
+                            maneja_inventario: manejaInventario,
                             stock: stock,
+                            lote: lote,
                             precio_unitario_usd: precio,
                             es_exento: esExento
                         }]).select();
 
-                        if (!errIns && prodIns && prodIns.length > 0 && stock > 0) {
+                        if (!errIns && prodIns && prodIns.length > 0 && manejaInventario && stock > 0) {
                             await supabaseClient.from('kardex_movimientos').insert([{
                                 tenant_id: tenantActual.id,
                                 producto_id: prodIns[0].id,
                                 tipo_movimiento: 'SALDO INICIAL',
-                                documento_ref: 'MASIVO-' + sku,
+                                documento_ref: lote ? `INIT-${sku} (${lote})` : `INIT-${sku}`,
                                 cantidad_in: 0,
                                 cantidad_out: 0,
                                 cantidad_inicial: stock,
@@ -924,7 +937,7 @@
                         importados++;
                     }
 
-                    alert(`¡Importación masiva completada con éxito! Se procesaron ${importados} artículos.`);
+                    alert(`¡Importación masiva completada con éxito! Se procesaron ${importados} ítems.`);
                     fileInput.value = '';
                     cargarProductosGestion();
                 } catch (err) {
@@ -937,16 +950,17 @@
 
         async function exportarStockExcel() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
-            if (!data || data.length === 0) { alert('Sin datos de stock.'); return; }
+            if (!data || data.length === 0) { alert('Sin datos.'); return; }
             const excelData = data.map(p => ({
                 SKU: p.codigo_sku || 'N/A',
                 Descripción: p.descripcion,
-                'Unidad de Medida': p.unidad_medida,
-                Stock: p.stock,
+                'Control Inventario': p.maneja_inventario ? 'SÍ' : 'NO (Servicio)',
+                Stock: p.maneja_inventario ? (p.stock || 0) : 'N/A',
+                Lote: p.lote || 'N/A',
                 'Precio Unitario ($)': p.precio_unitario_usd,
                 'Estatus Fiscal': p.es_exento ? 'Exento' : 'Gravado 16%'
             }));
-            descargarExcel(excelData, 'Inventario_Stock', 'Stock');
+            descargarExcel(excelData, 'Catalogo_Inventario_Servicios', 'Catalogo');
         }
 
         async function exportarClientesExcel() {
@@ -966,7 +980,7 @@
             if (!data || data.length === 0) { alert('Sin registros de compras.'); return; }
             const excelData = data.map(m => ({
                 Fecha: formatearFecha8Digitos(m.created_at),
-                'Documento / Ref': m.documento_ref,
+                'Documento / Lote': m.documento_ref,
                 Artículo: m.productos?.descripcion || 'Artículo',
                 'Cantidad Entrante': m.cantidad_in,
                 'Costo Unitario ($)': m.costo_unit_usd_in || 0,
@@ -981,7 +995,7 @@
             const excelData = data.map(m => ({
                 Fecha: formatearFecha8Digitos(m.created_at),
                 Movimiento: m.tipo_movimiento,
-                Documento: m.documento_ref,
+                'Documento / Lote': m.documento_ref,
                 Artículo: m.productos?.descripcion || 'Artículo',
                 Inicial: m.cantidad_inicial || 0,
                 Entrada: m.cantidad_in || 0,
@@ -991,20 +1005,6 @@
                 'Costo Promedio ($)': m.costo_promedio_usd
             }));
             descargarExcel(excelData, 'Kardex_Inventario_PPM', 'Kardex');
-        }
-
-        async function exportarHistorialExcel() {
-            if (!documentosHistorialCache || documentosHistorialCache.length === 0) { alert('Sin comprobantes.'); return; }
-            const excelData = documentosHistorialCache.map(d => ({
-                Tipo: d.tipoDoc,
-                Número: d.numero,
-                Control: d.nro_control || 'N/A',
-                Cliente: d.cliente_nombre,
-                'Método / Motivo': d.metodo_pago || d.motivo || 'N/A',
-                Fecha: formatearFecha8Digitos(d.created_at),
-                'Total (Bs)': d.total_bs
-            }));
-            descargarExcel(excelData, 'Historial_Comprobantes', 'Comprobantes');
         }
 
         async function exportarLibroVentasExcel() {
@@ -1038,44 +1038,48 @@
 
         // --- MÓDULO DE AJUSTES DE INVENTARIO ---
         async function cargarProductosSelectAjuste() {
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).eq('maneja_inventario', true);
             const select = document.getElementById('ajusteProductoSelect');
             select.innerHTML = '';
             if (!data) return;
-            data.forEach(p => { select.innerHTML += `<option value="${p.id}" data-stock="${p.stock||0}" data-precio="${p.precio_unitario_usd||0}">${p.descripcion} [Stock Actual: ${p.stock||0}]</option>`; });
+            data.forEach(p => { select.innerHTML += `<option value="${p.id}" data-stock="${p.stock||0}" data-precio="${p.precio_unitario_usd||0}">${p.descripcion} [Stock: ${p.stock||0} | Lote: ${p.lote||'N/A'}]</option>`; });
         }
 
         async function registrarAjusteInventario() {
             const productoId = document.getElementById('ajusteProductoSelect').value;
             const tipo = document.getElementById('ajusteTipo').value;
             const cantidad = parseFloat(document.getElementById('ajusteCantidad').value) || 0;
+            const loteAjuste = document.getElementById('ajusteLote').value.trim();
             const motivo = document.getElementById('ajusteMotivo').value.trim() || 'Ajuste de inventario';
 
             if (!productoId || cantidad <= 0) { alert('Complete los datos del ajuste correctamente.'); return; }
 
             try {
-                const { data: prodData } = await supabaseClient.from('productos').select('stock, precio_unitario_usd').eq('id', productoId).single();
+                const { data: prodData } = await supabaseClient.from('productos').select('stock, precio_unitario_usd, lote').eq('id', productoId).single();
                 const stockActual = prodData ? (prodData.stock || 0) : 0;
                 const costo = prodData ? (prodData.precio_unitario_usd || 0) : 0;
+                const loteFinal = loteAjuste || prodData?.lote || '';
 
                 let nuevoStock = stockActual;
                 let cantAjusteVal = 0;
 
                 if (tipo === 'AJUSTE ENTRADA') {
                     nuevoStock += cantidad;
-                    cantAjusteVal = cantidad; // Positivo
+                    cantAjusteVal = cantidad; 
                 } else {
                     nuevoStock = Math.max(0, stockActual - cantidad);
-                    cantAjusteVal = -cantidad; // Negativo
+                    cantAjusteVal = -cantidad; 
                 }
 
-                await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', productoId);
+                await supabaseClient.from('productos').update({ stock: nuevoStock, lote: loteFinal }).eq('id', productoId);
+
+                const refDoc = loteFinal ? `${motivo} (Lote: ${loteFinal})` : motivo;
 
                 await supabaseClient.from('kardex_movimientos').insert([{
                     tenant_id: tenantActual.id,
                     producto_id: productoId,
                     tipo_movimiento: tipo,
-                    documento_ref: motivo,
+                    documento_ref: refDoc,
                     cantidad_in: 0,
                     cantidad_out: 0,
                     cantidad_inicial: 0,
@@ -1088,6 +1092,7 @@
                 alert('¡Ajuste aplicado y registrado en el Kardex PPM con éxito!');
                 document.getElementById('ajusteCantidad').value = '1';
                 document.getElementById('ajusteMotivo').value = '';
+                document.getElementById('ajusteLote').value = '';
                 cargarProductosSelectAjuste();
                 cargarKardexMovimientos();
             } catch (err) {
@@ -1098,24 +1103,24 @@
 
         // --- MÓDULO DE INVENTARIO FÍSICO ---
         async function cargarInventarioFisico() {
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).eq('maneja_inventario', true);
             const tbody = document.getElementById('tablaInventarioFisico');
             tbody.innerHTML = '';
-            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin artículos registrados.</td></tr>`; return; }
+            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin artículos con control de inventario.</td></tr>`; return; }
             data.forEach(p => {
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 font-mono text-emerald-400">${p.codigo_sku||'S/N'}</td>
-                        <td class="p-3">${p.descripcion}</td>
+                        <td class="p-3">${p.descripcion} <br><span class="text-[10px] text-slate-400">Lote: ${p.lote||'N/A'}</span></td>
                         <td class="p-3 font-mono text-white font-bold" id="teo_${p.id}">${p.stock||0}</td>
                         <td class="p-3"><input type="number" id="fisico_${p.id}" value="${p.stock||0}" class="w-24 bg-slate-900 border border-slate-800 rounded p-1.5 text-white font-mono text-xs"></td>
-                        <td class="p-3 text-center"><button onclick='aplicarConteoFisico("${p.id}", ${p.precio_unitario_usd||0})' class="bg-emerald-600 text-white text-[11px] px-3 py-1.5 rounded cursor-pointer">Ajustar Diferencia</button></td>
+                        <td class="p-3 text-center"><button onclick='aplicarConteoFisico("${p.id}", ${p.precio_unitario_usd||0}, "${p.lote||''}")' class="bg-emerald-600 text-white text-[11px] px-3 py-1.5 rounded cursor-pointer">Ajustar Diferencia</button></td>
                     </tr>
                 `;
             });
         }
 
-        async function aplicarConteoFisico(productoId, costo) {
+        async function aplicarConteoFisico(productoId, costo, loteActual) {
             const fisicoInput = document.getElementById('fisico_' + productoId);
             const teoSpan = document.getElementById('teo_' + productoId);
             const stockTeorico = parseFloat(teoSpan.innerText) || 0;
@@ -1127,8 +1132,9 @@
             if (diferencia === 0) { alert('El stock físico coincide con el teórico. Sin ajustes necesarios.'); return; }
 
             const tipo = diferencia > 0 ? 'AJUSTE ENTRADA' : 'AJUSTE SALIDA';
-            const cantAjusteVal = diferencia; // Positivo o negativo
-            const motivo = `Toma de Inventario Físico (Teórico: ${stockTeorico} vs Real: ${stockFisico})`;
+            const cantAjusteVal = diferencia; 
+            const motivo = `Inventario Físico (Teórico: ${stockTeorico} vs Real: ${stockFisico})`;
+            const refDoc = loteActual ? `${motivo} [Lote: ${loteActual}]` : motivo;
 
             try {
                 await supabaseClient.from('productos').update({ stock: stockFisico }).eq('id', productoId);
@@ -1137,7 +1143,7 @@
                     tenant_id: tenantActual.id,
                     producto_id: productoId,
                     tipo_movimiento: tipo,
-                    documento_ref: motivo,
+                    documento_ref: refDoc,
                     cantidad_in: 0,
                     cantidad_out: 0,
                     cantidad_inicial: 0,
@@ -1157,17 +1163,17 @@
 
         // --- POS Y OPERACIONES ---
         async function renderizarEtiquetasQr() {
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).eq('maneja_inventario', true);
             const contenedor = document.getElementById('contenedorGridEtiquetas');
             const ubicacionBase = document.getElementById('inputUbicacionQr').value.trim() || 'ALM-01-01';
             contenedor.innerHTML = '';
             if (!data) return;
             data.forEach((p, idx) => {
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=SKU:${p.codigo_sku||'S/N'}|UBI:${ubicacionBase}`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=SKU:${p.codigo_sku||'S/N'}|Lote:${p.lote||'N/A'}|UBI:${ubicacionBase}`;
                 contenedor.innerHTML += `
                     <div class="bg-white text-slate-900 p-4 rounded-xl border border-slate-300 font-mono text-xs flex flex-col items-center text-center space-y-2 shadow">
                         <div class="font-bold text-sm">${p.descripcion}</div>
-                        <div class="text-[10px] text-slate-600">SKU: ${p.codigo_sku||'S/N'}</div>
+                        <div class="text-[10px] text-slate-600">SKU: ${p.codigo_sku||'S/N'} | Lote: ${p.lote||'N/A'}</div>
                         <img src="${qrUrl}" alt="QR" class="w-24 h-24 object-contain">
                         <div class="bg-slate-100 px-2 py-1 rounded w-full font-bold text-[11px]">Ubicación: ${ubicacionBase}-${idx+1}</div>
                     </div>
@@ -1204,17 +1210,18 @@
         }
 
         async function cargarProductosSelectCompra() {
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).eq('maneja_inventario', true);
             const select = document.getElementById('compraProductoSelect');
             select.innerHTML = '';
             if (!data) return;
-            data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} (Stock: ${p.stock||0})</option>`; });
+            data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} [Stock: ${p.stock||0} | Lote: ${p.lote||'N/A'}]</option>`; });
         }
 
         async function registrarCompraInventario() {
             const productoId = document.getElementById('compraProductoSelect').value;
             const cantidad = parseFloat(document.getElementById('compraCantidad').value) || 0;
             const costo = parseFloat(document.getElementById('compraCostoUsd').value) || 0;
+            const loteIngresado = document.getElementById('compraLote').value.trim();
             const docRef = document.getElementById('compraDocRef').value.trim() || 'COMPRA-01';
 
             if (!productoId || cantidad <= 0 || costo <= 0) { 
@@ -1225,7 +1232,7 @@
             try {
                 const { data: prodData, error: errProd } = await supabaseClient
                     .from('productos')
-                    .select('stock, precio_unitario_usd')
+                    .select('stock, precio_unitario_usd, lote')
                     .eq('id', productoId)
                     .single();
 
@@ -1235,19 +1242,22 @@
                 const costoActual = prodData ? (prodData.precio_unitario_usd || costo) : costo;
                 const nuevoStock = stockActual + cantidad;
                 const nuevoCostoProm = ((stockActual * costoActual) + (cantidad * costo)) / nuevoStock;
+                const loteFinal = loteIngresado || prodData?.lote || '';
 
                 const { error: errUpd } = await supabaseClient
                     .from('productos')
-                    .update({ stock: nuevoStock, precio_unitario_usd: nuevoCostoProm })
+                    .update({ stock: nuevoStock, precio_unitario_usd: nuevoCostoProm, lote: loteFinal })
                     .eq('id', productoId);
 
                 if (errUpd) throw new Error('Error al actualizar stock: ' + errUpd.message);
+
+                const refMovimiento = loteFinal ? `${docRef} (Lote: ${loteFinal})` : docRef;
 
                 const { error: errKardex } = await supabaseClient.from('kardex_movimientos').insert([{
                     tenant_id: tenantActual.id, 
                     producto_id: productoId, 
                     tipo_movimiento: 'ENTRADA',
-                    documento_ref: docRef, 
+                    documento_ref: refMovimiento, 
                     cantidad_in: cantidad, 
                     cantidad_out: 0,
                     cantidad_inicial: 0,
@@ -1260,13 +1270,14 @@
 
                 if (errKardex) throw new Error('Error al registrar Kardex: ' + errKardex.message);
 
-                alert(`¡Compra registrada con éxito! Stock actual: ${nuevoStock} | Costo Promedio: $${nuevoCostoProm.toFixed(2)}`);
+                alert(`¡Compra registrada con éxito! Stock actual: ${nuevoStock} | Lote: ${loteFinal} | Costo Prom: $${nuevoCostoProm.toFixed(2)}`);
+                document.getElementById('compraLote').value = '';
                 cargarProductosSelectCompra();
                 cargarKardexMovimientos();
 
             } catch (error) {
                 console.error(error);
-                alert('❌ Falla al registrar en Supabase: ' + error.message);
+                alert('❌ Falla al registrar compra: ' + error.message);
             }
         }
 
@@ -1308,9 +1319,10 @@
             productosCache = data || [];
             const select = document.getElementById('productoSelect');
             select.innerHTML = '';
-            if (productosCache.length === 0) { select.innerHTML = '<option value="">No hay artículos.</option>'; return; }
+            if (productosCache.length === 0) { select.innerHTML = '<option value="">No hay artículos o servicios.</option>'; return; }
             productosCache.forEach(prod => {
-                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${prod.unidad_medida||'Und'}" data-stock="${prod.stock||0}">${prod.descripcion} [Stock: ${prod.stock||0}] - $${prod.precio_unitario_usd.toFixed(2)}</option>`;
+                const infoInv = prod.maneja_inventario ? `[Stock: ${prod.stock||0} | Lote: ${prod.lote||'N/A'}]` : '[Servicio / Sin Stock]';
+                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${prod.unidad_medida||'Und'}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">${prod.descripcion} ${infoInv} - $${prod.precio_unitario_usd.toFixed(2)}</option>`;
             });
         }
 
@@ -1320,15 +1332,17 @@
             tbody.innerHTML = '';
             if (!data) return;
             data.forEach(prod => {
+                const badgeInv = prod.maneja_inventario ? '<span class="text-emerald-400 font-bold">SÍ (Inventario)</span>' : '<span class="text-amber-400 font-bold">NO (Servicio)</span>';
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 font-mono text-emerald-400">${prod.codigo_sku||'S/N'}</td>
                         <td class="p-3">${prod.descripcion}</td>
-                        <td class="p-3">${prod.unidad_medida||'Und'}</td>
-                        <td class="p-3 font-bold ${prod.stock<=5?'text-rose-400':'text-emerald-400'}">${prod.stock||0}</td>
+                        <td class="p-3">${badgeInv}</td>
+                        <td class="p-3 font-bold ${prod.maneja_inventario?(prod.stock<=5?'text-rose-400':'text-emerald-400'):'text-slate-500'}">${prod.maneja_inventario?(prod.stock||0):'N/A'}</td>
+                        <td class="p-3 font-mono text-slate-300">${prod.lote||'N/A'}</td>
                         <td class="p-3 font-mono">$ ${prod.precio_unitario_usd.toFixed(2)}</td>
                         <td class="p-3">${prod.es_exento?'EXENTO':'GRAVADO'}</td>
-                        <td class="p-3 text-center"><button onclick='editarProducto("${prod.id}", "${prod.codigo_sku||''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento}, "${prod.unidad_medida||'Und'}","${prod.stock||0}")' class="text-emerald-400">Editar</button></td>
+                        <td class="p-3 text-center"><button onclick='editarProducto("${prod.id}", "${prod.codigo_sku||''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento}, "${prod.unidad_medida||'Und'}","${prod.stock||0}", ${prod.maneja_inventario !== false}, "${prod.lote||''}")' class="text-emerald-400">Editar</button></td>
                     </tr>
                 `;
             });
@@ -1336,13 +1350,17 @@
 
         async function guardarProducto() {
             const id = document.getElementById('editProductoId').value;
-            const stockIngresado = parseFloat(document.getElementById('prodStock').value) || 0;
+            const manejaInv = document.getElementById('prodManejaInventario').value === 'true';
+            const stockIngresado = manejaInv ? (parseFloat(document.getElementById('prodStock').value) || 0) : 0;
             const precioIngresado = parseFloat(document.getElementById('prodPrecio').value) || 0;
+            const loteIngresado = document.getElementById('prodLote').value.trim();
+
             const payload = {
                 codigo_sku: document.getElementById('prodSku').value.trim(),
                 descripcion: document.getElementById('prodDescripcion').value.trim(),
-                unidad_medida: document.getElementById('prodUnidad').value,
+                maneja_inventario: manejaInv,
                 stock: stockIngresado,
+                lote: loteIngresado,
                 precio_unitario_usd: precioIngresado,
                 es_exento: document.getElementById('prodExento').value === 'true'
             };
@@ -1352,13 +1370,14 @@
                 await supabaseClient.from('productos').update(payload).eq('id', id);
             } else {
                 const { data: prodIns, error: errIns } = await supabaseClient.from('productos').insert([{...payload, tenant_id: tenantActual.id}]).select();
-                if (!errIns && prodIns && prodIns.length > 0 && stockIngresado > 0) {
+                if (!errIns && prodIns && prodIns.length > 0 && manejaInv && stockIngresado > 0) {
                     const nuevoProdId = prodIns[0].id;
+                    const refInit = loteIngresado ? `INIT-${payload.codigo_sku||'001'} (${loteIngresado})` : `INIT-${payload.codigo_sku||'001'}`;
                     await supabaseClient.from('kardex_movimientos').insert([{
                         tenant_id: tenantActual.id,
                         producto_id: nuevoProdId,
                         tipo_movimiento: 'SALDO INICIAL',
-                        documento_ref: 'INIT-' + (payload.codigo_sku || '001'),
+                        documento_ref: refInit,
                         cantidad_in: 0,
                         cantidad_out: 0,
                         cantidad_inicial: stockIngresado,
@@ -1372,18 +1391,19 @@
             }
             limpiarFormProducto();
             cargarProductosGestion();
-            alert('¡Artículo guardado y sincronizado con el Kardex con éxito!');
+            alert('¡Ítem guardado con éxito!');
         }
 
-        function editarProducto(id, sku, desc, precio, exento, unidad, stock) {
+        function editarProducto(id, sku, desc, precio, exento, unidad, stock, manejaInv, lote) {
             document.getElementById('editProductoId').value = id;
             document.getElementById('prodSku').value = sku;
             document.getElementById('prodDescripcion').value = desc;
-            document.getElementById('prodUnidad').value = unidad;
+            document.getElementById('prodManejaInventario').value = manejaInv.toString();
             document.getElementById('prodStock').value = stock;
+            document.getElementById('prodLote').value = lote;
             document.getElementById('prodPrecio').value = precio;
             document.getElementById('prodExento').value = exento.toString();
-            document.getElementById('tituloFormProducto').innerText = '✏️ Editar Artículo';
+            document.getElementById('tituloFormProducto').innerText = '✏️ Editar Ítem / Servicio';
             document.getElementById('btnCancelarProd').classList.remove('hidden');
         }
 
@@ -1391,7 +1411,8 @@
             document.getElementById('editProductoId').value = '';
             document.getElementById('prodSku').value = '';
             document.getElementById('prodDescripcion').value = '';
-            document.getElementById('tituloFormProducto').innerText = '📦 Maestro de Artículos y Stock';
+            document.getElementById('prodLote').value = '';
+            document.getElementById('tituloFormProducto').innerText = '📦 Maestro de Artículos y Servicios';
             document.getElementById('btnCancelarProd').classList.add('hidden');
         }
 
@@ -1469,15 +1490,19 @@
             if (!sel.value) return;
             const opt = sel.options[sel.selectedIndex];
             const cant = parseFloat(document.getElementById('cantidadItem').value) || 1;
+            const manejaInv = opt.getAttribute('data-maneja') === 'true';
             const stock = parseFloat(opt.getAttribute('data-stock')) || 0;
-            if (cant > stock) { alert(`Stock insuficiente (${stock} disponibles).`); return; }
+
+            if (manejaInv && cant > stock) { alert(`Stock insuficiente (${stock} disponibles).`); return; }
+
             carritoItems.push({
                 productoId: sel.value,
                 descripcion: opt.text.split(' [')[0],
                 unidad: opt.getAttribute('data-unidad'),
                 precio: parseFloat(opt.getAttribute('data-precio')),
                 esExento: opt.getAttribute('data-exento') === 'true',
-                cantidad: cant
+                cantidad: cant,
+                manejaInventario: manejaInv
             });
             actualizarTablaYCalculos();
         }
@@ -1574,36 +1599,35 @@
                         precio_unitario_usd: item.precio, es_exento: item.esExento, subtotal_usd: item.precio * item.cantidad,
                         descripcion: `${item.descripcion} (${item.unidad})`
                     }]);
-                    const { data: pData } = await supabaseClient.from('productos').select('stock, precio_unitario_usd').eq('id', item.productoId).single();
-                    const stockActual = pData ? (pData.stock || 0) : 0;
-                    const nuevoStock = Math.max(0, stockActual - item.cantidad);
-                    await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.productoId);
-                    
-                    // Registrar salida en kardex con manejo defensivo de columnas
-                    const payloadKardex = {
-                        tenant_id: tenantActual.id, 
-                        producto_id: item.productoId, 
-                        tipo_movimiento: 'SALIDA',
-                        documento_ref: facturaNro, 
-                        cantidad_in: 0, 
-                        cantidad_out: item.cantidad,
-                        cantidad_inicial: 0,
-                        cantidad_ajuste: 0,
-                        precio_venta_usd: item.precio, 
-                        saldo_cantidad: nuevoStock, 
-                        costo_promedio_usd: pData ? pData.precio_unitario_usd : item.precio, 
-                        tasa_bcv: tasa
-                    };
 
-                    const { error: errKardex } = await supabaseClient.from('kardex_movimientos').insert([payloadKardex]);
-                    if (errKardex) {
-                        console.warn('Advertencia en kardex con campos extendidos, intentando fallback básico:', errKardex);
-                        delete payloadKardex.cantidad_inicial;
-                        delete payloadKardex.cantidad_ajuste;
+                    // Si el ítem maneja inventario, actualizamos stock y registramos salida en el Kardex
+                    if (item.manejaInventario) {
+                        const { data: pData } = await supabaseClient.from('productos').select('stock, precio_unitario_usd, lote').eq('id', item.productoId).single();
+                        const stockActual = pData ? (pData.stock || 0) : 0;
+                        const nuevoStock = Math.max(0, stockActual - item.cantidad);
+                        await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.productoId);
+                        
+                        const refSalida = pData?.lote ? `${facturaNro} (Lote: ${pData.lote})` : facturaNro;
+
+                        const payloadKardex = {
+                            tenant_id: tenantActual.id, 
+                            producto_id: item.productoId, 
+                            tipo_movimiento: 'SALIDA',
+                            documento_ref: refSalida, 
+                            cantidad_in: 0, 
+                            cantidad_out: item.cantidad,
+                            cantidad_inicial: 0,
+                            cantidad_ajuste: 0,
+                            precio_venta_usd: item.precio, 
+                            saldo_cantidad: nuevoStock, 
+                            costo_promedio_usd: pData ? pData.precio_unitario_usd : item.precio, 
+                            tasa_bcv: tasa
+                        };
+
                         await supabaseClient.from('kardex_movimientos').insert([payloadKardex]);
                     }
                 }
-                alert(`¡Factura ${facturaNro} emitida con éxito y registrada en el Kardex!`);
+                alert(`¡Factura ${facturaNro} emitida con éxito!`);
             } catch (err) {
                 console.error(err);
                 alert('❌ Error al emitir factura: ' + err.message);
