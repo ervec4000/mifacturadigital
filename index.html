@@ -6,7 +6,7 @@
     <title>MiFacturaDigital.com.ve - Sistema Fiscal Integrado SENIAT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Librería SheetJS para generar y leer archivos Excel (.xlsx) profesionales -->
+    <!-- Librería SheetJS para exportar e importar Excel (.xlsx) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         @media print {
@@ -711,6 +711,29 @@
         </div>
     </div>
 
+    <!-- MODAL NUEVO TENANT (MASTER) -->
+    <div id="modalNuevoTenant" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+            <h3 class="text-base font-bold text-emerald-400">🏢 Registrar Nuevo Inquilino (Tenant)</h3>
+            <div class="space-y-3 text-xs">
+                <div><label class="block text-slate-400 mb-1">Correo de Acceso</label><input type="email" id="masterTenantEmail" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
+                <div><label class="block text-slate-400 mb-1">Contraseña</label><input type="password" id="masterTenantPass" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
+                <div><label class="block text-slate-400 mb-1">Razón Social / Comercio</label><input type="text" id="masterTenantRazon" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
+                <div><label class="block text-slate-400 mb-1">RIF</label><input type="text" id="masterTenantRif" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono" placeholder="J-00000000-0"></div>
+                <div><label class="block text-slate-400 mb-1">Plan</label>
+                    <select id="masterTenantPlan" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+                        <option value="Freemium">Freemium</option>
+                        <option value="Administración">Administración</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="guardarNuevoTenantMaster()" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs shadow">Crear Tenant</button>
+                <button onclick="cerrarModalNuevoTenant()" class="w-full bg-slate-800 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SCRIPT GENERAL Y MÓDULOS -->
     <script>
         const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
@@ -779,6 +802,13 @@
             document.getElementById('headerTenantRif').innerText = tenantActual.rif || 'J-00000000-0';
             document.getElementById('headerTenantRol').innerText = (tenantActual.rol || 'freemium').toUpperCase();
             document.getElementById('headerTenantPlan').innerText = (tenantActual.plan_activo || 'Freemium').toUpperCase();
+
+            // Mostrar u ocultar solapa Master Tenants según el rol
+            const esMaster = tenantActual.rol === 'master' || tenantActual.email === 'ervec2000@gmail.com';
+            document.querySelectorAll('.tab-master').forEach(el => {
+                if (esMaster) el.classList.remove('hidden'); else el.classList.add('hidden');
+            });
+
             cambiarPestana('pos');
         }
 
@@ -818,6 +848,7 @@
             if (pestana === 'cuentas') cargarCuentasPorCobrar();
             if (pestana === 'productos') cargarProductosGestion();
             if (pestana === 'clientes') cargarClientesGestion();
+            if (pestana === 'inquilinosMaster') cargarInquilinosMaster();
             if (pestana === 'pos') { cargarProductosSelect(); cargarClientesSelect(); }
         }
 
@@ -853,6 +884,67 @@
             localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
             document.getElementById('headerTenantPlan').innerText = 'ADMINISTRACIÓN';
             cerrarModalSuscripcion();
+        }
+
+        // --- MÓDULO MASTER TENANTS ---
+        async function cargarInquilinosMaster() {
+            const { data } = await supabaseClient.from('tenants').select('*');
+            const tbody = document.getElementById('tablaInquilinosMaster');
+            tbody.innerHTML = '';
+            if (!data) return;
+            data.forEach(t => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900">
+                        <td class="p-3 font-mono text-emerald-400">${t.razon_social||'Sin Nombre'}<br><span class="text-[10px] text-slate-400">${t.email}</span></td>
+                        <td class="p-3 font-mono">${t.rif||'J-000'}<br>${t.telefono||''}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300">${t.plan_activo||'Freemium'}</span></td>
+                        <td class="p-3 font-bold uppercase text-slate-300">${t.rol||'user'}</td>
+                        <td class="p-3 text-center">
+                            <button onclick='eliminarTenantMaster("${t.id}", "${t.email}")' class="text-rose-400 hover:underline text-xs">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        function abrirModalNuevoTenant() { document.getElementById('modalNuevoTenant').classList.remove('hidden'); }
+        function cerrarModalNuevoTenant() { document.getElementById('modalNuevoTenant').classList.add('hidden'); }
+        async function guardarNuevoTenantMaster() {
+            const email = document.getElementById('masterTenantEmail').value.trim();
+            const password = document.getElementById('masterTenantPass').value.trim();
+            const razon_social = document.getElementById('masterTenantRazon').value.trim();
+            const rif = document.getElementById('masterTenantRif').value.trim();
+            const plan_activo = document.getElementById('masterTenantPlan').value;
+
+            if (!email || !password || !razon_social) { alert('Complete los campos obligatorios.'); return; }
+
+            const { error } = await supabaseClient.from('tenants').insert([{
+                email, password, razon_social, rif, plan_activo, rol: 'user'
+            }]);
+
+            if (error) { alert('Error al crear tenant: ' + error.message); return; }
+            alert('¡Tenant creado con éxito!');
+            cerrarModalNuevoTenant();
+            cargarInquilinosMaster();
+        }
+        async function eliminarTenantMaster(tenantId, emailTenant) {
+            if (emailTenant === 'ervec2000@gmail.com') { alert('No se puede eliminar el tenant administrador principal.'); return; }
+            if (!confirm(`¿Desea eliminar el tenant ${emailTenant} y todos sus datos?`)) return;
+
+            // Validación de movimientos / transacciones del tenant
+            const { count: cInv } = await supabaseClient.from('invoices').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId);
+            const { count: cKardex } = await supabaseClient.from('kardex_movimientos').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId);
+
+            if ((cInv || 0) > 0 || (cKardex || 0) > 0) {
+                alert('⚠️ No se puede eliminar este tenant porque ya posee comprobantes o movimientos registrados en el sistema.');
+                return;
+            }
+
+            await supabaseClient.from('productos').delete().eq('tenant_id', tenantId);
+            await supabaseClient.from('clientes').delete().eq('tenant_id', tenantId);
+            const { error } = await supabaseClient.from('tenants').delete().eq('id', tenantId);
+            if (error) { alert('Error al eliminar: ' + error.message); return; }
+            alert('¡Tenant eliminado correctamente!');
+            cargarInquilinosMaster();
         }
 
         // --- EXPORTACIÓN E IMPORTACIÓN MASIVA EXCEL (.xlsx) ---
@@ -1342,10 +1434,31 @@
                         <td class="p-3 font-mono text-slate-300">${prod.lote||'N/A'}</td>
                         <td class="p-3 font-mono">$ ${prod.precio_unitario_usd.toFixed(2)}</td>
                         <td class="p-3">${prod.es_exento?'EXENTO':'GRAVADO'}</td>
-                        <td class="p-3 text-center"><button onclick='editarProducto("${prod.id}", "${prod.codigo_sku||''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento}, "${prod.unidad_medida||'Und'}","${prod.stock||0}", ${prod.maneja_inventario !== false}, "${prod.lote||''}")' class="text-emerald-400">Editar</button></td>
+                        <td class="p-3 text-center space-x-2">
+                            <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku||''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento}, "${prod.unidad_medida||'Und'}","${prod.stock||0}", ${prod.maneja_inventario !== false}, "${prod.lote||''}")' class="text-emerald-400 hover:underline">Editar</button>
+                            <button onclick='eliminarProducto("${prod.id}")' class="text-rose-400 hover:underline">Eliminar</button>
+                        </td>
                     </tr>
                 `;
             });
+        }
+
+        async function eliminarProducto(productoId) {
+            if (!confirm('¿Desea eliminar este artículo/servicio?')) return;
+
+            // Validación: Verificar si tiene movimientos en Kardex o ítems de facturas
+            const { count: cKardex } = await supabaseClient.from('kardex_movimientos').select('*', { count: 'exact', head: true }).eq('producto_id', productoId);
+            const { count: cItems } = await supabaseClient.from('invoice_items').select('*', { count: 'exact', head: true }).eq('producto_id', productoId);
+
+            if ((cKardex || 0) > 0 || (cItems || 0) > 0) {
+                alert('⚠️ No se puede eliminar este artículo porque ya tiene movimientos en el Kardex o ha sido facturado.');
+                return;
+            }
+
+            const { error } = await supabaseClient.from('productos').delete().eq('id', productoId);
+            if (error) { alert('Error al eliminar: ' + error.message); return; }
+            alert('¡Artículo eliminado con éxito!');
+            cargarProductosGestion();
         }
 
         async function guardarProducto() {
@@ -1443,11 +1556,32 @@
                         <td class="p-3 font-semibold">${c.razon_social}</td>
                         <td class="p-3 text-slate-400">${c.direccion||'N/A'}</td>
                         <td class="p-3 text-slate-300">${c.telefono||'N/A'}</td>
-                        <td class="p-3 text-center"><button onclick='editarCliente("${c.id}","${c.rif}","${c.razon_social}","${c.direccion||''}","${c.telefono||''}")' class="text-emerald-400">Editar</button></td>
+                        <td class="p-3 text-center space-x-2">
+                            <button onclick='editarCliente("${c.id}","${c.rif}","${c.razon_social}","${c.direccion||''}","${c.telefono||''}")' class="text-emerald-400 hover:underline">Editar</button>
+                            <button onclick='eliminarCliente("${c.rif}")' class="text-rose-400 hover:underline">Eliminar</button>
+                        </td>
                     </tr>
                 `;
             });
         }
+
+        async function eliminarCliente(rifCliente) {
+            if (!confirm('¿Desea eliminar este cliente?')) return;
+
+            // Validación: Verificar si el cliente tiene facturas asociadas
+            const { count: cInv } = await supabaseClient.from('invoices').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantActual.id).eq('cliente_rif', rifCliente);
+
+            if ((cInv || 0) > 0) {
+                alert('⚠️ No se puede eliminar este cliente porque ya tiene facturas emitidas a su nombre.');
+                return;
+            }
+
+            const { error } = await supabaseClient.from('clientes').delete().eq('tenant_id', tenantActual.id).eq('rif', rifCliente);
+            if (error) { alert('Error al eliminar: ' + error.message); return; }
+            alert('¡Cliente eliminado con éxito!');
+            cargarClientesGestion();
+        }
+
         async function guardarCliente() {
             const id = document.getElementById('editClienteId').value;
             const payload = {
