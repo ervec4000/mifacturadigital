@@ -82,6 +82,7 @@
             <button onclick="cambiarPestana('fisico')" id="btnTabFisico" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🔍 Inventario Físico</button>
             <button onclick="cambiarPestana('etiquetas')" id="btnTabEtiquetas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🏷️ Etiquetas QR</button>
             <button onclick="cambiarPestana('cuentas')" id="btnTabCuentas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📑 Créditos (CxC)</button>
+            <button onclick="cambiarPestana('unidades')" id="btnTabUnidades" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📐 Unidades de Medida</button>
             <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📦 Stock / Artículos</button>
             <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">👥 Clientes</button>
             <button onclick="cambiarPestana('inquilinosMaster')" id="btnTabInquilinosMaster" class="tab-master bg-emerald-950 border border-emerald-700/50 hover:bg-emerald-900 text-emerald-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🏢 Master Tenants</button>
@@ -482,6 +483,35 @@
                 </div>
             </div>
 
+            <!-- SECCIÓN NUEVA: MAESTRO DE UNIDADES DE MEDIDA -->
+            <div id="seccionUnidades" class="hidden tab-admin space-y-6">
+                <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
+                    <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📐 Maestro de Unidades de Medida</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Nombre / Abreviatura</label>
+                            <input type="text" id="inputNuevaUnidad" placeholder="Ej. Litro (L), Kg, Und, Pimpina" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+                        </div>
+                        <div>
+                            <button onclick="guardarUnidadMedida()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs cursor-pointer shadow">
+                                + Agregar Unidad
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto pt-2">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                                <tr>
+                                    <th class="p-3">Unidad de Medida</th>
+                                    <th class="p-3 text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaUnidadesGestion" class="divide-y divide-slate-800/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- SECCIÓN 8: STOCK / PRODUCTOS & IMPORTACIÓN MASIVA -->
             <div id="seccionProductos" class="hidden tab-admin space-y-6">
                 
@@ -529,6 +559,12 @@
                             </select>
                         </div>
                         <div>
+                            <label class="block text-xs text-slate-400 mb-1">Unidad de Medida</label>
+                            <select id="prodUnidadMedida" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+                                <option value="Und">Und</option>
+                            </select>
+                        </div>
+                        <div>
                             <label class="block text-xs text-slate-400 mb-1">Stock Inicial</label>
                             <input type="number" id="prodStock" step="1" value="100" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
                         </div>
@@ -563,7 +599,7 @@
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                                 <tr>
-                                    <th class="p-3">SKU</th><th class="p-3">Descripción</th><th class="p-3">Control Inv.</th><th class="p-3">Stock</th><th class="p-3">Lote</th><th class="p-3">Precio ($)</th><th class="p-3">Tipo</th><th class="p-3 text-center">Acciones</th>
+                                    <th class="p-3">SKU</th><th class="p-3">Descripción</th><th class="p-3">Control Inv.</th><th class="p-3">Unidad</th><th class="p-3">Stock</th><th class="p-3">Lote</th><th class="p-3">Precio ($)</th><th class="p-3">Tipo</th><th class="p-3 text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaProductosGestion" class="divide-y divide-slate-800/60"></tbody>
@@ -744,6 +780,7 @@
         let carritoItems = [];
         let productosCache = [];
         let clientesCache = [];
+        let unidadesCache = [];
         let documentosHistorialCache = [];
 
         window.onload = function() {
@@ -803,7 +840,6 @@
             document.getElementById('headerTenantRol').innerText = (tenantActual.rol || 'freemium').toUpperCase();
             document.getElementById('headerTenantPlan').innerText = (tenantActual.plan_activo || 'Freemium').toUpperCase();
 
-            // Mostrar u ocultar solapa Master Tenants según el rol
             const esMaster = tenantActual.rol === 'master' || tenantActual.email === 'ervec2000@gmail.com';
             document.querySelectorAll('.tab-master').forEach(el => {
                 if (esMaster) el.classList.remove('hidden'); else el.classList.add('hidden');
@@ -820,7 +856,7 @@
         }
 
         function cambiarPestana(pestana) {
-            const tabs = ['pos', 'historial', 'cierrez', 'compras', 'kardex', 'ajustes', 'fisico', 'etiquetas', 'cuentas', 'productos', 'clientes', 'inquilinosMaster'];
+            const tabs = ['pos', 'historial', 'cierrez', 'compras', 'kardex', 'ajustes', 'fisico', 'etiquetas', 'cuentas', 'unidades', 'productos', 'clientes', 'inquilinosMaster'];
             tabs.forEach(t => {
                 const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
                 const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -846,7 +882,8 @@
             if (pestana === 'fisico') cargarInventarioFisico();
             if (pestana === 'etiquetas') renderizarEtiquetasQr();
             if (pestana === 'cuentas') cargarCuentasPorCobrar();
-            if (pestana === 'productos') cargarProductosGestion();
+            if (pestana === 'unidades') cargarUnidadesMedidaGestion();
+            if (pestana === 'productos') { cargarUnidadesSelectForm(); cargarProductosGestion(); }
             if (pestana === 'clientes') cargarClientesGestion();
             if (pestana === 'inquilinosMaster') cargarInquilinosMaster();
             if (pestana === 'pos') { cargarProductosSelect(); cargarClientesSelect(); }
@@ -884,6 +921,72 @@
             localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
             document.getElementById('headerTenantPlan').innerText = 'ADMINISTRACIÓN';
             cerrarModalSuscripcion();
+        }
+
+        // --- MÓDULO MAESTRO DE UNIDADES DE MEDIDA ---
+        async function cargarUnidadesMedidaGestion() {
+            const { data } = await supabaseClient.from('unidades_medida').select('*').eq('tenant_id', tenantActual.id);
+            unidadesCache = data || [];
+            const tbody = document.getElementById('tablaUnidadesGestion');
+            tbody.innerHTML = '';
+            if (unidadesCache.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-500">Sin unidades registradas. Cree algunas (Ej. Litro, Kg, Und).</td></tr>`;
+                return;
+            }
+            unidadesCache.forEach(u => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900">
+                        <td class="p-3 font-mono font-bold text-emerald-400">${u.nombre}</td>
+                        <td class="p-3 text-center"><button onclick='eliminarUnidadMedida("${u.id}", "${u.nombre}")' class="text-rose-400 hover:underline">Eliminar</button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function guardarUnidadMedida() {
+            const nombre = document.getElementById('inputNuevaUnidad').value.trim();
+            if (!nombre) { alert('Ingrese el nombre de la unidad.'); return; }
+
+            const { error } = await supabaseClient.from('unidades_medida').insert([{
+                tenant_id: tenantActual.id,
+                nombre: nombre
+            }]);
+
+            if (error) { alert('Error al guardar unidad: ' + error.message); return; }
+            alert('¡Unidad de medida agregada con éxito!');
+            document.getElementById('inputNuevaUnidad').value = '';
+            cargarUnidadesMedidaGestion();
+        }
+
+        async function eliminarUnidadMedida(id, nombreUnidad) {
+            if (!confirm(`¿Desea eliminar la unidad "${nombreUnidad}"?`)) return;
+
+            // Validación: Verificar si algún producto usa esta unidad
+            const { count: cProd } = await supabaseClient.from('productos').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantActual.id).eq('unidad_medida', nombreUnidad);
+
+            if ((cProd || 0) > 0) {
+                alert('⚠️ No se puede eliminar esta unidad de medida porque hay artículos del catálogo que la están utilizando.');
+                return;
+            }
+
+            const { error } = await supabaseClient.from('unidades_medida').delete().eq('id', id);
+            if (error) { alert('Error al eliminar: ' + error.message); return; }
+            alert('¡Unidad eliminada!');
+            cargarUnidadesMedidaGestion();
+        }
+
+        async function cargarUnidadesSelectForm() {
+            const { data } = await supabaseClient.from('unidades_medida').select('*').eq('tenant_id', tenantActual.id);
+            unidadesCache = data || [];
+            const select = document.getElementById('prodUnidadMedida');
+            select.innerHTML = '';
+            if (unidadesCache.length === 0) {
+                select.innerHTML = '<option value="Und">Und (Predeterminada)</option>';
+                return;
+            }
+            unidadesCache.forEach(u => {
+                select.innerHTML += `<option value="${u.nombre}">${u.nombre}</option>`;
+            });
         }
 
         // --- MÓDULO MASTER TENANTS ---
@@ -930,7 +1033,6 @@
             if (emailTenant === 'ervec2000@gmail.com') { alert('No se puede eliminar el tenant administrador principal.'); return; }
             if (!confirm(`¿Desea eliminar el tenant ${emailTenant} y todos sus datos?`)) return;
 
-            // Validación de movimientos / transacciones del tenant
             const { count: cInv } = await supabaseClient.from('invoices').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId);
             const { count: cKardex } = await supabaseClient.from('kardex_movimientos').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId);
 
@@ -941,6 +1043,7 @@
 
             await supabaseClient.from('productos').delete().eq('tenant_id', tenantId);
             await supabaseClient.from('clientes').delete().eq('tenant_id', tenantId);
+            await supabaseClient.from('unidades_medida').delete().eq('tenant_id', tenantId);
             const { error } = await supabaseClient.from('tenants').delete().eq('id', tenantId);
             if (error) { alert('Error al eliminar: ' + error.message); return; }
             alert('¡Tenant eliminado correctamente!');
@@ -957,8 +1060,8 @@
 
         function descargarPlantillaExcel() {
             const plantillaEjemplo = [
-                { SKU: "SRV-001", Descripción: "Servicios Contables", "Maneja Inventario (SI/NO)": "NO", "Stock Inicial": 0, Lote: "", "Precio Unitario ($)": 50.00, "Es Exento (SI/NO)": "SI" },
-                { SKU: "SKU-002", Descripción: "Detergente Lavaplatos 1L", "Maneja Inventario (SI/NO)": "SI", "Stock Inicial": 100, Lote: "LOTE-2026-A", "Precio Unitario ($)": 5.00, "Es Exento (SI/NO)": "NO" }
+                { SKU: "SRV-001", Descripción: "Servicios Contables", "Maneja Inventario (SI/NO)": "NO", "Unidad de Medida": "Und", "Stock Inicial": 0, Lote: "", "Precio Unitario ($)": 50.00, "Es Exento (SI/NO)": "SI" },
+                { SKU: "SKU-002", Descripción: "Detergente Lavaplatos 1L", "Maneja Inventario (SI/NO)": "SI", "Unidad de Medida": "Litros", "Stock Inicial": 100, Lote: "LOTE-2026-A", "Precio Unitario ($)": 5.00, "Es Exento (SI/NO)": "NO" }
             ];
             descargarExcel(plantillaEjemplo, 'Plantilla_Importacion_Catalogo', 'Catalogo');
         }
@@ -991,6 +1094,7 @@
                         const descripcion = String(row['Descripción'] || row['Descripcion'] || row['descripcion'] || '').trim();
                         const manejaInvTxt = String(row['Maneja Inventario (SI/NO)'] || row['maneja_inventario'] || 'SI').toUpperCase();
                         const manejaInventario = manejaInvTxt !== 'NO' && manejaInvTxt !== 'FALSE';
+                        const unidadMedida = String(row['Unidad de Medida'] || row['unidad_medida'] || 'Und').trim();
                         const stock = manejaInventario ? (parseFloat(row['Stock Inicial'] || row['stock'] || 0) || 0) : 0;
                         const lote = String(row['Lote'] || row['lote'] || '').trim();
                         const precio = parseFloat(row['Precio Unitario ($)'] || row['precio'] || 0) || 0;
@@ -1004,6 +1108,7 @@
                             codigo_sku: sku,
                             descripcion: descripcion,
                             maneja_inventario: manejaInventario,
+                            unidad_medida: unidadMedida,
                             stock: stock,
                             lote: lote,
                             precio_unitario_usd: precio,
@@ -1047,6 +1152,7 @@
                 SKU: p.codigo_sku || 'N/A',
                 Descripción: p.descripcion,
                 'Control Inventario': p.maneja_inventario ? 'SÍ' : 'NO (Servicio)',
+                'Unidad de Medida': p.unidad_medida || 'Und',
                 Stock: p.maneja_inventario ? (p.stock || 0) : 'N/A',
                 Lote: p.lote || 'N/A',
                 'Precio Unitario ($)': p.precio_unitario_usd,
@@ -1413,8 +1519,9 @@
             select.innerHTML = '';
             if (productosCache.length === 0) { select.innerHTML = '<option value="">No hay artículos o servicios.</option>'; return; }
             productosCache.forEach(prod => {
-                const infoInv = prod.maneja_inventario ? `[Stock: ${prod.stock||0} | Lote: ${prod.lote||'N/A'}]` : '[Servicio / Sin Stock]';
-                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${prod.unidad_medida||'Und'}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">${prod.descripcion} ${infoInv} - $${prod.precio_unitario_usd.toFixed(2)}</option>`;
+                const unidad = prod.unidad_medida || 'Und';
+                const infoInv = prod.maneja_inventario ? `[Stock: ${prod.stock||0} ${unidad} | Lote: ${prod.lote||'N/A'}]` : '[Servicio / Sin Stock]';
+                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${unidad}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">${prod.descripcion} ${infoInv} - $${prod.precio_unitario_usd.toFixed(2)}</option>`;
             });
         }
 
@@ -1425,17 +1532,19 @@
             if (!data) return;
             data.forEach(prod => {
                 const badgeInv = prod.maneja_inventario ? '<span class="text-emerald-400 font-bold">SÍ (Inventario)</span>' : '<span class="text-amber-400 font-bold">NO (Servicio)</span>';
+                const unidad = prod.unidad_medida || 'Und';
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 font-mono text-emerald-400">${prod.codigo_sku||'S/N'}</td>
                         <td class="p-3">${prod.descripcion}</td>
                         <td class="p-3">${badgeInv}</td>
+                        <td class="p-3 font-mono text-sky-300 font-bold">${unidad}</td>
                         <td class="p-3 font-bold ${prod.maneja_inventario?(prod.stock<=5?'text-rose-400':'text-emerald-400'):'text-slate-500'}">${prod.maneja_inventario?(prod.stock||0):'N/A'}</td>
                         <td class="p-3 font-mono text-slate-300">${prod.lote||'N/A'}</td>
                         <td class="p-3 font-mono">$ ${prod.precio_unitario_usd.toFixed(2)}</td>
                         <td class="p-3">${prod.es_exento?'EXENTO':'GRAVADO'}</td>
                         <td class="p-3 text-center space-x-2">
-                            <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku||''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento}, "${prod.unidad_medida||'Und'}","${prod.stock||0}", ${prod.maneja_inventario !== false}, "${prod.lote||''}")' class="text-emerald-400 hover:underline">Editar</button>
+                            <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku||''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento}, "${unidad}","${prod.stock||0}", ${prod.maneja_inventario !== false}, "${prod.lote||''}")' class="text-emerald-400 hover:underline">Editar</button>
                             <button onclick='eliminarProducto("${prod.id}")' class="text-rose-400 hover:underline">Eliminar</button>
                         </td>
                     </tr>
@@ -1446,7 +1555,6 @@
         async function eliminarProducto(productoId) {
             if (!confirm('¿Desea eliminar este artículo/servicio?')) return;
 
-            // Validación: Verificar si tiene movimientos en Kardex o ítems de facturas
             const { count: cKardex } = await supabaseClient.from('kardex_movimientos').select('*', { count: 'exact', head: true }).eq('producto_id', productoId);
             const { count: cItems } = await supabaseClient.from('invoice_items').select('*', { count: 'exact', head: true }).eq('producto_id', productoId);
 
@@ -1467,11 +1575,13 @@
             const stockIngresado = manejaInv ? (parseFloat(document.getElementById('prodStock').value) || 0) : 0;
             const precioIngresado = parseFloat(document.getElementById('prodPrecio').value) || 0;
             const loteIngresado = document.getElementById('prodLote').value.trim();
+            const unidadMedida = document.getElementById('prodUnidadMedida').value;
 
             const payload = {
                 codigo_sku: document.getElementById('prodSku').value.trim(),
                 descripcion: document.getElementById('prodDescripcion').value.trim(),
                 maneja_inventario: manejaInv,
+                unidad_medida: unidadMedida,
                 stock: stockIngresado,
                 lote: loteIngresado,
                 precio_unitario_usd: precioIngresado,
@@ -1512,6 +1622,7 @@
             document.getElementById('prodSku').value = sku;
             document.getElementById('prodDescripcion').value = desc;
             document.getElementById('prodManejaInventario').value = manejaInv.toString();
+            document.getElementById('prodUnidadMedida').value = unidad;
             document.getElementById('prodStock').value = stock;
             document.getElementById('prodLote').value = lote;
             document.getElementById('prodPrecio').value = precio;
@@ -1568,7 +1679,6 @@
         async function eliminarCliente(rifCliente) {
             if (!confirm('¿Desea eliminar este cliente?')) return;
 
-            // Validación: Verificar si el cliente tiene facturas asociadas
             const { count: cInv } = await supabaseClient.from('invoices').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantActual.id).eq('cliente_rif', rifCliente);
 
             if ((cInv || 0) > 0) {
@@ -1734,7 +1844,6 @@
                         descripcion: `${item.descripcion} (${item.unidad})`
                     }]);
 
-                    // Si el ítem maneja inventario, actualizamos stock y registramos salida en el Kardex
                     if (item.manejaInventario) {
                         const { data: pData } = await supabaseClient.from('productos').select('stock, precio_unitario_usd, lote').eq('id', item.productoId).single();
                         const stockActual = pData ? (pData.stock || 0) : 0;
