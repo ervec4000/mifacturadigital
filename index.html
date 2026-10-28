@@ -437,7 +437,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 6: ETIQUETAS QR (MEJORADA CON MODELO EXACTO) -->
+            <!-- SECCIÓN 6: ETIQUETAS QR -->
             <div id="seccionEtiquetas" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
@@ -517,7 +517,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 8: STOCK / PRODUCTOS (CON CATEGORÍA Y UBICACIÓN) -->
+            <!-- SECCIÓN 8: STOCK / PRODUCTOS (CON MODIFICACIÓN FUNCIONAL) -->
             <div id="seccionProductos" class="hidden tab-admin space-y-6">
                 
                 <div class="bg-emerald-950/20 border border-emerald-700/50 p-5 rounded-2xl space-y-4 shadow-lg">
@@ -545,7 +545,7 @@
 
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Maestro de Artículos y Servicios</h3>
+                        <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Maestro de Artículos y Servicios (Nuevo / Editar)</h3>
                         <button onclick="exportarStockExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Catálogo (Excel)</button>
                     </div>
                     <input type="hidden" id="editProductoId">
@@ -608,8 +608,8 @@
                         </div>
                     </div>
                     <div class="flex space-x-2 pt-2">
-                        <button onclick="guardarProducto()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs cursor-pointer shadow">Guardar Ítem / Servicio</button>
-                        <button onclick="limpiarFormProducto()" id="btnCancelarProd" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-xl text-xs cursor-pointer">Cancelar</button>
+                        <button onclick="guardarProducto()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs cursor-pointer shadow">Guardar / Actualizar Ítem</button>
+                        <button onclick="limpiarFormProducto()" id="btnCancelarProd" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-xl text-xs cursor-pointer">Cancelar Edición</button>
                     </div>
                 </div>
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-3">
@@ -1287,21 +1287,60 @@
             if (!data) return;
             data.forEach(prod => {
                 const pv = prod.precio_venta_usd || prod.precio_unitario_usd || 0;
+                const catStr = prod.categoria || 'N/A';
+                const locStr = prod.ubicacion || 'N/A';
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 font-mono text-emerald-400">${prod.codigo_sku||'S/N'}</td>
-                        <td class="p-3 text-amber-300 font-semibold">${prod.categoria||'N/A'}</td>
+                        <td class="p-3 text-amber-300 font-semibold">${catStr}</td>
                         <td class="p-3">${prod.descripcion}</td>
-                        <td class="p-3 font-mono">${prod.ubicacion||'N/A'}</td>
+                        <td class="p-3 font-mono">${locStr}</td>
                         <td class="p-3">${prod.maneja_inventario?(prod.stock||0):'N/A'}</td>
                         <td class="p-3 font-mono text-emerald-400 font-bold">$ ${pv.toFixed(2)}</td>
-                        <td class="p-3 text-center"><button onclick='eliminarProducto("${prod.id}")' class="text-rose-400">Eliminar</button></td>
+                        <td class="p-3 text-center space-x-2">
+                            <button onclick='editarProducto("${prod.id}", ${JSON.stringify(prod).replace(/"/g, '&quot;')})' class="text-sky-400 hover:underline">Editar</button>
+                            <button onclick='eliminarProducto("${prod.id}")' class="text-rose-400 hover:underline">Eliminar</button>
+                        </td>
                     </tr>
                 `;
             });
         }
         async function eliminarProducto(id) { await supabaseClient.from('productos').delete().eq('id', id); cargarProductosGestion(); }
+
+        function editarProducto(id, prod) {
+            document.getElementById('editProductoId').value = id;
+            document.getElementById('prodSku').value = prod.codigo_sku || '';
+            document.getElementById('prodCategoria').value = prod.categoria || '';
+            document.getElementById('prodUbicacion').value = prod.ubicacion || '';
+            document.getElementById('prodManejaInventario').value = String(prod.maneja_inventario ?? true);
+            document.getElementById('prodUnidadMedida').value = prod.unidad_medida || 'UND';
+            document.getElementById('prodStock').value = prod.stock || 0;
+            document.getElementById('prodLote').value = prod.lote || 'SIN-LOTE';
+            document.getElementById('prodDescripcion').value = prod.descripcion || '';
+            document.getElementById('prodCosto').value = prod.costo_unitario_usd || 1;
+            document.getElementById('prodUtilidad').value = prod.margen_utilidad_porcentaje || 30;
+            document.getElementById('prodPrecioVenta').value = prod.precio_venta_usd || 1.30;
+            document.getElementById('prodExento').value = String(prod.es_exento ?? false);
+            document.getElementById('btnCancelarProd').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function limpiarFormProducto() {
+            document.getElementById('editProductoId').value = '';
+            document.getElementById('prodSku').value = '';
+            document.getElementById('prodCategoria').value = '';
+            document.getElementById('prodUbicacion').value = '';
+            document.getElementById('prodStock').value = '100';
+            document.getElementById('prodLote').value = 'SIN-LOTE';
+            document.getElementById('prodDescripcion').value = '';
+            document.getElementById('prodCosto').value = '1.00';
+            document.getElementById('prodUtilidad').value = '30.00';
+            document.getElementById('prodPrecioVenta').value = '1.30';
+            document.getElementById('btnCancelarProd').classList.add('hidden');
+        }
+
         async function guardarProducto() {
+            const editId = document.getElementById('editProductoId').value;
             const payload = {
                 codigo_sku: document.getElementById('prodSku').value.trim(),
                 categoria: document.getElementById('prodCategoria').value.trim().toUpperCase(),
@@ -1318,11 +1357,20 @@
                 es_exento: document.getElementById('prodExento').value === 'true',
                 tenant_id: tenantActual.id
             };
-            await supabaseClient.from('productos').insert([payload]);
+
+            if (editId) {
+                const { error } = await supabaseClient.from('productos').update(payload).eq('id', editId);
+                if (error) { alert('Error al actualizar: ' + error.message); return; }
+                alert('¡Artículo actualizado con éxito!');
+            } else {
+                const { error } = await supabaseClient.from('productos').insert([payload]);
+                if (error) { alert('Error al guardar: ' + error.message); return; }
+                alert('¡Artículo guardado con éxito!');
+            }
+            limpiarFormProducto();
             cargarProductosGestion();
-            alert('¡Artículo guardado con éxito!');
         }
-        function limpiarFormProducto() {}
+
         async function cargarClientesSelect() {
             const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
             clientesCache = data || [];
@@ -1559,7 +1607,6 @@
                 `;
                 contenedor.innerHTML += cardHtml;
 
-                // Generar QR real usando qrcode.js
                 setTimeout(() => {
                     const canvasEl = document.getElementById(qrTextId);
                     if (canvasEl && window.QRCode) {
