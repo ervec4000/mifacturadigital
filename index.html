@@ -11,8 +11,8 @@
     <style>
         @media print {
             body * { visibility: hidden; }
-            #modalTicket, #modalTicket *, #modalImprimirQr, #modalImprimirQr * { visibility: visible; }
-            #modalTicket, #modalImprimirQr { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+            #modalTicket, #modalTicket *, #seccionEtiquetas, #seccionEtiquetas * { visibility: visible; }
+            #modalTicket, #seccionEtiquetas { position: absolute; left: 0; top: 0; width: 100%; background: white; }
             .no-print { display: none !important; }
         }
     </style>
@@ -437,25 +437,25 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 6: ETIQUETAS QR -->
+            <!-- SECCIÓN 6: ETIQUETAS QR (MEJORADA CON MODELO EXACTO) -->
             <div id="seccionEtiquetas" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
                         <div>
-                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🏷️ Generador de Etiquetas QR (Depósito)</h3>
+                            <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🏷️ Generador de Etiquetas QR (Depósito - Modelo Exacto)</h3>
                         </div>
-                        <button onclick="imprimirEtiquetasQr()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow">🖨️ Imprimir Hoja</button>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <div>
-                            <label class="block text-xs text-slate-400 mb-1">Nomenclatura Ubicación</label>
-                            <input type="text" id="inputUbicacionQr" value="ALM-01-02-A" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono">
-                        </div>
-                        <div class="md:col-span-2 flex items-end">
+                        <div class="flex gap-2">
                             <button onclick="renderizarEtiquetasQr()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer">🔄 Actualizar Vista</button>
+                            <button onclick="imprimirEtiquetasQr()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow">🖨️ Imprimir Etiquetas</button>
                         </div>
                     </div>
-                    <div id="contenedorGridEtiquetas" class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 max-h-[60vh] overflow-y-auto"></div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Filtrar por Categoría / Ubicación</label>
+                            <input type="text" id="filtroEtiqueta" placeholder="Ej. INSECTICIDA o ALM-01" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="renderizarEtiquetasQr()">
+                        </div>
+                    </div>
+                    <div id="contenedorGridEtiquetas" class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 max-h-[65vh] overflow-y-auto"></div>
                 </div>
             </div>
 
@@ -517,14 +517,14 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 8: STOCK / PRODUCTOS -->
+            <!-- SECCIÓN 8: STOCK / PRODUCTOS (CON CATEGORÍA Y UBICACIÓN) -->
             <div id="seccionProductos" class="hidden tab-admin space-y-6">
                 
                 <div class="bg-emerald-950/20 border border-emerald-700/50 p-5 rounded-2xl space-y-4 shadow-lg">
                     <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                         <div>
                             <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📥 Módulo de Importación Masiva de Artículos & Servicios (Excel / CSV)</h3>
-                            <p class="text-xs text-slate-300">Sube tu inventario con Costos, % de Utilidad y Precios de Venta.</p>
+                            <p class="text-xs text-slate-300">Sube tu inventario con Costos, Categoría, Ubicación y Precios.</p>
                         </div>
                         <button onclick="descargarPlantillaExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-600/40 text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow flex items-center gap-2">
                             📄 Descargar Plantilla Excel Modelo
@@ -552,7 +552,15 @@
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">SKU / Código</label>
-                            <input type="text" id="prodSku" placeholder="SRV-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+                            <input type="text" id="prodSku" placeholder="12411660" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Categoría</label>
+                            <input type="text" id="prodCategoria" placeholder="INSECTICIDA" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Ubicación (Depósito)</label>
+                            <input type="text" id="prodUbicacion" placeholder="ALM-01-A" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">¿Maneja Inventario?</label>
@@ -564,7 +572,7 @@
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Unidad de Medida</label>
                             <select id="prodUnidadMedida" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
-                                <option value="Und">Und</option>
+                                <option value="UND">UND</option>
                             </select>
                         </div>
                         <div>
@@ -573,11 +581,11 @@
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Número de Lote (Opcional)</label>
-                            <input type="text" id="prodLote" placeholder="LOTE-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+                            <input type="text" id="prodLote" placeholder="SIN-LOTE" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
                         </div>
                         <div class="md:col-span-3">
                             <label class="block text-xs text-slate-400 mb-1">Descripción del Artículo / Servicio</label>
-                            <input type="text" id="prodDescripcion" placeholder="Servicios Contables / Lavacarros 1L" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+                            <input type="text" id="prodDescripcion" placeholder="INSECTICIDA MATCH - LUFENURON" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Costo Unitario ($ USD)</label>
@@ -610,7 +618,7 @@
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                                 <tr>
-                                    <th class="p-3">SKU</th><th class="p-3">Descripción</th><th class="p-3">Control Inv.</th><th class="p-3">Unidad</th><th class="p-3">Stock</th><th class="p-3">Costo ($)</th><th class="p-3">P. Venta ($)</th><th class="p-3">Tipo</th><th class="p-3 text-center">Acciones</th>
+                                    <th class="p-3">SKU</th><th class="p-3">Categoría</th><th class="p-3">Descripción</th><th class="p-3">Ubicación</th><th class="p-3">Stock</th><th class="p-3">P. Venta ($)</th><th class="p-3 text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaProductosGestion" class="divide-y divide-slate-800/60"></tbody>
@@ -981,7 +989,7 @@
             unidadesCache = data || [];
             const select = document.getElementById('prodUnidadMedida');
             select.innerHTML = '';
-            if (unidadesCache.length === 0) { select.innerHTML = '<option value="Und">Und</option>'; return; }
+            if (unidadesCache.length === 0) { select.innerHTML = '<option value="UND">UND</option>'; return; }
             unidadesCache.forEach(u => { select.innerHTML += `<option value="${u.nombre}">${u.nombre}</option>`; });
         }
 
@@ -1051,7 +1059,6 @@
             matriz.push([null, null, null, null, 'Desde: 01/' + new Date().toISOString().slice(5,7) + '/' + new Date().getFullYear() + '   Hasta: ' + new Date().toISOString().slice(0,10)]);
             matriz.push([]);
 
-            // Cabeceras oficiales exactas hasta la columna AD sin centros ni correlativos falsos
             matriz.push([
                 null, 'Oper, Nro,', 'Fecha del Documento', 'RIF', 'Nombre o Razon Social', 'Contrb', 
                 'Num,Planilla de Exportación', 'Número de la Factura', '  Núm. de Control    ', 
@@ -1096,34 +1103,10 @@
                 const debitosValor = ivaGen16;
 
                 matriz.push([
-                    null,
-                    index + 1,
-                    fechaDoc,
-                    inv.cliente_rif || 'V-00000000-0',
-                    inv.cliente_nombre || 'CONSUMIDOR FINAL',
-                    'C',
-                    '',
-                    inv.factura_nro || 'FAC-0001',
-                    inv.nro_control || '00-000000',
-                    '',
-                    '',
-                    '01-Reg',
-                    '',
-                    totalConIva,
-                    ventasExentasBs,            // Columna de Ventas Internas No Gravadas (Exentas)
-                    0,
-                    baseGravableBs,
-                    baseGravableBs > 0 ? 16 : 0,
-                    0,
-                    0,
-                    ivaGen16,
-                    0,
-                    '',                         // Columna W: Sin centro
-                    nroDocumentoTrazabilidad,   // Columna X: Trazabilidad real
-                    0, 0, 0,
-                    fechaDoc,                   // Columna AB: Fecha de registro
-                    ventasNetasValor,           // Columna AC: Ventas netas reales
-                    debitosValor                // Columna AD: Débitos fiscales reales
+                    null, index + 1, fechaDoc, inv.cliente_rif || 'V-00000000-0', inv.cliente_nombre || 'CONSUMIDOR FINAL',
+                    'C', '', inv.factura_nro || 'FAC-0001', inv.nro_control || '00-000000', '', '', '01-Reg', '',
+                    totalConIva, ventasExentasBs, 0, baseGravableBs, baseGravableBs > 0 ? 16 : 0, 0, 0, ivaGen16, 0,
+                    '', nroDocumentoTrazabilidad, 0, 0, 0, fechaDoc, ventasNetasValor, debitosValor
                 ]);
             });
 
@@ -1172,36 +1155,15 @@
                     const totalBs = baseBs + ivaBs;
 
                     matriz.push([
-                        null,
-                        index + 1,
-                        fechaDoc,
-                        comp.proveedor_rif || 'J-001241345',
-                        comp.proveedor_nombre || 'PROVEEDOR AUTORIZADO C.A.',
-                        '   PJ',
-                        null, null, null,
-                        comp.documento_ref || 'FACT-001',
-                        'N/A',
-                        ' FACT',
-                        null,
-                        totalBs,
-                        0,
-                        baseBs,
-                        16,
-                        ivaBs,
-                        null, null, null,
-                        0, null, 0, 0, null, 0, 0, null, 0, 0,
-                        null, null, 0,
-                        1960000000 + index,
-                        'ADMIN',
-                        fechaDoc,
-                        fechaDoc,
-                        1960000000 + index
+                        null, index + 1, fechaDoc, comp.proveedor_rif || 'J-001241345', comp.proveedor_nombre || 'PROVEEDOR AUTORIZADO C.A.',
+                        '   PJ', null, null, null, comp.documento_ref || 'FACT-001', 'N/A', ' FACT', null,
+                        totalBs, 0, baseBs, 16, ivaBs, null, null, null, 0, null, 0, 0, null, 0, 0, null, 0, 0,
+                        null, null, 0, 1960000000 + index, 'ADMIN', fechaDoc, fechaDoc, 1960000000 + index
                     ]);
                 });
             } else {
                 matriz.push([
-                    null, 1, new Date(), 'J-001241345', 'PROVEEDOR EJEMPLO C.A.', '   PJ',
-                    null, null, null, 'FACT-0001', 'N/A', ' FACT', null,
+                    null, 1, new Date(), 'J-001241345', 'PROVEEDOR EJEMPLO C.A.', '   PJ', null, null, null, 'FACT-0001', 'N/A', ' FACT', null,
                     116.00, 0, 100.00, 16, 16.00, null, null, null, 0, null, 0, 0, null, 0, 0, null, 0, 0,
                     null, null, 0, 1960001125, 'ADMIN', new Date(), new Date(), 1960001125
                 ]);
@@ -1214,8 +1176,8 @@
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             if (!data || data.length === 0) { alert('Sin datos.'); return; }
             const excelData = data.map(p => ({
-                SKU: p.codigo_sku || 'N/A', Descripción: p.descripcion, 'Control Inventario': p.maneja_inventario ? 'SÍ' : 'NO',
-                'Unidad': p.unidad_medida || 'Und', Stock: p.stock || 0, 'Costo ($)': p.costo_unitario_usd || 0, 'P. Venta ($)': p.precio_venta_usd || 0
+                SKU: p.codigo_sku || 'N/A', Categoría: p.categoria || '', Descripción: p.descripcion, Ubicación: p.ubicacion || '',
+                'Control Inventario': p.maneja_inventario ? 'SÍ' : 'NO', 'Unidad': p.unidad_medida || 'UND', Stock: p.stock || 0, 'Costo ($)': p.costo_unitario_usd || 0, 'P. Venta ($)': p.precio_venta_usd || 0
             }));
             descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Catálogo', 'Catálogo');
         }
@@ -1315,7 +1277,7 @@
             select.innerHTML = '';
             productosCache.forEach(prod => {
                 const pv = prod.precio_venta_usd || prod.precio_unitario_usd || 0;
-                select.innerHTML += `<option value="${prod.id}" data-precio="${pv}" data-exento="${prod.es_exento}" data-unidad="${prod.unidad_medida||'Und'}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">${prod.descripcion} - P.V: $${pv.toFixed(2)}</option>`;
+                select.innerHTML += `<option value="${prod.id}" data-precio="${pv}" data-exento="${prod.es_exento}" data-unidad="${prod.unidad_medida||'UND'}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">${prod.descripcion} - P.V: $${pv.toFixed(2)}</option>`;
             });
         }
         async function cargarProductosGestion() {
@@ -1324,18 +1286,15 @@
             tbody.innerHTML = '';
             if (!data) return;
             data.forEach(prod => {
-                const costo = prod.costo_unitario_usd || 0;
                 const pv = prod.precio_venta_usd || prod.precio_unitario_usd || 0;
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 font-mono text-emerald-400">${prod.codigo_sku||'S/N'}</td>
+                        <td class="p-3 text-amber-300 font-semibold">${prod.categoria||'N/A'}</td>
                         <td class="p-3">${prod.descripcion}</td>
-                        <td class="p-3">${prod.maneja_inventario?'SÍ':'NO'}</td>
-                        <td class="p-3 font-mono">${prod.unidad_medida||'Und'}</td>
+                        <td class="p-3 font-mono">${prod.ubicacion||'N/A'}</td>
                         <td class="p-3">${prod.maneja_inventario?(prod.stock||0):'N/A'}</td>
-                        <td class="p-3 font-mono">$ ${costo.toFixed(2)}</td>
                         <td class="p-3 font-mono text-emerald-400 font-bold">$ ${pv.toFixed(2)}</td>
-                        <td class="p-3">${prod.es_exento?'EXENTO':'GRAVADO'}</td>
                         <td class="p-3 text-center"><button onclick='eliminarProducto("${prod.id}")' class="text-rose-400">Eliminar</button></td>
                     </tr>
                 `;
@@ -1345,10 +1304,13 @@
         async function guardarProducto() {
             const payload = {
                 codigo_sku: document.getElementById('prodSku').value.trim(),
-                descripcion: document.getElementById('prodDescripcion').value.trim(),
+                categoria: document.getElementById('prodCategoria').value.trim().toUpperCase(),
+                ubicacion: document.getElementById('prodUbicacion').value.trim().toUpperCase(),
+                descripcion: document.getElementById('prodDescripcion').value.trim().toUpperCase(),
                 maneja_inventario: document.getElementById('prodManejaInventario').value === 'true',
                 unidad_medida: document.getElementById('prodUnidadMedida').value,
                 stock: parseFloat(document.getElementById('prodStock').value) || 0,
+                lote: document.getElementById('prodLote').value.trim().toUpperCase() || 'SIN-LOTE',
                 costo_unitario_usd: parseFloat(document.getElementById('prodCosto').value) || 0,
                 margen_utilidad_porcentaje: parseFloat(document.getElementById('prodUtilidad').value) || 30,
                 precio_venta_usd: parseFloat(document.getElementById('prodPrecioVenta').value) || 0,
@@ -1358,7 +1320,7 @@
             };
             await supabaseClient.from('productos').insert([payload]);
             cargarProductosGestion();
-            alert('¡Guardado!');
+            alert('¡Artículo guardado con éxito!');
         }
         function limpiarFormProducto() {}
         async function cargarClientesSelect() {
@@ -1546,20 +1508,69 @@
             cargarInventarioFisico();
         }
 
-        function renderizarEtiquetasQr() {
-            const ubicacion = document.getElementById('inputUbicacionQr').value.trim() || 'ALM-01';
+        // --- RENDERIZADO DE ETIQUETAS QR 100% FUNCIONAL Y EXACTO AL MODELO ---
+        async function renderizarEtiquetasQr() {
+            const { data: productos } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             const contenedor = document.getElementById('contenedorGridEtiquetas');
             contenedor.innerHTML = '';
-            for(let i=1; i<=6; i++) {
-                contenedor.innerHTML += `
-                    <div class="bg-white text-slate-900 p-4 rounded-xl border border-slate-300 text-center font-mono space-y-2">
-                        <div class="font-bold text-sm">ETIQUETA DEPÓSITO</div>
-                        <div class="text-xs text-slate-600">${ubicacion}-${i}</div>
-                        <div class="bg-slate-100 p-2 rounded flex justify-center text-[10px]">[QR CODE: ${ubicacion}-${i}]</div>
+            
+            const filtro = (document.getElementById('filtroEtiqueta')?.value || '').toLowerCase().trim();
+            const listaFiltrada = (productos || []).filter(p => 
+                !filtro || 
+                (p.descripcion || '').toLowerCase().includes(filtro) || 
+                (p.codigo_sku || '').toLowerCase().includes(filtro) || 
+                (p.categoria || '').toLowerCase().includes(filtro) || 
+                (p.ubicacion || '').toLowerCase().includes(filtro)
+            );
+
+            if (listaFiltrada.length === 0) {
+                contenedor.innerHTML = `<div class="col-span-2 p-6 text-center text-slate-400 font-mono text-xs">Sin artículos encontrados para generar etiquetas.</div>`;
+                return;
+            }
+
+            for (let i = 0; i < listaFiltrada.length; i++) {
+                const p = listaFiltrada[i];
+                const codigoSku = p.codigo_sku || 'S/N';
+                const loteProd = p.lote || 'SIN-LOTE';
+                const descProd = p.descripcion || 'ARTÍCULO SIN DESCRIPCIÓN';
+                const umProd = p.unidad_medida || 'UND';
+                const ubicacionProd = p.ubicacion || 'N/A';
+                const catProd = p.categoria ? ` [${p.categoria}]` : '';
+                const qrTextId = `canvas_qr_${i}`;
+
+                const cardHtml = `
+                    <div class="bg-white text-slate-900 rounded-lg border border-slate-400 p-3 shadow-md flex items-center gap-3 font-sans" style="width: 100%; max-width: 420px; page-break-inside: avoid;">
+                        <div class="flex-shrink-0 bg-white p-1 border border-slate-300">
+                            <canvas id="${qrTextId}" class="w-24 h-24"></canvas>
+                        </div>
+                        <div class="flex-1 min-w-0 space-y-1">
+                            <div class="border-b border-slate-900 pb-1 font-bold text-[11px] font-mono tracking-tight text-slate-900 truncate">
+                                CÓDIGO: ${codigoSku} | LOTE: ${loteProd}
+                            </div>
+                            <div class="font-bold text-xs uppercase text-slate-900 leading-tight pt-0.5 line-clamp-2">
+                                ${descProd}${catProd}
+                            </div>
+                            <div class="border-t border-slate-300 pt-1 font-bold text-[11px] font-mono text-slate-800 flex justify-between">
+                                <span>UM: ${umProd}</span>
+                                <span>UBICACIÓN: ${ubicacionProd}</span>
+                            </div>
+                        </div>
                     </div>
                 `;
+                contenedor.innerHTML += cardHtml;
+
+                // Generar QR real usando qrcode.js
+                setTimeout(() => {
+                    const canvasEl = document.getElementById(qrTextId);
+                    if (canvasEl && window.QRCode) {
+                        QRCode.toCanvas(canvasEl, `SKU:${codigoSku}|LOTE:${loteProd}|LOC:${ubicacionProd}`, { width: 96, margin: 1 }, function (error) {
+                            if (error) console.error(error);
+                        });
+                    }
+                }, 50);
             }
         }
+
         function imprimirEtiquetasQr() { window.print(); }
 
         async function cargarCuentasPorCobrar() {
