@@ -100,7 +100,6 @@
                             <button onclick="consultarTasaBcvApi()" class="text-[10px] text-emerald-400 hover:underline cursor-pointer">🔄 Consultar API</button>
                         </div>
                         <input type="number" step="0.0001" id="tasaBcv" value="888.1183" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500 font-mono text-sm" oninput="recalcularTodo()">
-                        <p class="text-[10px] text-slate-400 mt-1">💡 Editable manualmente o vía API.</p>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-300 mb-1.5">Seleccionar Cliente Rápido</label>
@@ -165,7 +164,7 @@
                                     <th class="p-3">Descripción</th>
                                     <th class="p-3">Cant</th>
                                     <th class="p-3">Unidad</th>
-                                    <th class="p-3">P.U ($ / Bs)</th>
+                                    <th class="p-3">P.V ($ / Bs)</th>
                                     <th class="p-3">Tipo Fiscal</th>
                                     <th class="p-3">Subtotal ($ / Bs)</th>
                                     <th class="p-3 text-center">Acción</th>
@@ -520,7 +519,7 @@
                     <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                         <div>
                             <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📥 Módulo de Importación Masiva de Artículos & Servicios (Excel / CSV)</h3>
-                            <p class="text-xs text-slate-300">Ideal para subir inventario, lotes y servicios profesionales de golpe.</p>
+                            <p class="text-xs text-slate-300">Sube tu inventario con Costos, % de Utilidad y Precios de Venta.</p>
                         </div>
                         <button onclick="descargarPlantillaExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-600/40 text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow flex items-center gap-2">
                             📄 Descargar Plantilla Excel Modelo
@@ -539,7 +538,7 @@
                     </div>
                 </div>
 
-                <!-- Formulario Individual -->
+                <!-- Formulario Individual con Costo y Precio de Venta -->
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
                         <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Maestro de Artículos y Servicios</h3>
@@ -572,13 +571,21 @@
                             <label class="block text-xs text-slate-400 mb-1">Número de Lote (Opcional)</label>
                             <input type="text" id="prodLote" placeholder="LOTE-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
                         </div>
-                        <div class="md:col-span-2">
+                        <div class="md:col-span-3">
                             <label class="block text-xs text-slate-400 mb-1">Descripción del Artículo / Servicio</label>
                             <input type="text" id="prodDescripcion" placeholder="Servicios Contables / Lavacarros 1L" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
                         </div>
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1">Precio Unitario ($ USD)</label>
-                            <input type="number" id="prodPrecio" step="0.01" placeholder="15.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+                            <label class="block text-xs text-slate-400 mb-1">Costo Unitario ($ USD)</label>
+                            <input type="number" id="prodCosto" step="0.01" value="1.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" oninput="calcularPrecioPorcentaje()">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">% Utilidad (Markup)</label>
+                            <input type="number" id="prodUtilidad" step="0.01" value="30.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" oninput="calcularPrecioPorcentaje()">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Precio de Venta ($ USD)</label>
+                            <input type="number" id="prodPrecioVenta" step="0.01" value="1.30" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-emerald-400 font-bold text-sm font-mono">
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Estatus Fiscal</label>
@@ -599,7 +606,7 @@
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                                 <tr>
-                                    <th class="p-3">SKU</th><th class="p-3">Descripción</th><th class="p-3">Control Inv.</th><th class="p-3">Unidad</th><th class="p-3">Stock</th><th class="p-3">Lote</th><th class="p-3">Precio ($)</th><th class="p-3">Tipo</th><th class="p-3 text-center">Acciones</th>
+                                    <th class="p-3">SKU</th><th class="p-3">Descripción</th><th class="p-3">Control Inv.</th><th class="p-3">Unidad</th><th class="p-3">Stock</th><th class="p-3">Costo ($)</th><th class="p-3">P. Venta ($)</th><th class="p-3">Tipo</th><th class="p-3 text-center">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaProductosGestion" class="divide-y divide-slate-800/60"></tbody>
@@ -889,6 +896,14 @@
             if (pestana === 'pos') { cargarProductosSelect(); cargarClientesSelect(); }
         }
 
+        // --- CÁLCULO AUTOMÁTICO DE PRECIO VENTA POR % UTILIDAD ---
+        function calcularPrecioPorcentaje() {
+            const costo = parseFloat(document.getElementById('prodCosto').value) || 0;
+            const utilidad = parseFloat(document.getElementById('prodUtilidad').value) || 0;
+            const precioVenta = costo * (1 + (utilidad / 100));
+            document.getElementById('prodPrecioVenta').value = precioVenta.toFixed(2);
+        }
+
         function abrirModalPerfil() {
             document.getElementById('perfilEmail').value = tenantActual.email || '';
             document.getElementById('perfilRazonSocial').value = tenantActual.razon_social || '';
@@ -961,7 +976,6 @@
         async function eliminarUnidadMedida(id, nombreUnidad) {
             if (!confirm(`¿Desea eliminar la unidad "${nombreUnidad}"?`)) return;
 
-            // Validación: Verificar si algún producto usa esta unidad
             const { count: cProd } = await supabaseClient.from('productos').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantActual.id).eq('unidad_medida', nombreUnidad);
 
             if ((cProd || 0) > 0) {
@@ -1050,7 +1064,7 @@
             cargarInquilinosMaster();
         }
 
-        // --- EXPORTACIÓN E IMPORTACIÓN MASIVA EXCEL (.xlsx) ---
+        // --- EXPORTACIÓN E IMPORTACIÓN MASIVA EXCEL CON COSTO Y PRECIO DE VENTA ---
         function descargarExcel(datos, nombreArchivo, nombreHoja) {
             const worksheet = XLSX.utils.json_to_sheet(datos);
             const workbook = XLSX.utils.book_new();
@@ -1060,8 +1074,8 @@
 
         function descargarPlantillaExcel() {
             const plantillaEjemplo = [
-                { SKU: "SRV-001", Descripción: "Servicios Contables", "Maneja Inventario (SI/NO)": "NO", "Unidad de Medida": "Und", "Stock Inicial": 0, Lote: "", "Precio Unitario ($)": 50.00, "Es Exento (SI/NO)": "SI" },
-                { SKU: "SKU-002", Descripción: "Detergente Lavaplatos 1L", "Maneja Inventario (SI/NO)": "SI", "Unidad de Medida": "Litros", "Stock Inicial": 100, Lote: "LOTE-2026-A", "Precio Unitario ($)": 5.00, "Es Exento (SI/NO)": "NO" }
+                { SKU: "SRV-001", Descripción: "Servicios Contables", "Maneja Inventario (SI/NO)": "NO", "Unidad de Medida": "Und", "Stock Inicial": 0, Lote: "", "Costo Unitario ($)": 30.00, "% Utilidad": 66.67, "Precio Venta ($)": 50.00, "Es Exento (SI/NO)": "SI" },
+                { SKU: "SKU-002", Descripción: "Detergente Lavaplatos 1L", "Maneja Inventario (SI/NO)": "SI", "Unidad de Medida": "Litros", "Stock Inicial": 100, Lote: "LOTE-2026-A", "Costo Unitario ($)": 3.00, "% Utilidad": 66.67, "Precio Venta ($)": 5.00, "Es Exento (SI/NO)": "NO" }
             ];
             descargarExcel(plantillaEjemplo, 'Plantilla_Importacion_Catalogo', 'Catalogo');
         }
@@ -1097,7 +1111,14 @@
                         const unidadMedida = String(row['Unidad de Medida'] || row['unidad_medida'] || 'Und').trim();
                         const stock = manejaInventario ? (parseFloat(row['Stock Inicial'] || row['stock'] || 0) || 0) : 0;
                         const lote = String(row['Lote'] || row['lote'] || '').trim();
-                        const precio = parseFloat(row['Precio Unitario ($)'] || row['precio'] || 0) || 0;
+                        
+                        const costo = parseFloat(row['Costo Unitario ($)'] || row['costo'] || 0) || 0;
+                        const utilidad = parseFloat(row['% Utilidad'] || row['utilidad'] || 30) || 30;
+                        let precioVenta = parseFloat(row['Precio Venta ($)'] || row['precio_venta'] || 0) || 0;
+                        if (precioVenta <= 0 && costo > 0) {
+                            precioVenta = costo * (1 + (utilidad / 100));
+                        }
+
                         const esExentoTxt = String(row['Es Exento (SI/NO)'] || row['es_exento'] || 'NO').toUpperCase();
                         const esExento = esExentoTxt === 'SI' || esExentoTxt === 'TRUE';
 
@@ -1111,7 +1132,10 @@
                             unidad_medida: unidadMedida,
                             stock: stock,
                             lote: lote,
-                            precio_unitario_usd: precio,
+                            costo_unitario_usd: costo,
+                            margen_utilidad_porcentaje: utilidad,
+                            precio_unitario_usd: precioVenta, // Para compatibilidad POS
+                            precio_venta_usd: precioVenta,
                             es_exento: esExento
                         }]).select();
 
@@ -1125,9 +1149,9 @@
                                 cantidad_out: 0,
                                 cantidad_inicial: stock,
                                 cantidad_ajuste: 0,
-                                costo_unit_usd_in: precio,
+                                costo_unit_usd_in: costo,
                                 saldo_cantidad: stock,
-                                costo_promedio_usd: precio,
+                                costo_promedio_usd: costo,
                                 tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
                             }]);
                         }
@@ -1155,7 +1179,9 @@
                 'Unidad de Medida': p.unidad_medida || 'Und',
                 Stock: p.maneja_inventario ? (p.stock || 0) : 'N/A',
                 Lote: p.lote || 'N/A',
-                'Precio Unitario ($)': p.precio_unitario_usd,
+                'Costo Unitario ($)': p.costo_unitario_usd || p.precio_unitario_usd || 0,
+                '% Utilidad': p.margen_utilidad_porcentaje || 30,
+                'Precio Venta ($)': p.precio_venta_usd || p.precio_unitario_usd || 0,
                 'Estatus Fiscal': p.es_exento ? 'Exento' : 'Gravado 16%'
             }));
             descargarExcel(excelData, 'Catalogo_Inventario_Servicios', 'Catalogo');
@@ -1240,7 +1266,7 @@
             const select = document.getElementById('ajusteProductoSelect');
             select.innerHTML = '';
             if (!data) return;
-            data.forEach(p => { select.innerHTML += `<option value="${p.id}" data-stock="${p.stock||0}" data-precio="${p.precio_unitario_usd||0}">${p.descripcion} [Stock: ${p.stock||0} | Lote: ${p.lote||'N/A'}]</option>`; });
+            data.forEach(p => { select.innerHTML += `<option value="${p.id}" data-stock="${p.stock||0}">${p.descripcion} [Stock: ${p.stock||0} | Lote: ${p.lote||'N/A'}]</option>`; });
         }
 
         async function registrarAjusteInventario() {
@@ -1253,9 +1279,9 @@
             if (!productoId || cantidad <= 0) { alert('Complete los datos del ajuste correctamente.'); return; }
 
             try {
-                const { data: prodData } = await supabaseClient.from('productos').select('stock, precio_unitario_usd, lote').eq('id', productoId).single();
+                const { data: prodData } = await supabaseClient.from('productos').select('stock, costo_unitario_usd, precio_unitario_usd, lote').eq('id', productoId).single();
                 const stockActual = prodData ? (prodData.stock || 0) : 0;
-                const costo = prodData ? (prodData.precio_unitario_usd || 0) : 0;
+                const costo = prodData ? (prodData.costo_unitario_usd || prodData.precio_unitario_usd || 0) : 0;
                 const loteFinal = loteAjuste || prodData?.lote || '';
 
                 let nuevoStock = stockActual;
@@ -1306,13 +1332,14 @@
             tbody.innerHTML = '';
             if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin artículos con control de inventario.</td></tr>`; return; }
             data.forEach(p => {
+                const costoItem = p.costo_unitario_usd || p.precio_unitario_usd || 0;
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 font-mono text-emerald-400">${p.codigo_sku||'S/N'}</td>
                         <td class="p-3">${p.descripcion} <br><span class="text-[10px] text-slate-400">Lote: ${p.lote||'N/A'}</span></td>
                         <td class="p-3 font-mono text-white font-bold" id="teo_${p.id}">${p.stock||0}</td>
                         <td class="p-3"><input type="number" id="fisico_${p.id}" value="${p.stock||0}" class="w-24 bg-slate-900 border border-slate-800 rounded p-1.5 text-white font-mono text-xs"></td>
-                        <td class="p-3 text-center"><button onclick='aplicarConteoFisico("${p.id}", ${p.precio_unitario_usd||0}, "${p.lote||''}")' class="bg-emerald-600 text-white text-[11px] px-3 py-1.5 rounded cursor-pointer">Ajustar Diferencia</button></td>
+                        <td class="p-3 text-center"><button onclick='aplicarConteoFisico("${p.id}", ${costoItem}, "${p.lote||''}")' class="bg-emerald-600 text-white text-[11px] px-3 py-1.5 rounded cursor-pointer">Ajustar Diferencia</button></td>
                     </tr>
                 `;
             });
@@ -1430,21 +1457,29 @@
             try {
                 const { data: prodData, error: errProd } = await supabaseClient
                     .from('productos')
-                    .select('stock, precio_unitario_usd, lote')
+                    .select('stock, costo_unitario_usd, precio_unitario_usd, margen_utilidad_porcentaje, lote')
                     .eq('id', productoId)
                     .single();
 
                 if (errProd) throw new Error('Error al leer el producto: ' + errProd.message);
 
                 const stockActual = prodData ? (prodData.stock || 0) : 0;
-                const costoActual = prodData ? (prodData.precio_unitario_usd || costo) : costo;
+                const costoActual = prodData ? (prodData.costo_unitario_usd || prodData.precio_unitario_usd || costo) : costo;
                 const nuevoStock = stockActual + cantidad;
                 const nuevoCostoProm = ((stockActual * costoActual) + (cantidad * costo)) / nuevoStock;
+                const margen = prodData?.margen_utilidad_porcentaje || 30;
+                const nuevoPrecioVenta = nuevoCostoProm * (1 + (margen / 100));
                 const loteFinal = loteIngresado || prodData?.lote || '';
 
                 const { error: errUpd } = await supabaseClient
                     .from('productos')
-                    .update({ stock: nuevoStock, precio_unitario_usd: nuevoCostoProm, lote: loteFinal })
+                    .update({ 
+                        stock: nuevoStock, 
+                        costo_unitario_usd: nuevoCostoProm, 
+                        precio_unitario_usd: nuevoPrecioVenta,
+                        precio_venta_usd: nuevoPrecioVenta,
+                        lote: loteFinal 
+                    })
                     .eq('id', productoId);
 
                 if (errUpd) throw new Error('Error al actualizar stock: ' + errUpd.message);
@@ -1468,7 +1503,7 @@
 
                 if (errKardex) throw new Error('Error al registrar Kardex: ' + errKardex.message);
 
-                alert(`¡Compra registrada con éxito! Stock actual: ${nuevoStock} | Lote: ${loteFinal} | Costo Prom: $${nuevoCostoProm.toFixed(2)}`);
+                alert(`¡Compra registrada! Stock: ${nuevoStock} | Costo Prom: $${nuevoCostoProm.toFixed(2)} | Nuevo P.Venta: $${nuevoPrecioVenta.toFixed(2)}`);
                 document.getElementById('compraLote').value = '';
                 cargarProductosSelectCompra();
                 cargarKardexMovimientos();
@@ -1520,8 +1555,10 @@
             if (productosCache.length === 0) { select.innerHTML = '<option value="">No hay artículos o servicios.</option>'; return; }
             productosCache.forEach(prod => {
                 const unidad = prod.unidad_medida || 'Und';
+                // Usamos estrictamente precio_venta_usd para la venta
+                const precioVenta = prod.precio_venta_usd || prod.precio_unitario_usd || 0;
                 const infoInv = prod.maneja_inventario ? `[Stock: ${prod.stock||0} ${unidad} | Lote: ${prod.lote||'N/A'}]` : '[Servicio / Sin Stock]';
-                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${unidad}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">${prod.descripcion} ${infoInv} - $${prod.precio_unitario_usd.toFixed(2)}</option>`;
+                select.innerHTML += `<option value="${prod.id}" data-precio="${precioVenta}" data-exento="${prod.es_exento}" data-unidad="${unidad}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">${prod.descripcion} ${infoInv} - P.V: $${precioVenta.toFixed(2)}</option>`;
             });
         }
 
@@ -1533,6 +1570,8 @@
             data.forEach(prod => {
                 const badgeInv = prod.maneja_inventario ? '<span class="text-emerald-400 font-bold">SÍ (Inventario)</span>' : '<span class="text-amber-400 font-bold">NO (Servicio)</span>';
                 const unidad = prod.unidad_medida || 'Und';
+                const costo = prod.costo_unitario_usd || prod.precio_unitario_usd || 0;
+                const precioVenta = prod.precio_venta_usd || prod.precio_unitario_usd || 0;
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 font-mono text-emerald-400">${prod.codigo_sku||'S/N'}</td>
@@ -1540,11 +1579,11 @@
                         <td class="p-3">${badgeInv}</td>
                         <td class="p-3 font-mono text-sky-300 font-bold">${unidad}</td>
                         <td class="p-3 font-bold ${prod.maneja_inventario?(prod.stock<=5?'text-rose-400':'text-emerald-400'):'text-slate-500'}">${prod.maneja_inventario?(prod.stock||0):'N/A'}</td>
-                        <td class="p-3 font-mono text-slate-300">${prod.lote||'N/A'}</td>
-                        <td class="p-3 font-mono">$ ${prod.precio_unitario_usd.toFixed(2)}</td>
+                        <td class="p-3 font-mono text-slate-300">$ ${costo.toFixed(2)}</td>
+                        <td class="p-3 font-mono text-emerald-400 font-bold">$ ${precioVenta.toFixed(2)}</td>
                         <td class="p-3">${prod.es_exento?'EXENTO':'GRAVADO'}</td>
                         <td class="p-3 text-center space-x-2">
-                            <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku||''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento}, "${unidad}","${prod.stock||0}", ${prod.maneja_inventario !== false}, "${prod.lote||''}")' class="text-emerald-400 hover:underline">Editar</button>
+                            <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku||''}", "${prod.descripcion}", ${costo}, ${prod.margen_utilidad_porcentaje||30}, ${precioVenta}, ${prod.es_exento}, "${unidad}","${prod.stock||0}", ${prod.maneja_inventario !== false}, "${prod.lote||''}")' class="text-emerald-400 hover:underline">Editar</button>
                             <button onclick='eliminarProducto("${prod.id}")' class="text-rose-400 hover:underline">Eliminar</button>
                         </td>
                     </tr>
@@ -1573,7 +1612,9 @@
             const id = document.getElementById('editProductoId').value;
             const manejaInv = document.getElementById('prodManejaInventario').value === 'true';
             const stockIngresado = manejaInv ? (parseFloat(document.getElementById('prodStock').value) || 0) : 0;
-            const precioIngresado = parseFloat(document.getElementById('prodPrecio').value) || 0;
+            const costoIngresado = parseFloat(document.getElementById('prodCosto').value) || 0;
+            const utilidadIngresada = parseFloat(document.getElementById('prodUtilidad').value) || 30;
+            const precioVentaIngresado = parseFloat(document.getElementById('prodPrecioVenta').value) || 0;
             const loteIngresado = document.getElementById('prodLote').value.trim();
             const unidadMedida = document.getElementById('prodUnidadMedida').value;
 
@@ -1584,7 +1625,10 @@
                 unidad_medida: unidadMedida,
                 stock: stockIngresado,
                 lote: loteIngresado,
-                precio_unitario_usd: precioIngresado,
+                costo_unitario_usd: costoIngresado,
+                margen_utilidad_porcentaje: utilidadIngresada,
+                precio_unitario_usd: precioVentaIngresado, // Compatibilidad POS
+                precio_venta_usd: precioVentaIngresado,
                 es_exento: document.getElementById('prodExento').value === 'true'
             };
             if (!payload.descripcion) { alert('Ingrese descripción.'); return; }
@@ -1605,9 +1649,9 @@
                         cantidad_out: 0,
                         cantidad_inicial: stockIngresado,
                         cantidad_ajuste: 0,
-                        costo_unit_usd_in: precioIngresado,
+                        costo_unit_usd_in: costoIngresado,
                         saldo_cantidad: stockIngresado,
-                        costo_promedio_usd: precioIngresado,
+                        costo_promedio_usd: costoIngresado,
                         tasa_bcv: parseFloat(document.getElementById('tasaBcv').value) || 1
                     }]);
                 }
@@ -1617,7 +1661,7 @@
             alert('¡Ítem guardado con éxito!');
         }
 
-        function editarProducto(id, sku, desc, precio, exento, unidad, stock, manejaInv, lote) {
+        function editarProducto(id, sku, desc, costo, utilidad, precioVenta, exento, unidad, stock, manejaInv, lote) {
             document.getElementById('editProductoId').value = id;
             document.getElementById('prodSku').value = sku;
             document.getElementById('prodDescripcion').value = desc;
@@ -1625,7 +1669,9 @@
             document.getElementById('prodUnidadMedida').value = unidad;
             document.getElementById('prodStock').value = stock;
             document.getElementById('prodLote').value = lote;
-            document.getElementById('prodPrecio').value = precio;
+            document.getElementById('prodCosto').value = costo;
+            document.getElementById('prodUtilidad').value = utilidad;
+            document.getElementById('prodPrecioVenta').value = precioVenta;
             document.getElementById('prodExento').value = exento.toString();
             document.getElementById('tituloFormProducto').innerText = '✏️ Editar Ítem / Servicio';
             document.getElementById('btnCancelarProd').classList.remove('hidden');
@@ -1636,6 +1682,9 @@
             document.getElementById('prodSku').value = '';
             document.getElementById('prodDescripcion').value = '';
             document.getElementById('prodLote').value = '';
+            document.getElementById('prodCosto').value = '1.00';
+            document.getElementById('prodUtilidad').value = '30.00';
+            document.getElementById('prodPrecioVenta').value = '1.30';
             document.getElementById('tituloFormProducto').innerText = '📦 Maestro de Artículos y Servicios';
             document.getElementById('btnCancelarProd').classList.add('hidden');
         }
@@ -1845,12 +1894,13 @@
                     }]);
 
                     if (item.manejaInventario) {
-                        const { data: pData } = await supabaseClient.from('productos').select('stock, precio_unitario_usd, lote').eq('id', item.productoId).single();
+                        const { data: pData } = await supabaseClient.from('productos').select('stock, costo_unitario_usd, precio_venta_usd, lote').eq('id', item.productoId).single();
                         const stockActual = pData ? (pData.stock || 0) : 0;
                         const nuevoStock = Math.max(0, stockActual - item.cantidad);
                         await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.productoId);
                         
                         const refSalida = pData?.lote ? `${facturaNro} (Lote: ${pData.lote})` : facturaNro;
+                        const costoRef = pData ? (pData.costo_unitario_usd || item.precio) : item.precio;
 
                         const payloadKardex = {
                             tenant_id: tenantActual.id, 
@@ -1863,7 +1913,7 @@
                             cantidad_ajuste: 0,
                             precio_venta_usd: item.precio, 
                             saldo_cantidad: nuevoStock, 
-                            costo_promedio_usd: pData ? pData.precio_unitario_usd : item.precio, 
+                            costo_promedio_usd: costoRef, 
                             tasa_bcv: tasa
                         };
 
