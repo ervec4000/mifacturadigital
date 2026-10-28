@@ -9,8 +9,8 @@
     <style>
         @media print {
             body * { visibility: hidden; }
-            #modalTicket, #modalTicket * { visibility: visible; }
-            #modalTicket { position: absolute; left: 0; top: 0; width: 100%; background: white; }
+            #modalTicket, #modalTicket *, #modalImprimirQr, #modalImprimirQr * { visibility: visible; }
+            #modalTicket, #modalImprimirQr { position: absolute; left: 0; top: 0; width: 100%; background: white; }
             .no-print { display: none !important; }
         }
     </style>
@@ -67,6 +67,7 @@
             </div>
             <div class="flex items-center gap-2">
                 <button onclick="abrirModalPerfil()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg font-semibold border border-slate-700 cursor-pointer">⚙️ Mi Perfil</button>
+                <button onclick="abrirModalSuscripcion()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold cursor-pointer shadow">💳 Renovar Plan / Membresía</button>
                 <button onclick="abrirModalGestionUsuarios()" id="btnMenuAdminUsuarios" class="hidden bg-sky-900/50 hover:bg-sky-900 text-sky-300 text-xs px-3 py-1.5 rounded-lg font-semibold border border-sky-700/50 cursor-pointer">👥 Usuarios</button>
             </div>
         </div>
@@ -74,19 +75,25 @@
         <!-- Navegación por pestañas -->
         <div class="flex flex-wrap justify-center gap-2 border-b border-slate-700 pb-4">
             <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer shadow-lg shadow-emerald-900/25">
-                Punto de Venta (POS)
+                POS
             </button>
             <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                Historial Comprobantes
+                Comprobantes
             </button>
             <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                📊 Reporte Z y Libro
+                📊 Reporte Z
             </button>
             <button onclick="cambiarPestana('compras')" id="btnTabCompras" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                📥 Compras / Entradas
+                📥 Compras
             </button>
             <button onclick="cambiarPestana('kardex')" id="btnTabKardex" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                📋 Kardex Inventario
+                📋 Kardex
+            </button>
+            <button onclick="cambiarPestana('etiquetas')" id="btnTabEtiquetas" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
+                🏷️ Etiquetas QR
+            </button>
+            <button onclick="cambiarPestana('cuentas')" id="btnTabCuentas" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
+                📑 Créditos (CxC)
             </button>
             <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="tab-admin bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
                 📦 Stock
@@ -95,7 +102,7 @@
                 👥 Clientes
             </button>
             <button onclick="cambiarPestana('inquilinosMaster')" id="btnTabInquilinosMaster" class="tab-master bg-amber-600 hover:bg-amber-500 text-white px-3 py-2 rounded-lg font-semibold text-xs transition duration-200 cursor-pointer">
-                🏢 Master Inquilinos
+                🏢 Master
             </button>
         </div>
 
@@ -132,6 +139,7 @@
                         <option value="TARJETA DEBITO">Tarjeta de Débito - POS (Bs.)</option>
                         <option value="TARJETA CREDITO">Tarjeta de Crédito - POS (Bs.)</option>
                         <option value="EFECTIVO BS">Efectivo Bolívares (Bs.)</option>
+                        <option value="CREDITO ABIERTO">Crédito Abierto (Por Cobrar)</option>
                     </select>
                 </div>
                 <div>
@@ -308,7 +316,7 @@
             </div>
         </div>
 
-        <!-- SECCIÓN 3.5: COMPRAS / ENTRADAS AL INVENTARIO -->
+        <!-- SECCIÓN 3.5: COMPRAS -->
         <div id="seccionCompras" class="hidden tab-admin space-y-6">
             <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
                 <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📥 Registrar Compra / Entrada de Mercancía (Kardex)</h3>
@@ -359,6 +367,56 @@
                             </tr>
                         </thead>
                         <tbody id="tablaKardexMovimientos" class="divide-y divide-slate-700/50"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 3.7: ETIQUETAS QR -->
+        <div id="seccionEtiquetas" class="hidden tab-admin space-y-6">
+            <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">🏷️ Generador de Etiquetas y Códigos QR (Depósito)</h3>
+                        <p class="text-xs text-slate-400">Impresión rápida de códigos para estantes y productos bajo nomenclatura física</p>
+                    </div>
+                    <button onclick="imprimirEtiquetasQr()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2 rounded-lg font-semibold cursor-pointer">🖨️ Imprimir Hoja de Etiquetas</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Nomenclatura Ubicación (Ej. SSS-TT-UU)</label>
+                        <input type="text" id="inputUbicacionQr" value="ALM-01-02-A" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-xs font-mono">
+                    </div>
+                    <div class="md:col-span-2 flex items-end">
+                        <button onclick="renderizarEtiquetasQr()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-4 py-2 rounded font-semibold cursor-pointer">🔄 Actualizar Vista</button>
+                    </div>
+                </div>
+                <div id="contenedorGridEtiquetas" class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 max-h-[60vh] overflow-y-auto"></div>
+            </div>
+        </div>
+
+        <!-- SECCIÓN 3.8: CUENTAS POR COBRAR (CRÉDITOS) -->
+        <div id="seccionCuentas" class="hidden tab-admin space-y-6">
+            <div class="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wide">📑 Cuentas por Cobrar (Créditos Abiertos / Fiados)</h3>
+                        <p class="text-xs text-slate-400">Control de saldos pendientes por cliente</p>
+                    </div>
+                    <button onclick="cargarCuentasPorCobrar()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded-lg text-slate-200 cursor-pointer">🔄 Actualizar</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-900 text-slate-400 uppercase">
+                            <tr>
+                                <th class="p-2">Factura</th>
+                                <th class="p-2">Fecha</th>
+                                <th class="p-2">Cliente</th>
+                                <th class="p-2">Total Deuda ($ / Bs)</th>
+                                <th class="p-2 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaCuentasPorCobrar" class="divide-y divide-slate-700/50"></tbody>
                     </table>
                 </div>
             </div>
@@ -604,6 +662,21 @@
         </div>
     </div>
 
+    <!-- MODAL SUSCRIPCIÓN SAAS (PASARELA) -->
+    <div id="modalSuscripcion" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+            <h3 class="text-base font-bold text-amber-400">💳 Membresía y Planes - MiFacturaDigital</h3>
+            <p class="text-xs text-slate-300">Renueva tu plan mensual de facturación ilimitada y control fiscal por solo <span class="text-emerald-400 font-bold">$15.00 USD</span> al mes.</p>
+            <div class="space-y-2 bg-slate-900 p-3 rounded-lg border border-slate-700 text-xs">
+                <p class="text-slate-400">Selecciona pasarela de pago:</p>
+                <button onclick="simularPagoPasarela('Binance Pay')" class="w-full bg-amber-600 hover:bg-amber-500 text-white p-2.5 rounded font-semibold cursor-pointer text-left flex justify-between"><span>🟡 Pagar con Binance Pay</span><span class="font-mono">$15.00</span></button>
+                <button onclick="simularPagoPasarela('Zinli / Zelle')" class="w-full bg-sky-600 hover:bg-sky-500 text-white p-2.5 rounded font-semibold cursor-pointer text-left flex justify-between"><span>🔵 Pagar con Zinli / Zelle</span><span class="font-mono">$15.00</span></button>
+                <button onclick="simularPagoPasarela('Pago Móvil Bancario')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white p-2.5 rounded font-semibold cursor-pointer text-left flex justify-between"><span>🟢 Pago Móvil (Tasa BCV)</span><span class="font-mono">Bs. Equivalente</span></button>
+            </div>
+            <button onclick="cerrarModalSuscripcion()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2 rounded-xl font-semibold cursor-pointer text-xs">Cerrar</button>
+        </div>
+    </div>
+
     <!-- MODAL GESTIÓN DE USUARIOS -->
     <div id="modalGestionUsuarios" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
         <div class="bg-slate-800 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
@@ -736,6 +809,18 @@
             <div class="flex space-x-2 pt-2">
                 <button onclick="procesarNotaDebito()" class="w-full bg-sky-600 hover:bg-sky-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Confirmar Nota de Débito</button>
                 <button onclick="cerrarModalNotaDebito()" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL IMPRESIÓN QR -->
+    <div id="modalImprimirQr" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50">
+        <div class="bg-white text-slate-900 w-full max-w-md rounded-xl p-6 shadow-2xl relative font-mono text-xs space-y-3 max-h-[90vh] overflow-y-auto">
+            <h3 class="font-bold text-center text-sm border-b pb-2">HOJA DE ETIQUETAS DE DEPÓSITO</h3>
+            <div id="contenidoModalQrImprimir" class="space-y-4"></div>
+            <div class="flex gap-2 pt-2 no-print">
+                <button onclick="window.print()" class="w-full bg-slate-900 text-white py-2 rounded font-sans font-semibold cursor-pointer">🖨️ Imprimir</button>
+                <button onclick="document.getElementById('modalImprimirQr').classList.add('hidden')" class="w-full bg-slate-200 text-slate-800 py-2 rounded font-sans font-semibold cursor-pointer">Cerrar</button>
             </div>
         </div>
     </div>
@@ -876,7 +961,7 @@
         }
 
         function cambiarPestana(pestana) {
-            const tabs = ['pos', 'historial', 'cierrez', 'compras', 'kardex', 'referidos', 'productos', 'clientes', 'inquilinosMaster'];
+            const tabs = ['pos', 'historial', 'cierrez', 'compras', 'kardex', 'etiquetas', 'cuentas', 'referidos', 'productos', 'clientes', 'inquilinosMaster'];
             tabs.forEach(t => {
                 const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
                 const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -899,6 +984,8 @@
             }
             if (pestana === 'compras') cargarProductosSelectCompra();
             if (pestana === 'kardex') cargarKardexMovimientos();
+            if (pestana === 'etiquetas') renderizarEtiquetasQr();
+            if (pestana === 'cuentas') cargarCuentasPorCobrar();
             if (pestana === 'productos') cargarProductosGestion();
             if (pestana === 'clientes') cargarClientesGestion();
             if (pestana === 'inquilinosMaster') cargarInquilinosMaster();
@@ -916,7 +1003,93 @@
             alert('¡Enlace de referido copiado!');
         }
 
-        // --- MÓDULO DE COMPRAS / ENTRADAS Y KARDEX HISTÓRICO ---
+        function abrirModalSuscripcion() { document.getElementById('modalSuscripcion').classList.remove('hidden'); }
+        function cerrarModalSuscripcion() { document.getElementById('modalSuscripcion').classList.add('hidden'); }
+        async function simularPagoPasarela(pasarela) {
+            alert(`¡Pago simulado exitosamente a través de ${pasarela}! Su membresía ha sido renovada por 30 días.`);
+            tenantActual.plan_activo = 'Administración';
+            localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
+            document.getElementById('headerTenantPlan').innerText = 'ADMINISTRACIÓN';
+            cerrarModalSuscripcion();
+        }
+
+        // --- ETIQUETAS QR ---
+        async function renderizarEtiquetasQr() {
+            if (!supabaseClient || !tenantActual) return;
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            const contenedor = document.getElementById('contenedorGridEtiquetas');
+            const ubicacionBase = document.getElementById('inputUbicacionQr').value.trim() || 'ALM-01-01';
+            contenedor.innerHTML = '';
+            if (!data || data.length === 0) { contenedor.innerHTML = '<p class="text-slate-500">No hay productos para etiquetar.</p>'; return; }
+            data.forEach((p, idx) => {
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=SKU:${p.codigo_sku || 'S/N'}|UBI:${ubicacionBase}`;
+                contenedor.innerHTML += `
+                    <div class="bg-white text-slate-900 p-4 rounded-xl border border-slate-300 font-mono text-xs flex flex-col items-center text-center space-y-2 shadow">
+                        <div class="font-bold text-sm">${p.descripcion}</div>
+                        <div class="text-[10px] text-slate-600">SKU: ${p.codigo_sku || 'S/N'} | Stock: ${p.stock || 0}</div>
+                        <img src="${qrUrl}" alt="QR" class="w-24 h-24 object-contain">
+                        <div class="bg-slate-100 px-2 py-1 rounded w-full font-bold text-[11px]">Ubicación: ${ubicacionBase}-${idx+1}</div>
+                    </div>
+                `;
+            });
+        }
+
+        function imprimirEtiquetasQr() {
+            const gridHtml = document.getElementById('contenedorGridEtiquetas').innerHTML;
+            document.getElementById('contenidoModalQrImprimir').innerHTML = `<div class="grid grid-cols-2 gap-4">${gridHtml}</div>`;
+            document.getElementById('modalImprimirQr').classList.remove('hidden');
+        }
+
+        // --- CUENTAS POR COBRAR ---
+        async function cargarCuentasPorCobrar() {
+            if (!supabaseClient || !tenantActual) return;
+            const { data, error } = await supabaseClient
+                .from('invoices')
+                .select('*')
+                .eq('tenant_id', tenantActual.id)
+                .eq('metodo_pago', 'CREDITO ABIERTO')
+                .order('created_at', { ascending: false });
+
+            const tbody = document.getElementById('tablaCuentasPorCobrar');
+            tbody.innerHTML = '';
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay cuentas por cobrar pendientes.</td></tr>`;
+                return;
+            }
+            data.forEach(inv => {
+                const fecha = formatearFecha8Digitos(inv.created_at);
+                const clienteStr = `${inv.cliente_nombre || 'Cliente'} (${inv.cliente_rif || 'V-000'})`;
+                const tasa = inv.tasa_bcv || 1;
+                const usd = (inv.total_bs / tasa).toFixed(2);
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-800/50">
+                        <td class="p-2 font-mono text-amber-400 font-bold">${inv.factura_nro}</td>
+                        <td class="p-2 text-slate-400">${fecha}</td>
+                        <td class="p-2 text-slate-200">${clienteStr}</td>
+                        <td class="p-2 font-mono text-white">$ ${usd} | Bs. ${(inv.total_bs).toFixed(2)}</td>
+                        <td class="p-2 text-center">
+                            <button onclick='abonarCredito("${inv.id}", ${inv.total_bs})' class="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] px-3 py-1 rounded cursor-pointer font-semibold">Registrar Abono / Pago</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function abonarCredito(invoiceId, totalBs) {
+            const montoAbono = prompt(`Ingrese monto abonado en Bolívares (Deuda total: Bs. ${totalBs.toFixed(2)}):`);
+            if (!montoAbono) return;
+            const abono = parseFloat(montoAbono);
+            if (isNaN(abono) || abono <= 0) { alert('Monto inválido.'); return; }
+            if (abono >= totalBs) {
+                await supabaseClient.from('invoices').update({ metodo_pago: 'PAGO CONTADO (PAGADO)' }).eq('id', invoiceId);
+                alert('¡Crédito saldado y pagado en su totalidad!');
+            } else {
+                alert(`Abono de Bs. ${abono.toFixed(2)} registrado. Quedan pendientes Bs. ${(totalBs - abono).toFixed(2)}.`);
+            }
+            cargarCuentasPorCobrar();
+        }
+
+        // --- COMPRAS / ENTRADAS Y KARDEX ---
         async function cargarProductosSelectCompra() {
             if (!supabaseClient || !tenantActual) return;
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
@@ -1163,7 +1336,7 @@
             } catch (err) { alert('Error al guardar: ' + err.message); }
         }
 
-        // --- PRODUCTOS / STOCK CON ALERTA VISUAL ---
+        // --- PRODUCTOS / STOCK ---
         async function cargarProductosSelect() {
             if (!supabaseClient || !tenantActual) return;
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
@@ -1174,7 +1347,6 @@
             productosCache.forEach(prod => {
                 const unidad = prod.unidad_medida || 'Und';
                 const stock = prod.stock !== undefined && prod.stock !== null ? prod.stock : 0;
-                const tipoTexto = prod.es_exento ? 'EXENTO (E)' : 'GRAVADO 16%';
                 const alertaStock = stock <= 5 ? ' ⚠️ [¡STOCK CRÍTICO!]' : '';
                 select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${unidad}" data-stock="${stock}">${prod.descripcion} (${unidad}) [Stock: ${stock}]${alertaStock} - $${prod.precio_unitario_usd.toFixed(2)}</option>`;
             });
@@ -1478,7 +1650,7 @@
             }
         }
 
-        // --- EMISIÓN DE FACTURA + KARDEX INTEGRADO ---
+        // --- EMISIÓN DE FACTURA + KARDEX ---
         async function emitirFactura() {
             if (carritoItems.length === 0) { alert('Agregue ítems.'); return; }
             const rifCliente = document.getElementById('clienteRif').value.trim();
