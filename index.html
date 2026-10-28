@@ -411,23 +411,65 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN: INVENTARIO FÍSICO -->
+            <!-- SECCIÓN: INVENTARIO FÍSICO (NUEVO & MEJORADO) -->
             <div id="seccionFisico" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
-                    <div class="flex justify-between items-center">
+                    <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                         <div>
                             <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🔍 Inventario Físico / Toma de Conteo</h3>
+                            <p class="text-xs text-slate-400">Filtre por fecha, rango de materiales y categorías para registrar conteos.</p>
                         </div>
-                        <button onclick="cargarInventarioFisico()" class="bg-slate-800 hover:bg-slate-700 text-xs px-4 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Cargar Artículos</button>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="exportarInventarioFisicoExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Conteo (Excel)</button>
+                            <label class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow flex items-center gap-1.5">
+                                📤 Importar Conteo (Excel)
+                                <input type="file" id="archivoImportFisico" accept=".xlsx, .xls, .csv" class="hidden" onchange="importarInventarioFisicoExcel(event)">
+                            </label>
+                            <button onclick="cargarInventarioFisico()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2.5 rounded-xl text-slate-200 cursor-pointer">🔄 Cargar</button>
+                        </div>
                     </div>
+
+                    <!-- Filtros de Inventario Físico -->
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 items-end">
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Fecha del Conteo</label>
+                            <input type="date" id="filtroFisicoFecha" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Material Desde</label>
+                            <input type="text" id="filtroFisicoMatDesde" placeholder="Ej. SKU-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisicoTabla()">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Material Hasta</label>
+                            <input type="text" id="filtroFisicoMatHasta" placeholder="Ej. SKU-999" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisicoTabla()">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Categoría Desde</label>
+                            <input type="text" id="filtroFisicoCatDesde" placeholder="Ej. A" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisicoTabla()">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">Categoría Hasta</label>
+                            <input type="text" id="filtroFisicoCatHasta" placeholder="Ej. Z" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarInventarioFisicoTabla()">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button onclick="guardarTodoInventarioFisico()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs cursor-pointer shadow">
+                            💾 Grabar / Aplicar Todos los Ajustes Físicos
+                        </button>
+                    </div>
+
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                                 <tr>
                                     <th class="p-3">SKU</th>
                                     <th class="p-3">Descripción</th>
-                                    <th class="p-3">Stock Teórico</th>
-                                    <th class="p-3">Conteo Físico Real</th>
+                                    <th class="p-3">Categoría</th>
+                                    <th class="p-3">Ubicación</th>
+                                    <th class="p-3 text-center">Stock Teórico</th>
+                                    <th class="p-3 text-center">Conteo Físico Real</th>
+                                    <th class="p-3 text-center">Diferencia (±)</th>
                                     <th class="p-3 text-center">Acción</th>
                                 </tr>
                             </thead>
@@ -517,7 +559,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 8: STOCK / PRODUCTOS (CON MODIFICACIÓN FUNCIONAL) -->
+            <!-- SECCIÓN 8: STOCK / PRODUCTOS -->
             <div id="seccionProductos" class="hidden tab-admin space-y-6">
                 
                 <div class="bg-emerald-950/20 border border-emerald-700/50 p-5 rounded-2xl space-y-4 shadow-lg">
@@ -801,6 +843,7 @@
         let clientesCache = [];
         let unidadesCache = [];
         let documentosHistorialCache = [];
+        let inventarioFisicoCache = [];
 
         window.onload = function() {
             if (window.supabase) {
@@ -898,7 +941,10 @@
             if (pestana === 'compras') cargarProductosSelectCompra();
             if (pestana === 'kardex') cargarKardexMovimientos();
             if (pestana === 'ajustes') cargarProductosSelectAjuste();
-            if (pestana === 'fisico') cargarInventarioFisico();
+            if (pestana === 'fisico') {
+                document.getElementById('filtroFisicoFecha').value = new Date().toISOString().slice(0,10);
+                cargarInventarioFisico();
+            }
             if (pestana === 'etiquetas') renderizarEtiquetasQr();
             if (pestana === 'cuentas') cargarCuentasPorCobrar();
             if (pestana === 'unidades') cargarUnidadesMedidaGestion();
@@ -1371,6 +1417,144 @@
             cargarProductosGestion();
         }
 
+        // --- MÓDULO DE INVENTARIO FÍSICO AVANZADO ---
+
+        async function cargarInventarioFisico() {
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).eq('maneja_inventario', true);
+            inventarioFisicoCache = data || [];
+            renderizarTablaInventarioFisico(inventarioFisicoCache);
+        }
+
+        function renderizarTablaInventarioFisico(lista) {
+            const tbody = document.getElementById('tablaInventarioFisico');
+            tbody.innerHTML = '';
+            if (!lista || lista.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Sin artículos para inventario físico.</td></tr>`;
+                return;
+            }
+            lista.forEach(p => {
+                const stockTeorico = p.stock || 0;
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900" id="row_fisico_${p.id}">
+                        <td class="p-3 font-mono text-emerald-400 sku-cell">${p.codigo_sku || 'S/N'}</td>
+                        <td class="p-3">${p.descripcion}</td>
+                        <td class="p-3 text-amber-300 font-semibold cat-cell">${p.categoria || 'N/A'}</td>
+                        <td class="p-3 font-mono">${p.ubicacion || 'N/A'}</td>
+                        <td class="p-3 text-center font-mono teorico-cell">${stockTeorico}</td>
+                        <td class="p-3 text-center">
+                            <input type="number" id="fisico_real_${p.id}" value="${stockTeorico}" class="bg-slate-950 border border-slate-700 rounded p-1.5 w-24 text-white font-mono text-xs text-center focus:border-emerald-500" oninput="calcularDiferenciaFisica('${p.id}', ${stockTeorico})">
+                        </td>
+                        <td class="p-3 text-center font-mono font-bold" id="diff_${p.id}">0</td>
+                        <td class="p-3 text-center">
+                            <button onclick="guardarConteoFisicoUnico('${p.id}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-semibold cursor-pointer">Grabar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function calcularDiferenciaFisica(id, teorico) {
+            const real = parseFloat(document.getElementById('fisico_real_' + id).value) || 0;
+            const diff = real - teorico;
+            const diffEl = document.getElementById('diff_' + id);
+            diffEl.innerText = (diff > 0 ? '+' : '') + diff;
+            diffEl.className = `p-3 text-center font-mono font-bold ${diff > 0 ? 'text-emerald-400' : diff < 0 ? 'text-rose-400' : 'text-slate-300'}`;
+        }
+
+        function filtrarInventarioFisicoTabla() {
+            const matDesde = (document.getElementById('filtroFisicoMatDesde').value || '').trim().toUpperCase();
+            const matHasta = (document.getElementById('filtroFisicoMatHasta').value || '').trim().toUpperCase();
+            const catDesde = (document.getElementById('filtroFisicoCatDesde').value || '').trim().toUpperCase();
+            const catHasta = (document.getElementById('filtroFisicoCatHasta').value || '').trim().toUpperCase();
+
+            const filtrada = inventarioFisicoCache.filter(p => {
+                const sku = (p.codigo_sku || '').toUpperCase();
+                const cat = (p.categoria || '').toUpperCase();
+                if (matDesde && sku < matDesde) return false;
+                if (matHasta && sku > matHasta) return false;
+                if (catDesde && cat < catDesde) return false;
+                if (catHasta && cat > catHasta) return false;
+                return true;
+            });
+            renderizarTablaInventarioFisico(filtrada);
+        }
+
+        async function guardarConteoFisicoUnico(id) {
+            const real = parseFloat(document.getElementById('fisico_real_' + id).value) || 0;
+            const fechaConteo = document.getElementById('filtroFisicoFecha').value || new Date().toISOString().slice(0,10);
+            
+            const { error } = await supabaseClient.from('productos').update({ stock: real }).eq('id', id);
+            if (error) { alert('Error al grabar: ' + error.message); return; }
+            alert(`¡Inventario físico grabado con éxito para la fecha ${fechaConteo}!`);
+            cargarInventarioFisico();
+        }
+
+        async function guardarTodoInventarioFisico() {
+            if (!confirm('¿Seguro desea grabar y actualizar el stock de todos los artículos listados según el conteo físico real?')) return;
+            const fechaConteo = document.getElementById('filtroFisicoFecha').value || new Date().toISOString().slice(0,10);
+
+            for (const p of inventarioFisicoCache) {
+                const inputReal = document.getElementById('fisico_real_' + p.id);
+                if (inputReal) {
+                    const real = parseFloat(inputReal.value) || 0;
+                    await supabaseClient.from('productos').update({ stock: real }).eq('id', p.id);
+                }
+            }
+            alert(`¡Todos los ajustes de inventario físico del ${fechaConteo} han sido grabados y aplicados al sistema!`);
+            cargarInventarioFisico();
+        }
+
+        function exportarInventarioFisicoExcel() {
+            const fechaConteo = document.getElementById('filtroFisicoFecha').value || new Date().toISOString().slice(0,10);
+            const datosExport = inventarioFisicoCache.map(p => {
+                const real = parseFloat(document.getElementById('fisico_real_' + p.id)?.value) || p.stock || 0;
+                const teorico = p.stock || 0;
+                return {
+                    Fecha: fechaConteo,
+                    SKU: p.codigo_sku || 'S/N',
+                    Descripción: p.descripcion,
+                    Categoría: p.categoria || 'N/A',
+                    Ubicación: p.ubicacion || 'N/A',
+                    'Stock Teórico': teorico,
+                    'Stock Físico Real': real,
+                    'Diferencia (±)': real - teorico
+                };
+            });
+            descargarExcelMatriz([Object.keys(datosExport[0]), ...datosExport.map(Object.values)], 'Inventario_Fisico', 'InventarioFisico');
+        }
+
+        function importarInventarioFisicoExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    let count = 0;
+                    for (const row of rows) {
+                        const sku = String(row['SKU'] || '').trim();
+                        const real = parseFloat(row['Stock Físico Real'] ?? row['Conteo Físico Real'] ?? row['stock_fisico']) || 0;
+                        if (sku) {
+                            const prod = inventarioFisicoCache.find(x => x.codigo_sku === sku);
+                            if (prod) {
+                                await supabaseClient.from('productos').update({ stock: real }).eq('id', prod.id);
+                                count++;
+                            }
+                        }
+                    }
+                    alert(`¡Se importaron y aplicaron ${count} conteos físicos desde el archivo Excel con éxito!`);
+                    cargarInventarioFisico();
+                } catch (err) {
+                    alert('Error procesando el archivo Excel: ' + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
         async function cargarClientesSelect() {
             const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
             clientesCache = data || [];
@@ -1531,30 +1715,6 @@
         async function sincronizarOffline() {}
         async function imprimirBluetoothReal() { alert('Impresión térmica BT'); }
         function enviarWhatsApp() { window.open(`https://wa.me/?text=Comprobante`, '_blank'); }
-
-        async function cargarInventarioFisico() {
-            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id).eq('maneja_inventario', true);
-            const tbody = document.getElementById('tablaInventarioFisico');
-            tbody.innerHTML = '';
-            if (!data) return;
-            data.forEach(p => {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900">
-                        <td class="p-3 font-mono text-emerald-400">${p.codigo_sku||'S/N'}</td>
-                        <td class="p-3">${p.descripcion}</td>
-                        <td class="p-3 font-mono">${p.stock||0}</td>
-                        <td class="p-3"><input type="number" id="fisico_${p.id}" value="${p.stock||0}" class="bg-slate-900 border border-slate-800 rounded p-1 w-24 text-white font-mono text-xs"></td>
-                        <td class="p-3 text-center"><button onclick="guardarConteoFisico('${p.id}')" class="bg-emerald-600 text-white px-2.5 py-1 rounded text-xs">Ajustar</button></td>
-                    </tr>
-                `;
-            });
-        }
-        async function guardarConteoFisico(id) {
-            const nuevoStock = parseFloat(document.getElementById('fisico_' + id).value) || 0;
-            await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', id);
-            alert('¡Stock físico actualizado!');
-            cargarInventarioFisico();
-        }
 
         // --- RENDERIZADO DE ETIQUETAS QR 100% FUNCIONAL Y EXACTO AL MODELO ---
         async function renderizarEtiquetasQr() {
