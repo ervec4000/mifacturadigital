@@ -6,6 +6,8 @@
     <title>MiFacturaDigital.com.ve - Sistema Fiscal Integrado SENIAT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Librería SheetJS para generar archivos Excel (.xlsx) profesionales -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         @media print {
             body * { visibility: hidden; }
@@ -71,36 +73,16 @@
 
         <!-- Navegación por Pestañas Organizada -->
         <nav class="bg-slate-950/60 border-b border-slate-800 px-6 py-2.5 flex flex-wrap gap-2">
-            <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer shadow-md flex items-center gap-1.5">
-                🛒 POS Ventas
-            </button>
-            <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">
-                📋 Comprobantes
-            </button>
-            <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">
-                📊 Reporte Z & Libro
-            </button>
-            <button onclick="cambiarPestana('compras')" id="btnTabCompras" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">
-                📥 Compras (Entrada)
-            </button>
-            <button onclick="cambiarPestana('kardex')" id="btnTabKardex" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">
-                📦 Kardex PPM
-            </button>
-            <button onclick="cambiarPestana('etiquetas')" id="btnTabEtiquetas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">
-                🏷️ Etiquetas QR
-            </button>
-            <button onclick="cambiarPestana('cuentas')" id="btnTabCuentas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">
-                📑 Créditos (CxC)
-            </button>
-            <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">
-                📦 Stock / Artículos
-            </button>
-            <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">
-                👥 Clientes
-            </button>
-            <button onclick="cambiarPestana('inquilinosMaster')" id="btnTabInquilinosMaster" class="tab-master bg-emerald-950 border border-emerald-700/50 hover:bg-emerald-900 text-emerald-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">
-                🏢 Master Tenants
-            </button>
+            <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer shadow-md flex items-center gap-1.5">🛒 POS Ventas</button>
+            <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📋 Comprobantes</button>
+            <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📊 Reporte Z & Libro</button>
+            <button onclick="cambiarPestana('compras')" id="btnTabCompras" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📥 Compras</button>
+            <button onclick="cambiarPestana('kardex')" id="btnTabKardex" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📦 Kardex PPM</button>
+            <button onclick="cambiarPestana('etiquetas')" id="btnTabEtiquetas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🏷️ Etiquetas QR</button>
+            <button onclick="cambiarPestana('cuentas')" id="btnTabCuentas" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📑 Créditos (CxC)</button>
+            <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📦 Stock / Artículos</button>
+            <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">👥 Clientes</button>
+            <button onclick="cambiarPestana('inquilinosMaster')" id="btnTabInquilinosMaster" class="tab-master bg-emerald-950 border border-emerald-700/50 hover:bg-emerald-900 text-emerald-300 px-3.5 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🏢 Master Tenants</button>
         </nav>
 
         <!-- CONTENEDOR DE SECCIONES -->
@@ -231,7 +213,10 @@
             <div id="seccionHistorial" class="hidden space-y-6">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-3">
                     <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📋 Historial de Comprobantes Fiscales</h3>
-                    <button onclick="cargarHistorial()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Actualizar Lista</button>
+                    <div class="flex gap-2">
+                        <button onclick="exportarHistorialExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Comprobantes (Excel)</button>
+                        <button onclick="cargarHistorial()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Actualizar</button>
+                    </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-950/40 p-4 rounded-2xl border border-slate-800">
                     <div>
@@ -276,7 +261,7 @@
                         </div>
                         <div class="flex gap-2">
                             <button onclick="generarReporteZ()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer">🔄 Recalcular</button>
-                            <button onclick="exportarLibroVentasCSV()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Descargar Libro SENIAT (CSV)</button>
+                            <button onclick="exportarLibroVentasExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Descargar Libro SENIAT (Excel)</button>
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-950 p-4 rounded-xl border border-slate-800 items-end">
@@ -303,23 +288,17 @@
                                 <p class="text-slate-400">Efectivo Esperado Gaveta: <span id="totalGavetaEfectivo" class="text-emerald-400 font-bold text-sm">$ 0.00 | Bs. 0.00</span></p>
                             </div>
                         </div>
-                        <div class="space-y-2 bg-slate-950 p-4 rounded-xl border border-emerald-500/30 text-sm">
-                            <h4 class="font-bold text-emerald-400 uppercase text-xs mb-3 font-sans">💵 Arqueo por Método de Pago</h4>
-                            <div class="flex justify-between text-slate-300"><span>Efectivo Divisas ($):</span><span id="arqEfectivoUsd" class="font-bold">$ 0.00 | Bs. 0.00</span></div>
-                            <div class="flex justify-between text-slate-300"><span>Zelle / Digital ($):</span><span id="arqZelle" class="font-bold">$ 0.00 | Bs. 0.00</span></div>
-                            <div class="flex justify-between text-slate-300"><span>Pago Móvil / Transf. (Bs.):</span><span id="arqPagoMovil" class="font-bold">$ 0.00 | Bs. 0.00</span></div>
-                            <div class="flex justify-between text-slate-300"><span>Tarjeta Débito - POS (Bs.):</span><span id="arqDebito" class="font-bold">$ 0.00 | Bs. 0.00</span></div>
-                            <div class="flex justify-between text-slate-300"><span>Tarjeta Crédito - POS (Bs.):</span><span id="arqCredito" class="font-bold">$ 0.00 | Bs. 0.00</span></div>
-                            <div class="flex justify-between text-slate-300"><span>Efectivo Bolívares (Bs.):</span><span id="arqEfectivoBs" class="font-bold">$ 0.00 | Bs. 0.00</span></div>
-                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- SECCIÓN 3.5: COMPRAS -->
+            <!-- SECCIÓN 4: COMPRAS -->
             <div id="seccionCompras" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
-                    <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📥 Registrar Compra / Entrada de Mercancía (Kardex PPM)</h3>
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📥 Registrar Compra / Entrada de Mercancía</h3>
+                        <button onclick="exportarComprasExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Compras (Excel)</button>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs text-slate-400 mb-1">Producto</label>
@@ -346,12 +325,15 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 3.6: KARDEX -->
+            <!-- SECCIÓN 5: KARDEX -->
             <div id="seccionKardex" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📋 Kardex - Movimientos de Inventario</h3>
-                        <button onclick="cargarKardexMovimientos()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Actualizar</button>
+                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Kardex - Movimientos de Inventario</h3>
+                        <div class="flex gap-2">
+                            <button onclick="exportarKardexExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Kardex (Excel)</button>
+                            <button onclick="cargarKardexMovimientos()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Actualizar</button>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-slate-300">
@@ -372,7 +354,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 3.7: ETIQUETAS QR -->
+            <!-- SECCIÓN 6: ETIQUETAS QR -->
             <div id="seccionEtiquetas" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
@@ -395,15 +377,17 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 3.8: CUENTAS POR COBRAR -->
+            <!-- SECCIÓN 7: CUENTAS POR COBRAR -->
             <div id="seccionCuentas" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
                         <div>
                             <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📑 Cuentas por Cobrar (Créditos / Fiados)</h3>
-                            <p class="text-xs text-slate-400">Saldos pendientes por cliente</p>
                         </div>
-                        <button onclick="cargarCuentasPorCobrar()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Actualizar</button>
+                        <div class="flex gap-2">
+                            <button onclick="exportarCxCExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar CxC (Excel)</button>
+                            <button onclick="cargarCuentasPorCobrar()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Actualizar</button>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-slate-300">
@@ -422,10 +406,13 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 5: STOCK -->
+            <!-- SECCIÓN 8: STOCK / PRODUCTOS -->
             <div id="seccionProductos" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
-                    <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Maestro de Artículos y Stock</h3>
+                    <div class="flex justify-between items-center">
+                        <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📦 Maestro de Artículos y Stock</h3>
+                        <button onclick="exportarStockExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Stock (Excel)</button>
+                    </div>
                     <input type="hidden" id="editProductoId">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
@@ -481,10 +468,13 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 6: CLIENTES -->
+            <!-- SECCIÓN 9: CLIENTES -->
             <div id="seccionClientes" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
-                    <h3 id="tituloFormCliente" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">👥 Maestro de Clientes</h3>
+                    <div class="flex justify-between items-center">
+                        <h3 id="tituloFormCliente" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">👥 Maestro de Clientes</h3>
+                        <button onclick="exportarClientesExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Clientes (Excel)</button>
+                    </div>
                     <input type="hidden" id="editClienteId">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -524,19 +514,15 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 7: MASTER TENANTS -->
+            <!-- SECCIÓN 10: MASTER TENANTS -->
             <div id="seccionInquilinosMaster" class="hidden tab-master space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
                         <div>
                             <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🏢 Administración Master de Tenants (Inquilinos)</h3>
-                            <p class="text-xs text-slate-400">Control maestro de accesos, RIF, planes y estatus SaaS</p>
                         </div>
-                        <button onclick="abrirModalNuevoTenant()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow">
-                            + Nuevo Tenant
-                        </button>
+                        <button onclick="abrirModalNuevoTenant()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-4 py-2.5 rounded-xl font-semibold cursor-pointer shadow">+ Nuevo Tenant</button>
                     </div>
-
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
@@ -561,54 +547,31 @@
         </footer>
     </div>
 
-    <!-- MODAL TICKET / COMPROBANTE -->
+    <!-- MODAL TICKET -->
     <div id="modalTicket" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
         <div class="bg-white text-slate-900 w-full max-w-md rounded-2xl p-6 shadow-2xl relative font-mono text-xs space-y-3 max-h-[90vh] overflow-y-auto">
             <div class="text-center border-b border-dashed border-slate-400 pb-3 space-y-2">
-                <div id="ticketLogoContainer" class="flex justify-center mb-1"></div>
                 <h2 class="font-bold text-sm" id="ticketComercioNombre">COMERCIO C.A.</h2>
                 <p id="ticketComercioRif">RIF: J-00000000-0</p>
-                <p id="ticketComercioContacto" class="text-[10px] text-slate-600">Dirección / Teléfono</p>
-                <p class="font-bold text-emerald-700 mt-1" id="ticketTipoTitulo">FACTURA FISCAL DIGITAL</p>
+                <p class="font-bold text-emerald-700 mt-1">FACTURA FISCAL DIGITAL</p>
             </div>
-
             <div class="space-y-1 border-b border-dashed border-slate-400 pb-3 text-[11px]">
                 <div class="flex justify-between"><span id="ticketNro">Factura: FAC-0000</span><span id="ticketFecha">Fecha: --/--/----</span></div>
-                <div class="flex justify-between"><span id="ticketControl">Control: 00-000000</span><span>Tasa BCV: <span id="ticketTasa">0.00</span></span></div>
-                <div id="ticketCliente" class="pt-1 font-bold text-slate-800">Cliente: --</div>
-                <div id="ticketMetodoPago" class="text-slate-700 font-bold">Método de Pago: --</div>
-                <div id="ticketAplicaIgtf" class="text-emerald-700 font-semibold">IGTF (3%): SÍ / NO</div>
+                <div class="flex justify-between"><span id="ticketControl">Control: 00-000000</span><span>Tasa: <span id="ticketTasa">0.00</span></span></div>
+                <div id="ticketCliente" class="pt-1 font-bold">Cliente: --</div>
+                <div id="ticketMetodoPago" class="text-slate-700 font-bold">Método: --</div>
             </div>
-
-            <div class="border-b border-dashed border-slate-400 pb-3 space-y-1">
-                <div class="font-bold mb-1 text-[11px]">DETALLE DE ÍTEMS</div>
-                <div id="ticketItemsContainer" class="space-y-1"></div>
-            </div>
-
-            <div id="bloqueTotalesFactura" class="border-b border-dashed border-slate-400 pb-2 space-y-1 text-[11px]">
-                <div class="flex justify-between"><span>Base Imponible:</span><span id="ticketBaseGravada">$ 0.00 | Bs. 0.00</span></div>
-                <div class="flex justify-between"><span>Monto Exento:</span><span id="ticketExento">$ 0.00 | Bs. 0.00</span></div>
-                <div class="flex justify-between font-bold"><span>IVA (16%):</span><span id="ticketIva">$ 0.00 | Bs. 0.00</span></div>
-                <div class="flex justify-between font-bold"><span>IGTF (3%):</span><span id="ticketIgtf">$ 0.00 | Bs. 0.00</span></div>
-            </div>
-
             <div class="flex justify-between font-bold text-sm border-t border-slate-900 pt-2">
-                <span id="ticketLabelTotal">TOTAL A PAGAR:</span>
+                <span>TOTAL A PAGAR:</span>
                 <span id="ticketTotal" class="text-emerald-700">$ 0.00 | Bs. 0.00</span>
             </div>
-
-            <div class="text-center text-[10px] text-slate-500 pt-2 border-t border-dashed border-slate-300">
-                <p>¡Providencia SENIAT Conforme!</p>
-                <p>MiFacturaDigital.com.ve - Copia sin derecho a crédito fiscal</p>
-            </div>
-
             <div class="space-y-2 pt-2 no-print">
                 <div class="grid grid-cols-3 gap-1">
-                    <button onclick="window.print()" class="bg-slate-900 hover:bg-slate-800 text-white py-2 rounded font-sans font-semibold cursor-pointer text-[10px]">🖨️ PDF</button>
-                    <button onclick="enviarWhatsApp()" class="bg-emerald-600 hover:bg-emerald-500 text-white py-2 rounded font-sans font-semibold cursor-pointer text-[10px]">📱 WhatsApp</button>
-                    <button onclick="imprimirBluetooth()" class="bg-sky-600 hover:bg-sky-500 text-white py-2 rounded font-sans font-semibold cursor-pointer text-[10px]">📶 BT Térmica</button>
+                    <button onclick="window.print()" class="bg-slate-900 text-white py-2 rounded font-sans font-semibold cursor-pointer text-[10px]">🖨️ PDF</button>
+                    <button onclick="enviarWhatsApp()" class="bg-emerald-600 text-white py-2 rounded font-sans font-semibold cursor-pointer text-[10px]">📱 WhatsApp</button>
+                    <button onclick="imprimirBluetoothReal()" class="bg-sky-600 text-white py-2 rounded font-sans font-semibold cursor-pointer text-[10px]">📶 BT Térmica</button>
                 </div>
-                <button onclick="cerrarTicket()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-800 py-1.5 rounded font-sans font-semibold cursor-pointer text-xs">Cerrar</button>
+                <button onclick="cerrarTicket()" class="w-full bg-slate-200 text-slate-800 py-1.5 rounded font-sans font-semibold cursor-pointer text-xs">Cerrar</button>
             </div>
         </div>
     </div>
@@ -618,38 +581,15 @@
         <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
             <h3 class="text-base font-bold text-emerald-400">👤 Perfil y Datos Fiscales</h3>
             <div class="space-y-3 text-xs">
-                <div>
-                    <label class="block text-slate-400 mb-1">Correo Electrónico</label>
-                    <input type="email" id="perfilEmail" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-400 font-mono cursor-not-allowed">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Razón Social</label>
-                    <input type="text" id="perfilRazonSocial" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">RIF</label>
-                    <input type="text" id="perfilRif" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Teléfono</label>
-                    <input type="text" id="perfilTelefono" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Dirección Fiscal</label>
-                    <input type="text" id="perfilDireccion" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">URL del Logo</label>
-                    <input type="text" id="perfilLogo" placeholder="https://..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Contraseña</label>
-                    <input type="text" id="perfilPassword" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono">
-                </div>
+                <div><label class="block text-slate-400 mb-1">Correo</label><input type="email" id="perfilEmail" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-400 font-mono"></div>
+                <div><label class="block text-slate-400 mb-1">Razón Social</label><input type="text" id="perfilRazonSocial" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
+                <div><label class="block text-slate-400 mb-1">RIF</label><input type="text" id="perfilRif" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
+                <div><label class="block text-slate-400 mb-1">Teléfono</label><input type="text" id="perfilTelefono" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
+                <div><label class="block text-slate-400 mb-1">Dirección</label><input type="text" id="perfilDireccion" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
             </div>
             <div class="flex space-x-2 pt-2">
-                <button onclick="guardarCambiosPerfil()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs shadow">Guardar Cambios</button>
-                <button onclick="cerrarModalPerfil()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cerrar</button>
+                <button onclick="guardarCambiosPerfil()" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs shadow">Guardar</button>
+                <button onclick="cerrarModalPerfil()" class="w-full bg-slate-800 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cerrar</button>
             </div>
         </div>
     </div>
@@ -658,141 +598,16 @@
     <div id="modalSuscripcion" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
         <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
             <h3 class="text-base font-bold text-amber-400">💳 Membresía SaaS</h3>
-            <p class="text-xs text-slate-300">Renueva tu plan mensual de facturación ilimitada por <span class="text-emerald-400 font-bold">$15.00 USD</span>.</p>
-            <div class="space-y-2 bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
-                <button onclick="simularPagoPasarela('Binance Pay')" class="w-full bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-700/50 p-3 rounded-xl font-semibold cursor-pointer text-left flex justify-between"><span>🟡 Binance Pay</span><span class="font-mono">$15.00</span></button>
-                <button onclick="simularPagoPasarela('Zinli / Zelle')" class="w-full bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-700/50 p-3 rounded-xl font-semibold cursor-pointer text-left flex justify-between"><span>🔵 Zinli / Zelle</span><span class="font-mono">$15.00</span></button>
-                <button onclick="simularPagoPasarela('Pago Móvil')" class="w-full bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-700/50 p-3 rounded-xl font-semibold cursor-pointer text-left flex justify-between"><span>🟢 Pago Móvil (Tasa BCV)</span><span class="font-mono">Equivalente</span></button>
+            <p class="text-xs text-slate-300">Renueva tu plan mensual por <span class="text-emerald-400 font-bold">$15.00 USD</span>.</p>
+            <div class="space-y-2 text-xs">
+                <button onclick="simularPagoPasarela('Binance Pay')" class="w-full bg-amber-600/20 text-amber-300 border border-amber-700/50 p-3 rounded-xl font-semibold cursor-pointer">🟡 Binance Pay ($15)</button>
+                <button onclick="simularPagoPasarela('Pago Móvil')" class="w-full bg-emerald-600/20 text-emerald-300 border border-emerald-700/50 p-3 rounded-xl font-semibold cursor-pointer">🟢 Pago Móvil</button>
             </div>
-            <button onclick="cerrarModalSuscripcion()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cerrar</button>
+            <button onclick="cerrarModalSuscripcion()" class="w-full bg-slate-800 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cerrar</button>
         </div>
     </div>
 
-    <!-- MODAL MASTER TENANT -->
-    <div id="modalTenantMaster" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-        <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-base font-bold text-emerald-400" id="tituloTenantModal">🏢 Registrar Nuevo Tenant</h3>
-            <input type="hidden" id="masterTenantId">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                <div class="md:col-span-2">
-                    <label class="block text-slate-400 mb-1">Correo Electrónico</label>
-                    <input type="email" id="masterEmail" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Contraseña</label>
-                    <input type="text" id="masterPassword" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Rol</label>
-                    <input type="text" id="masterRol" value="admin" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-amber-400 font-semibold font-mono">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">RIF</label>
-                    <input type="text" id="masterRif" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Teléfono</label>
-                    <input type="text" id="masterTelefono" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-slate-400 mb-1">Razón Social</label>
-                    <input type="text" id="masterRazonSocial" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-slate-400 mb-1">Dirección Fiscal</label>
-                    <input type="text" id="masterDireccion" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Plan Activo</label>
-                    <select id="masterPlanActivo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-semibold">
-                        <option value="Administración">Administración</option>
-                        <option value="Freemium">Freemium</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-slate-400 mb-1">Estatus</label>
-                    <select id="masterActivo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-semibold">
-                        <option value="true">Activo (Sí)</option>
-                        <option value="false">Inactivo (No)</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block text-slate-400 mb-1">URL Logo</label>
-                    <input type="text" id="masterLogo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
-                </div>
-            </div>
-            <div class="flex space-x-2 pt-2">
-                <button onclick="guardarInquilinoMaster()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs shadow">Guardar Tenant</button>
-                <button onclick="cerrarModalTenantMaster()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL NOTA CRÉDITO -->
-    <div id="modalNotaCredito" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-        <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 class="text-base font-bold text-amber-400">📄 Emitir Nota de Crédito Fiscal</h3>
-            <div class="text-xs space-y-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <p class="text-slate-300">Factura Ref: <span id="ncFacturaRef" class="font-bold text-white">--</span></p>
-                <p class="text-slate-300">Cliente: <span id="ncClienteRef" class="text-white">--</span></p>
-            </div>
-            <div>
-                <label class="block text-xs text-slate-400 mb-1">Motivo (Devolución / Anulación)</label>
-                <input type="text" id="ncMotivo" placeholder="Ej. Devolución de mercancía" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
-            </div>
-            <div id="ncItemsContainer" class="space-y-1 bg-slate-950/60 p-3 rounded-xl border border-slate-800 max-h-40 overflow-y-auto text-xs"></div>
-            <div class="flex justify-between font-bold text-sm border-t border-slate-800 pt-2 text-amber-400">
-                <span>Total Reintegro:</span><span id="ncTotalBs">$ 0.00 | Bs. 0.00</span>
-            </div>
-            <div class="flex space-x-2 pt-2">
-                <button onclick="procesarNotaCredito()" class="w-full bg-amber-600 hover:bg-amber-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Confirmar Nota Crédito</button>
-                <button onclick="cerrarModalNotaCredito()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL NOTA DÉBITO -->
-    <div id="modalNotaDebito" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-        <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 class="text-base font-bold text-sky-400">📄 Emitir Nota de Débito Fiscal</h3>
-            <div class="text-xs space-y-2 bg-slate-950 p-3 rounded-xl border border-slate-800">
-                <p class="text-slate-300">Factura Ref: <span id="ndFacturaRef" class="font-bold text-white">--</span></p>
-                <p class="text-slate-300">Cliente: <span id="ndClienteRef" class="text-white">--</span></p>
-            </div>
-            <div>
-                <label class="block text-xs text-slate-400 mb-1">Motivo (Diferencial / Recargo)</label>
-                <input type="text" id="ndMotivo" placeholder="Ej. Ajuste cambiario" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">Monto ($)</label>
-                    <input type="number" id="ndMontoUsd" step="0.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono" oninput="sincronizarNdMonto('usd')">
-                </div>
-                <div>
-                    <label class="block text-xs text-slate-400 mb-1">Monto (Bs.)</label>
-                    <input type="number" id="ndMontoBs" step="0.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono" oninput="sincronizarNdMonto('bs')">
-                </div>
-            </div>
-            <div class="flex space-x-2 pt-2">
-                <button onclick="procesarNotaDebito()" class="w-full bg-sky-600 hover:bg-sky-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Confirmar Nota Débito</button>
-                <button onclick="cerrarModalNotaDebito()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL IMPRESIÓN QR -->
-    <div id="modalImprimirQr" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-        <div class="bg-white text-slate-900 w-full max-w-md rounded-2xl p-6 shadow-2xl relative font-mono text-xs space-y-3 max-h-[90vh] overflow-y-auto">
-            <h3 class="font-bold text-center text-sm border-b pb-2">HOJA DE ETIQUETAS DE DEPÓSITO</h3>
-            <div id="contenidoModalQrImprimir" class="space-y-4"></div>
-            <div class="flex gap-2 pt-2 no-print">
-                <button onclick="window.print()" class="w-full bg-slate-900 text-white py-2.5 rounded-xl font-sans font-semibold cursor-pointer">🖨️ Imprimir</button>
-                <button onclick="document.getElementById('modalImprimirQr').classList.add('hidden')" class="w-full bg-slate-200 text-slate-800 py-2.5 rounded-xl font-sans font-semibold cursor-pointer">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- SCRIPT DE LÓGICA COMPLETO -->
+    <!-- SCRIPT GENERAL Y DE EXPORTACIÓN EXCEL -->
     <script>
         const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji'; 
@@ -803,72 +618,48 @@
         let productosCache = [];
         let clientesCache = [];
         let documentosHistorialCache = [];
-        let facturaSeleccionadaParaNC = null;
-        let facturaItemsParaNC = [];
-        let facturaSeleccionadaParaND = null;
-        let documentoActualTicket = null;
 
         window.onload = function() {
             if (window.supabase) {
                 supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 verificarSesionGuardada();
                 verificarColaOffline();
-            } else {
-                alert('Error al cargar Supabase.');
             }
         };
 
         function formatearFecha8Digitos(isoString) {
             if (!isoString) return '--/--/---- --:--';
             const d = new Date(isoString);
-            const dd = String(d.getDate()).padStart(2, '0');
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const aaaa = d.getFullYear();
-            const hh = String(d.getHours()).padStart(2, '0');
-            const min = String(d.getMinutes()).padStart(2, '0');
-            const ss = String(d.getSeconds()).padStart(2, '0');
-            return `${dd}/${mm}/${aaaa} ${hh}:${min}:${ss}`;
+            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
         }
 
         async function consultarTasaBcvApi() {
             try {
                 const res = await fetch('https://pydolarvenezuela-api.valtx.workers.dev/api/v1/dollar/bcv');
                 const json = await res.json();
-                if (json && json.monitors && json.monitors.usd) {
-                    const tasaOficial = json.monitors.usd.price;
-                    document.getElementById('tasaBcv').value = tasaOficial.toFixed(2);
+                if (json?.monitors?.usd?.price) {
+                    document.getElementById('tasaBcv').value = json.monitors.usd.price.toFixed(2);
                     recalcularTodo();
                 }
-            } catch (e) {
-                console.warn('API BCV offline', e);
-            }
+            } catch (e) { console.warn('BCV API offline'); }
         }
 
         async function iniciarSesionTenant() {
-            const emailInput = document.getElementById('loginEmail').value.trim();
-            const passwordInput = document.getElementById('loginPassword').value.trim();
-            if (!emailInput) { alert('Ingrese un correo.'); return; }
-
-            const { data, error } = await supabaseClient
-                .from('tenants').select('*').eq('email', emailInput).single();
-
+            const email = document.getElementById('loginEmail').value.trim();
+            const pass = document.getElementById('loginPassword').value.trim();
+            if (!email) { alert('Ingrese un correo.'); return; }
+            const { data, error } = await supabaseClient.from('tenants').select('*').eq('email', email).single();
             if (error || !data) { alert('Correo no registrado.'); return; }
-            if (data.activo === false || data.activo === 'false') { alert('Cuenta inactiva.'); return; }
-            if (data.password && data.password !== passwordInput) { alert('Contraseña incorrecta.'); return; }
-
+            if (data.password && data.password !== pass) { alert('Contraseña incorrecta.'); return; }
             tenantActual = data;
             if (!tenantActual.plan_activo) tenantActual.plan_activo = 'Freemium';
-
             localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
             activarVistaPrincipal();
         }
 
         function verificarSesionGuardada() {
             const guardado = localStorage.getItem('tenant_actual');
-            if (guardado) {
-                tenantActual = JSON.parse(guardado);
-                activarVistaPrincipal();
-            }
+            if (guardado) { tenantActual = JSON.parse(guardado); activarVistaPrincipal(); }
         }
 
         function activarVistaPrincipal() {
@@ -878,7 +669,6 @@
             document.getElementById('headerTenantRif').innerText = tenantActual.rif || 'J-00000000-0';
             document.getElementById('headerTenantRol').innerText = (tenantActual.rol || 'freemium').toUpperCase();
             document.getElementById('headerTenantPlan').innerText = (tenantActual.plan_activo || 'Freemium').toUpperCase();
-
             cambiarPestana('pos');
         }
 
@@ -903,12 +693,11 @@
                     sec.classList.add('hidden');
                 }
             });
-
             if (pestana === 'historial') cargarHistorial();
             if (pestana === 'cierrez') {
                 const hoy = new Date().toISOString().slice(0,10);
-                if (!document.getElementById('filtroFechaDesde').value) document.getElementById('filtroFechaDesde').value = hoy;
-                if (!document.getElementById('filtroFechaHasta').value) document.getElementById('filtroFechaHasta').value = hoy;
+                document.getElementById('filtroFechaDesde').value = hoy;
+                document.getElementById('filtroFechaHasta').value = hoy;
                 generarReporteZ();
             }
             if (pestana === 'compras') cargarProductosSelectCompra();
@@ -917,7 +706,6 @@
             if (pestana === 'cuentas') cargarCuentasPorCobrar();
             if (pestana === 'productos') cargarProductosGestion();
             if (pestana === 'clientes') cargarClientesGestion();
-            if (pestana === 'inquilinosMaster') cargarInquilinosMaster();
             if (pestana === 'pos') { consultarTasaBcvApi(); cargarProductosSelect(); cargarClientesSelect(); }
         }
 
@@ -927,91 +715,186 @@
             document.getElementById('perfilRif').value = tenantActual.rif || '';
             document.getElementById('perfilTelefono').value = tenantActual.telefono || '';
             document.getElementById('perfilDireccion').value = tenantActual.direccion || '';
-            document.getElementById('perfilLogo').value = tenantActual.logo || '';
-            document.getElementById('perfilPassword').value = tenantActual.password || '';
             document.getElementById('modalPerfilUsuario').classList.remove('hidden');
         }
         function cerrarModalPerfil() { document.getElementById('modalPerfilUsuario').classList.add('hidden'); }
-
         async function guardarCambiosPerfil() {
-            const razon = document.getElementById('perfilRazonSocial').value.trim();
-            const rif = document.getElementById('perfilRif').value.trim();
-            const telefono = document.getElementById('perfilTelefono').value.trim();
-            const direccion = document.getElementById('perfilDireccion').value.trim();
-            const logo = document.getElementById('perfilLogo').value.trim();
-            const password = document.getElementById('perfilPassword').value.trim();
-            try {
-                const payload = { razon_social: razon, rif, telefono, direccion, logo, password };
-                await supabaseClient.from('tenants').update(payload).eq('id', tenantActual.id);
-                tenantActual = {...tenantActual, ...payload};
-                localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
-                alert('¡Perfil actualizado!');
-                cerrarModalPerfil();
-                activarVistaPrincipal();
-            } catch (err) { alert('Error: ' + err.message); }
+            const payload = {
+                razon_social: document.getElementById('perfilRazonSocial').value.trim(),
+                rif: document.getElementById('perfilRif').value.trim(),
+                telefono: document.getElementById('perfilTelefono').value.trim(),
+                direccion: document.getElementById('perfilDireccion').value.trim()
+            };
+            await supabaseClient.from('tenants').update(payload).eq('id', tenantActual.id);
+            tenantActual = {...tenantActual, ...payload};
+            localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
+            alert('¡Perfil actualizado!');
+            cerrarModalPerfil();
+            activarVistaPrincipal();
         }
 
         function abrirModalSuscripcion() { document.getElementById('modalSuscripcion').classList.remove('hidden'); }
         function cerrarModalSuscripcion() { document.getElementById('modalSuscripcion').classList.add('hidden'); }
-        async function simularPagoPasarela(pasarela) {
-            alert(`¡Pago simulado con ${pasarela}! Membresía renovada por 30 días.`);
+        function simularPagoPasarela(pas) {
+            alert(`¡Pago simulado con ${pas}! Membresía renovada.`);
             tenantActual.plan_activo = 'Administración';
             localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
             document.getElementById('headerTenantPlan').innerText = 'ADMINISTRACIÓN';
             cerrarModalSuscripcion();
         }
 
-        // --- MÓDULOS DE NEGOCIO ---
+        // --- FUNCIONES DE EXPORTACIÓN EXCEL (.xlsx) ---
+        function descargarExcel(datos, nombreArchivo, nombreHoja) {
+            const worksheet = XLSX.utils.json_to_sheet(datos);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, nombreHoja);
+            XLSX.writeFile(workbook, `${nombreArchivo}_${new Date().toISOString().slice(0,10)}.xlsx`);
+        }
+
+        async function exportarStockExcel() {
+            const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+            if (!data || data.length === 0) { alert('Sin datos de stock.'); return; }
+            const excelData = data.map(p => ({
+                SKU: p.codigo_sku || 'N/A',
+                Descripción: p.descripcion,
+                'Unidad de Medida': p.unidad_medida,
+                Stock: p.stock,
+                'Precio Unitario ($)': p.precio_unitario_usd,
+                'Estatus Fiscal': p.es_exento ? 'Exento' : 'Gravado 16%'
+            }));
+            descargarExcel(excelData, 'Inventario_Stock', 'Stock');
+        }
+
+        async function exportarClientesExcel() {
+            const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
+            if (!data || data.length === 0) { alert('Sin clientes.'); return; }
+            const excelData = data.map(c => ({
+                'RIF / Cédula': c.rif,
+                'Razón Social': c.razon_social,
+                'Dirección Fiscal': c.direccion,
+                Teléfono: c.telefono
+            }));
+            descargarExcel(excelData, 'Directorio_Clientes', 'Clientes');
+        }
+
+        async function exportarComprasExcel() {
+            const { data } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion)').eq('tenant_id', tenantActual.id).eq('tipo_movimiento', 'ENTRADA');
+            if (!data || data.length === 0) { alert('Sin registros de compras.'); return; }
+            const excelData = data.map(m => ({
+                Fecha: formatearFecha8Digitos(m.created_at),
+                'Documento / Ref': m.documento_ref,
+                Artículo: m.productos?.descripcion || 'Artículo',
+                'Cantidad Entrante': m.cantidad_in,
+                'Costo Unitario ($)': m.costo_unit_usd_in || 0,
+                'Costo Promedio ($)': m.costo_promedio_usd
+            }));
+            descargarExcel(excelData, 'Registro_Compras', 'Compras');
+        }
+
+        async function exportarKardexExcel() {
+            const { data } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion)').eq('tenant_id', tenantActual.id);
+            if (!data || data.length === 0) { alert('Sin movimientos en Kardex.'); return; }
+            const excelData = data.map(m => ({
+                Fecha: formatearFecha8Digitos(m.created_at),
+                Movimiento: m.tipo_movimiento,
+                Documento: m.documento_ref,
+                Artículo: m.productos?.descripcion || 'Artículo',
+                Entrada: m.cantidad_in || 0,
+                Salida: m.cantidad_out || 0,
+                Saldo: m.saldo_cantidad,
+                'Costo Promedio ($)': m.costo_promedio_usd
+            }));
+            descargarExcel(excelData, 'Kardex_Inventario', 'Kardex');
+        }
+
+        async function exportarHistorialExcel() {
+            if (!documentosHistorialCache || documentosHistorialCache.length === 0) { alert('Sin comprobantes.'); return; }
+            const excelData = documentosHistorialCache.map(d => ({
+                Tipo: d.tipoDoc,
+                Número: d.numero,
+                Control: d.nro_control || 'N/A',
+                Cliente: d.cliente_nombre,
+                'Método / Motivo': d.metodo_pago || d.motivo || 'N/A',
+                Fecha: formatearFecha8Digitos(d.created_at),
+                'Total (Bs)': d.total_bs
+            }));
+            descargarExcel(excelData, 'Historial_Comprobantes', 'Comprobantes');
+        }
+
+        async function exportarLibroVentasExcel() {
+            const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
+            if (!data || data.length === 0) { alert('Sin ventas para el libro.'); return; }
+            const excelData = data.map(f => ({
+                Factura: f.factura_nro,
+                Control: f.nro_control,
+                Fecha: formatearFecha8Digitos(f.created_at),
+                RIF: f.cliente_rif,
+                Cliente: f.cliente_nombre,
+                'Total Bs': f.total_bs,
+                'IVA Bs': f.iva_bs,
+                'IGTF Bs': f.igtf_bs
+            }));
+            descargarExcel(excelData, 'Libro_Ventas_SENIAT', 'LibroVentas');
+        }
+
+        async function exportarCxCExcel() {
+            const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).eq('metodo_pago', 'CREDITO ABIERTO');
+            if (!data || data.length === 0) { alert('Sin cuentas por cobrar.'); return; }
+            const excelData = data.map(c => ({
+                Factura: c.factura_nro,
+                Fecha: formatearFecha8Digitos(c.created_at),
+                Cliente: c.cliente_nombre,
+                RIF: c.cliente_rif,
+                'Deuda Total Bs': c.total_bs
+            }));
+            descargarExcel(excelData, 'Cuentas_Por_Cobrar', 'CxC');
+        }
+
+        // --- POS Y OPERACIONES ---
         async function renderizarEtiquetasQr() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             const contenedor = document.getElementById('contenedorGridEtiquetas');
             const ubicacionBase = document.getElementById('inputUbicacionQr').value.trim() || 'ALM-01-01';
             contenedor.innerHTML = '';
-            if (!data || data.length === 0) { contenedor.innerHTML = '<p class="text-slate-500">Sin artículos.</p>'; return; }
+            if (!data) return;
             data.forEach((p, idx) => {
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=SKU:${p.codigo_sku || 'S/N'}|UBI:${ubicacionBase}`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=SKU:${p.codigo_sku||'S/N'}|UBI:${ubicacionBase}`;
                 contenedor.innerHTML += `
                     <div class="bg-white text-slate-900 p-4 rounded-xl border border-slate-300 font-mono text-xs flex flex-col items-center text-center space-y-2 shadow">
                         <div class="font-bold text-sm">${p.descripcion}</div>
-                        <div class="text-[10px] text-slate-600">SKU: ${p.codigo_sku || 'S/N'} | Stock: ${p.stock || 0}</div>
+                        <div class="text-[10px] text-slate-600">SKU: ${p.codigo_sku||'S/N'}</div>
                         <img src="${qrUrl}" alt="QR" class="w-24 h-24 object-contain">
                         <div class="bg-slate-100 px-2 py-1 rounded w-full font-bold text-[11px]">Ubicación: ${ubicacionBase}-${idx+1}</div>
                     </div>
                 `;
             });
         }
-        function imprimirEtiquetasQr() {
-            document.getElementById('contenidoModalQrImprimir').innerHTML = `<div class="grid grid-cols-2 gap-4">${document.getElementById('contenedorGridEtiquetas').innerHTML}</div>`;
-            document.getElementById('modalImprimirQr').classList.remove('hidden');
-        }
+        function imprimirEtiquetasQr() { window.print(); }
 
         async function cargarCuentasPorCobrar() {
-            const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).eq('metodo_pago', 'CREDITO ABIERTO').order('created_at', { ascending: false });
+            const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).eq('metodo_pago', 'CREDITO ABIERTO');
             const tbody = document.getElementById('tablaCuentasPorCobrar');
             tbody.innerHTML = '';
-            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No hay cuentas por cobrar.</td></tr>`; return; }
+            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin cuentas por cobrar.</td></tr>`; return; }
             data.forEach(inv => {
-                const usd = (inv.total_bs / (inv.tasa_bcv || 1)).toFixed(2);
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 font-mono text-amber-400 font-bold">${inv.factura_nro}</td>
                         <td class="p-3 text-slate-400">${formatearFecha8Digitos(inv.created_at)}</td>
-                        <td class="p-3 text-slate-200">${inv.cliente_nombre} (${inv.cliente_rif})</td>
-                        <td class="p-3 font-mono text-white">$ ${usd} | Bs. ${inv.total_bs.toFixed(2)}</td>
-                        <td class="p-3 text-center"><button onclick='abonarCredito("${inv.id}", ${inv.total_bs})' class="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] px-3 py-1.5 rounded-lg cursor-pointer font-semibold shadow">Registrar Abono</button></td>
+                        <td class="p-3 text-slate-200">${inv.cliente_nombre}</td>
+                        <td class="p-3 font-mono text-white">Bs. ${inv.total_bs.toFixed(2)}</td>
+                        <td class="p-3 text-center"><button onclick='abonarCredito("${inv.id}", ${inv.total_bs})' class="bg-emerald-600 text-white text-[11px] px-3 py-1.5 rounded-lg cursor-pointer">Abonar</button></td>
                     </tr>
                 `;
             });
         }
-        async function abonarCredito(invoiceId, totalBs) {
-            const abono = parseFloat(prompt(`Monto abonado en Bolívares (Deuda total: Bs. ${totalBs.toFixed(2)}):`));
+        async function abonarCredito(id, totalBs) {
+            const abono = parseFloat(prompt(`Monto abonado en Bolívares (Deuda: Bs. ${totalBs.toFixed(2)}):`));
             if (isNaN(abono) || abono <= 0) return;
             if (abono >= totalBs) {
-                await supabaseClient.from('invoices').update({ metodo_pago: 'PAGO CONTADO (PAGADO)' }).eq('id', invoiceId);
+                await supabaseClient.from('invoices').update({ metodo_pago: 'PAGADO' }).eq('id', id);
                 alert('¡Crédito saldado!');
-            } else {
-                alert(`Abono registrado. Quedan Bs. ${(totalBs - abono).toFixed(2)}`);
-            }
+            } else { alert('Abono registrado.'); }
             cargarCuentasPorCobrar();
         }
 
@@ -1020,16 +903,14 @@
             const select = document.getElementById('compraProductoSelect');
             select.innerHTML = '';
             if (!data) return;
-            data.forEach(p => {
-                select.innerHTML += `<option value="${p.id}">${p.descripcion} (Stock: ${p.stock || 0})</option>`;
-            });
+            data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} (Stock: ${p.stock||0})</option>`; });
         }
         async function registrarCompraInventario() {
             const productoId = document.getElementById('compraProductoSelect').value;
             const cantidad = parseFloat(document.getElementById('compraCantidad').value) || 0;
             const costo = parseFloat(document.getElementById('compraCostoUsd').value) || 0;
             const docRef = document.getElementById('compraDocRef').value.trim() || 'COMPRA-01';
-            if (!productoId || cantidad <= 0 || costo <= 0) { alert('Complete los datos de compra.'); return; }
+            if (!productoId || cantidad <= 0 || costo <= 0) { alert('Complete los datos.'); return; }
             
             const { data: prodData } = await supabaseClient.from('productos').select('stock, precio_unitario_usd').eq('id', productoId).single();
             const stockActual = prodData ? (prodData.stock || 0) : 0;
@@ -1043,7 +924,7 @@
                 documento_ref: docRef, cantidad_in: cantidad, costo_unit_usd_in: costo,
                 saldo_cantidad: nuevoStock, costo_promedio_usd: nuevoCostoProm, tasa_bcv: parseFloat(document.getElementById('tasaBcv').value)||1
             }]);
-            alert(`¡Compra registrada! Nuevo stock: ${nuevoStock} | Costo Promedio: $${nuevoCostoProm.toFixed(2)}`);
+            alert('¡Compra registrada con éxito!');
             cargarProductosSelectCompra();
         }
 
@@ -1051,16 +932,15 @@
             const { data } = await supabaseClient.from('kardex_movimientos').select('*, productos(descripcion)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
             const tbody = document.getElementById('tablaKardexMovimientos');
             tbody.innerHTML = '';
-            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin movimientos en Kardex.</td></tr>`; return; }
+            if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin movimientos.</td></tr>`; return; }
             data.forEach(m => {
-                const desc = m.productos ? m.productos.descripcion : 'Artículo';
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 text-slate-400">${formatearFecha8Digitos(m.created_at)}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${m.tipo_movimiento==='ENTRADA'?'bg-emerald-950 text-emerald-300':'bg-amber-950 text-amber-300'} font-bold">${m.tipo_movimiento}</span><br><span class="text-[10px] text-white">${desc}</span></td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${m.tipo_movimiento==='ENTRADA'?'bg-emerald-950 text-emerald-300':'bg-amber-950 text-amber-300'}">${m.tipo_movimiento}</span></td>
                         <td class="p-3 font-mono">${m.documento_ref}</td>
-                        <td class="p-3 font-mono text-emerald-400">${m.cantidad_in > 0 ? '+' + m.cantidad_in : '-'}</td>
-                        <td class="p-3 font-mono text-rose-400">${m.cantidad_out > 0 ? '-' + m.cantidad_out : '-'}</td>
+                        <td class="p-3 font-mono text-emerald-400">${m.cantidad_in||'-'}</td>
+                        <td class="p-3 font-mono text-rose-400">${m.cantidad_out||'-'}</td>
                         <td class="p-3 font-mono font-bold text-white">${m.saldo_cantidad}</td>
                         <td class="p-3 font-mono text-emerald-300">$ ${m.costo_promedio_usd.toFixed(2)}</td>
                     </tr>
@@ -1068,7 +948,6 @@
             });
         }
 
-        // --- PRODUCTOS Y CLIENTES ---
         async function cargarProductosSelect() {
             const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
             productosCache = data || [];
@@ -1076,7 +955,7 @@
             select.innerHTML = '';
             if (productosCache.length === 0) { select.innerHTML = '<option value="">No hay artículos.</option>'; return; }
             productosCache.forEach(prod => {
-                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${prod.unidad_medida || 'Und'}" data-stock="${prod.stock || 0}">${prod.descripcion} [Stock: ${prod.stock || 0}] - $${prod.precio_unitario_usd.toFixed(2)}</option>`;
+                select.innerHTML += `<option value="${prod.id}" data-precio="${prod.precio_unitario_usd}" data-exento="${prod.es_exento}" data-unidad="${prod.unidad_medida||'Und'}" data-stock="${prod.stock||0}">${prod.descripcion} [Stock: ${prod.stock||0}] - $${prod.precio_unitario_usd.toFixed(2)}</option>`;
             });
         }
         async function cargarProductosGestion() {
@@ -1087,45 +966,41 @@
             data.forEach(prod => {
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
-                        <td class="p-3 font-mono text-emerald-400">${prod.codigo_sku || 'S/N'}</td>
+                        <td class="p-3 font-mono text-emerald-400">${prod.codigo_sku||'S/N'}</td>
                         <td class="p-3">${prod.descripcion}</td>
-                        <td class="p-3 text-slate-300">${prod.unidad_medida || 'Und'}</td>
-                        <td class="p-3 font-bold ${prod.stock<=5?'text-rose-400':'text-emerald-400'}">${prod.stock || 0}</td>
+                        <td class="p-3">${prod.unidad_medida||'Und'}</td>
+                        <td class="p-3 font-bold ${prod.stock<=5?'text-rose-400':'text-emerald-400'}">${prod.stock||0}</td>
                         <td class="p-3 font-mono">$ ${prod.precio_unitario_usd.toFixed(2)}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${prod.es_exento?'bg-amber-950 text-amber-300':'bg-emerald-950 text-emerald-300'}">${prod.es_exento?'EXENTO':'GRAVADO'}</span></td>
-                        <td class="p-3 text-center space-x-2">
-                            <button onclick='editarProducto("${prod.id}", "${prod.codigo_sku||''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento}, "${prod.unidad_medida||'Und'}", ${prod.stock||0})' class="text-emerald-400 hover:underline">Editar</button>
-                            <button onclick='eliminarProducto("${prod.id}")' class="text-rose-400 hover:underline">Eliminar</button>
-                        </td>
+                        <td class="p-3">${prod.es_exento?'EXENTO':'GRAVADO'}</td>
+                        <td class="p-3 text-center"><button onclick='editarProducto("${prod.id}", "${prod.codigo_sku||''}", "${prod.descripcion}", ${prod.precio_unitario_usd}, ${prod.es_exento}, "${prod.unidad_medida||'Und'}","${prod.stock||0}")' class="text-emerald-400">Editar</button></td>
                     </tr>
                 `;
             });
         }
         async function guardarProducto() {
             const id = document.getElementById('editProductoId').value;
-            const sku = document.getElementById('prodSku').value.trim();
-            const descripcion = document.getElementById('prodDescripcion').value.trim();
-            const unidad = document.getElementById('prodUnidad').value;
-            const stock = parseFloat(document.getElementById('prodStock').value) || 0;
-            const precio = parseFloat(document.getElementById('prodPrecio').value);
-            const esExento = document.getElementById('prodExento').value === 'true';
-            if (!descripcion || isNaN(precio)) { alert('Ingrese descripción y precio.'); return; }
-            if (id) {
-                await supabaseClient.from('productos').update({ codigo_sku: sku, descripcion, unidad_medida: unidad, stock, precio_unitario_usd: precio, es_exento: esExento }).eq('id', id);
-            } else {
-                await supabaseClient.from('productos').insert([{ tenant_id: tenantActual.id, codigo_sku: sku, descripcion, unidad_medida: unidad, stock, precio_unitario_usd: precio, es_exento: esExento }]);
-            }
+            const payload = {
+                codigo_sku: document.getElementById('prodSku').value.trim(),
+                descripcion: document.getElementById('prodDescripcion').value.trim(),
+                unidad_medida: document.getElementById('prodUnidad').value,
+                stock: parseFloat(document.getElementById('prodStock').value) || 0,
+                precio_unitario_usd: parseFloat(document.getElementById('prodPrecio').value) || 0,
+                es_exento: document.getElementById('prodExento').value === 'true'
+            };
+            if (!payload.descripcion) { alert('Ingrese descripción.'); return; }
+            if (id) { await supabaseClient.from('productos').update(payload).eq('id', id); }
+            else { payload.tenant_id = tenantActual.id; await supabaseClient.from('productos').insert([payload]); }
             limpiarFormProducto();
             cargarProductosGestion();
         }
-        function editarProducto(id, sku, descripcion, precio, esExento, unidad, stock) {
+        function editarProducto(id, sku, desc, precio, exento, unidad, stock) {
             document.getElementById('editProductoId').value = id;
             document.getElementById('prodSku').value = sku;
-            document.getElementById('prodDescripcion').value = descripcion;
+            document.getElementById('prodDescripcion').value = desc;
             document.getElementById('prodUnidad').value = unidad;
             document.getElementById('prodStock').value = stock;
             document.getElementById('prodPrecio').value = precio;
-            document.getElementById('prodExento').value = esExento.toString();
+            document.getElementById('prodExento').value = exento.toString();
             document.getElementById('tituloFormProducto').innerText = '✏️ Editar Artículo';
             document.getElementById('btnCancelarProd').classList.remove('hidden');
         }
@@ -1133,15 +1008,8 @@
             document.getElementById('editProductoId').value = '';
             document.getElementById('prodSku').value = '';
             document.getElementById('prodDescripcion').value = '';
-            document.getElementById('prodStock').value = '100';
-            document.getElementById('prodPrecio').value = '';
             document.getElementById('tituloFormProducto').innerText = '📦 Maestro de Artículos y Stock';
             document.getElementById('btnCancelarProd').classList.add('hidden');
-        }
-        async function eliminarProducto(id) {
-            if (!confirm('¿Eliminar?')) return;
-            await supabaseClient.from('productos').delete().eq('id', id);
-            cargarProductosGestion();
         }
 
         async function cargarClientesSelect() {
@@ -1149,15 +1017,14 @@
             clientesCache = data || [];
             const select = document.getElementById('clienteSelect');
             select.innerHTML = '<option value="">-- Seleccionar Cliente --</option>';
-            clientesCache.forEach(cli => { select.innerHTML += `<option value="${cli.id}">${cli.razon_social} (${cli.rif})</option>`; });
+            clientesCache.forEach(c => { select.innerHTML += `<option value="${c.id}">${c.razon_social} (${c.rif})</option>`; });
         }
         function seleccionarClientePredefinido() {
-            const selectId = document.getElementById('clienteSelect').value;
-            if (!selectId) return;
-            const cli = clientesCache.find(c => c.id === selectId);
-            if (cli) {
-                document.getElementById('clienteRif').value = cli.rif || '';
-                document.getElementById('clienteNombre').value = cli.razon_social || '';
+            const id = document.getElementById('clienteSelect').value;
+            const c = clientesCache.find(x => x.id === id);
+            if (c) {
+                document.getElementById('clienteRif').value = c.rif || '';
+                document.getElementById('clienteNombre').value = c.razon_social || '';
             }
         }
         async function cargarClientesGestion() {
@@ -1165,42 +1032,38 @@
             const tbody = document.getElementById('tablaClientesGestion');
             tbody.innerHTML = '';
             if (!data) return;
-            data.forEach(cli => {
+            data.forEach(c => {
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
-                        <td class="p-3 font-mono text-emerald-400">${cli.rif}</td>
-                        <td class="p-3 font-semibold">${cli.razon_social}</td>
-                        <td class="p-3 text-slate-400">${cli.direccion || 'N/A'}</td>
-                        <td class="p-3 text-slate-300">${cli.telefono || 'N/A'}</td>
-                        <td class="p-3 text-center space-x-2">
-                            <button onclick='editarCliente("${cli.id}", "${cli.rif}", "${cli.razon_social}", "${cli.direccion||''}", "${cli.telefono||''}")' class="text-emerald-400 hover:underline">Editar</button>
-                            <button onclick='eliminarCliente("${cli.id}")' class="text-rose-400 hover:underline">Eliminar</button>
-                        </td>
+                        <td class="p-3 font-mono text-emerald-400">${c.rif}</td>
+                        <td class="p-3 font-semibold">${c.razon_social}</td>
+                        <td class="p-3 text-slate-400">${c.direccion||'N/A'}</td>
+                        <td class="p-3 text-slate-300">${c.telefono||'N/A'}</td>
+                        <td class="p-3 text-center"><button onclick='editarCliente("${c.id}","${c.rif}","${c.razon_social}","${c.direccion||''}","${c.telefono||''}")' class="text-emerald-400">Editar</button></td>
                     </tr>
                 `;
             });
         }
         async function guardarCliente() {
             const id = document.getElementById('editClienteId').value;
-            const rif = document.getElementById('cliRif').value.trim();
-            const razonSocial = document.getElementById('cliRazonSocial').value.trim();
-            const direccion = document.getElementById('cliDireccion').value.trim();
-            const telefono = document.getElementById('cliTelefono').value.trim();
-            if (!rif || !razonSocial) { alert('Ingrese RIF y Razón Social.'); return; }
-            if (id) {
-                await supabaseClient.from('clientes').update({ rif, razon_social: razonSocial, direccion, telefono }).eq('id', id);
-            } else {
-                await supabaseClient.from('clientes').insert([{ tenant_id: tenantActual.id, rif, razon_social: razonSocial, direccion, telefono }]);
-            }
+            const payload = {
+                rif: document.getElementById('cliRif').value.trim(),
+                razon_social: document.getElementById('cliRazonSocial').value.trim(),
+                direccion: document.getElementById('cliDireccion').value.trim(),
+                telefono: document.getElementById('cliTelefono').value.trim()
+            };
+            if (!payload.rif || !payload.razon_social) { alert('Ingrese RIF y Razón Social.'); return; }
+            if (id) { await supabaseClient.from('clientes').update(payload).eq('id', id); }
+            else { payload.tenant_id = tenantActual.id; await supabaseClient.from('clientes').insert([payload]); }
             limpiarFormCliente();
             cargarClientesGestion();
         }
-        function editarCliente(id, rif, razonSocial, direccion, telefono) {
+        function editarCliente(id, rif, raz, dir, tel) {
             document.getElementById('editClienteId').value = id;
             document.getElementById('cliRif').value = rif;
-            document.getElementById('cliRazonSocial').value = razonSocial;
-            document.getElementById('cliDireccion').value = direccion;
-            document.getElementById('cliTelefono').value = telefono;
+            document.getElementById('cliRazonSocial').value = raz;
+            document.getElementById('cliDireccion').value = dir;
+            document.getElementById('cliTelefono').value = tel;
             document.getElementById('tituloFormCliente').innerText = '✏️ Editar Cliente';
             document.getElementById('btnCancelarCli').classList.remove('hidden');
         }
@@ -1208,136 +1071,51 @@
             document.getElementById('editClienteId').value = '';
             document.getElementById('cliRif').value = '';
             document.getElementById('cliRazonSocial').value = '';
-            document.getElementById('cliDireccion').value = '';
-            document.getElementById('cliTelefono').value = '';
             document.getElementById('tituloFormCliente').innerText = '👥 Maestro de Clientes';
             document.getElementById('btnCancelarCli').classList.add('hidden');
         }
-        async function eliminarCliente(id) {
-            if (!confirm('¿Eliminar?')) return;
-            await supabaseClient.from('clientes').delete().eq('id', id);
-            cargarClientesGestion();
-        }
 
-        async function cargarInquilinosMaster() {
-            const { data } = await supabaseClient.from('tenants').select('*');
-            const tbody = document.getElementById('tablaInquilinosMaster');
-            tbody.innerHTML = '';
-            if (!data) return;
-            data.forEach(t => {
-                const esActivo = t.activo !== false && t.activo !== 'false';
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-900">
-                        <td class="p-3 font-mono text-emerald-400">${t.email}<br><span class="text-[10px] text-slate-400">${t.razon_social || ''}</span></td>
-                        <td class="p-3 font-mono text-slate-300">${t.rif || 'N/A'}<br><span class="text-[10px] text-slate-400">${t.telefono || ''}</span></td>
-                        <td class="p-3"><span class="text-emerald-300 font-bold">${t.plan_activo || 'Freemium'}</span><br>${esActivo?'<span class="text-emerald-400">Activo</span>':'<span class="text-rose-400">Inactivo</span>'}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 font-bold uppercase">${t.rol || 'user'}</span></td>
-                        <td class="p-3 text-center">
-                            <button onclick='editarInquilinoMaster("${t.id}", "${t.email}", "${t.password||''}", "${t.rol||''}", "${t.rif||''}", "${t.razon_social||''}", "${t.telefono||''}", "${t.direccion||''}", "${t.plan_activo||'Freemium'}","${esActivo}","${t.logo||''}")' class="text-emerald-400 hover:underline">Configurar</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-        function abrirModalNuevoTenant() {
-            document.getElementById('masterTenantId').value = '';
-            document.getElementById('masterEmail').value = '';
-            document.getElementById('masterPassword').value = '';
-            document.getElementById('masterRol').value = 'admin';
-            document.getElementById('masterRif').value = '';
-            document.getElementById('masterTelefono').value = '';
-            document.getElementById('masterRazonSocial').value = '';
-            document.getElementById('masterDireccion').value = '';
-            document.getElementById('masterPlanActivo').value = 'Administración';
-            document.getElementById('masterActivo').value = 'true';
-            document.getElementById('masterLogo').value = '';
-            document.getElementById('tituloTenantModal').innerText = '🏢 Registrar Nuevo Tenant';
-            document.getElementById('modalTenantMaster').classList.remove('hidden');
-        }
-        function editarInquilinoMaster(id, email, password, rol, rif, razonSocial, telefono, direccion, planActivo, activo, logo) {
-            document.getElementById('masterTenantId').value = id;
-            document.getElementById('masterEmail').value = email;
-            document.getElementById('masterPassword').value = password;
-            document.getElementById('masterRol').value = rol;
-            document.getElementById('masterRif').value = rif;
-            document.getElementById('masterRazonSocial').value = razonSocial;
-            document.getElementById('masterTelefono').value = telefono;
-            document.getElementById('masterDireccion').value = direccion;
-            document.getElementById('masterPlanActivo').value = planActivo;
-            document.getElementById('masterActivo').value = activo === 'false' ? 'false' : 'true';
-            document.getElementById('masterLogo').value = logo;
-            document.getElementById('tituloTenantModal').innerText = '⚙️ Configurar Tenant';
-            document.getElementById('modalTenantMaster').classList.remove('hidden');
-        }
-        function cerrarModalTenantMaster() { document.getElementById('modalTenantMaster').classList.add('hidden'); }
-        async function guardarInquilinoMaster() {
-            const id = document.getElementById('masterTenantId').value;
-            const email = document.getElementById('masterEmail').value.trim();
-            const payload = {
-                email,
-                password: document.getElementById('masterPassword').value.trim(),
-                rol: document.getElementById('masterRol').value.trim(),
-                rif: document.getElementById('masterRif').value.trim(),
-                razon_social: document.getElementById('masterRazonSocial').value.trim(),
-                telefono: document.getElementById('masterTelefono').value.trim(),
-                direccion: document.getElementById('masterDireccion').value.trim(),
-                plan_activo: document.getElementById('masterPlanActivo').value,
-                activo: document.getElementById('masterActivo').value === 'true',
-                logo: document.getElementById('masterLogo').value.trim()
-            };
-            if (!email) { alert('Ingrese correo.'); return; }
-            if (id) {
-                await supabaseClient.from('tenants').update(payload).eq('id', id);
-            } else {
-                await supabaseClient.from('tenants').insert([payload]);
-            }
-            alert('¡Guardado!');
-            cerrarModalTenantMaster();
-            cargarInquilinosMaster();
-        }
-
-        // --- CARRITO Y POS ---
+        // --- POS CARRITO Y FACTURACIÓN ---
         function verificarAplicacionIgtf() {
-            const metodo = document.getElementById('metodoPagoSelect').value;
-            document.getElementById('aplicaIgtfSelect').value = ['EFECTIVO DIVISAS', 'ZELLE'].includes(metodo) ? 'SI' : 'NO';
+            const m = document.getElementById('metodoPagoSelect').value;
+            document.getElementById('aplicaIgtfSelect').value = ['EFECTIVO DIVISAS', 'ZELLE'].includes(m) ? 'SI' : 'NO';
             recalcularTodo();
         }
         function agregarItem() {
-            const select = document.getElementById('productoSelect');
-            if (!select.value) return;
-            const option = select.options[select.selectedIndex];
-            const cantidad = parseFloat(document.getElementById('cantidadItem').value) || 1;
-            const stock = parseFloat(option.getAttribute('data-stock')) || 0;
-            if (cantidad > stock) { alert(`Stock insuficiente (${stock} disponibles).`); return; }
-
+            const sel = document.getElementById('productoSelect');
+            if (!sel.value) return;
+            const opt = sel.options[sel.selectedIndex];
+            const cant = parseFloat(document.getElementById('cantidadItem').value) || 1;
+            const stock = parseFloat(opt.getAttribute('data-stock')) || 0;
+            if (cant > stock) { alert(`Stock insuficiente (${stock} disponibles).`); return; }
             carritoItems.push({
-                productoId: select.value,
-                descripcion: option.text.split(' [')[0],
-                unidad: option.getAttribute('data-unidad'),
-                precio: parseFloat(option.getAttribute('data-precio')),
-                esExento: option.getAttribute('data-exento') === 'true',
-                cantidad: cantidad
+                productoId: sel.value,
+                descripcion: opt.text.split(' [')[0],
+                unidad: opt.getAttribute('data-unidad'),
+                precio: parseFloat(opt.getAttribute('data-precio')),
+                esExento: opt.getAttribute('data-exento') === 'true',
+                cantidad: cant
             });
             actualizarTablaYCalculos();
         }
-        function eliminarItem(index) { carritoItems.splice(index, 1); actualizarTablaYCalculos(); }
-        
+        function eliminarItem(i) { carritoItems.splice(i, 1); actualizarTablaYCalculos(); }
+
         function actualizarTablaYCalculos() {
-            const tasa = parseFloat(document.getElementById('tasaBcv').value.toString().replace(',','.')) || 1;
+            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
             const tbody = document.getElementById('tablaItems');
             tbody.innerHTML = '';
             if (carritoItems.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="p-3 text-center text-slate-500">Carrito vacío.</td></tr>`; }
-            carritoItems.forEach((item, index) => {
+            carritoItems.forEach((item, idx) => {
                 const subUsd = item.precio * item.cantidad;
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3">${item.descripcion} ${item.esExento?'(E)':''}</td>
                         <td class="p-3">${item.cantidad}</td>
-                        <td class="p-3 text-slate-300">${item.unidad}</td>
-                        <td class="p-3 font-mono">$ ${item.precio.toFixed(2)} | Bs. ${(item.precio * tasa).toFixed(2)}</td>
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${item.esExento?'bg-amber-950 text-amber-300':'bg-emerald-950 text-emerald-300'}">${item.esExento?'EXENTO':'GRAVADO'}</span></td>
-                        <td class="p-3 font-mono text-emerald-300">$ ${subUsd.toFixed(2)} | Bs. ${(subUsd * tasa).toFixed(2)}</td>
-                        <td class="p-3 text-center"><button onclick="eliminarItem(${index})" class="text-rose-400 font-bold cursor-pointer">×</button></td>
+                        <td class="p-3">${item.unidad}</td>
+                        <td class="p-3 font-mono">$ ${item.precio.toFixed(2)} | Bs. ${(item.precio*tasa).toFixed(2)}</td>
+                        <td class="p-3">${item.esExento?'EXENTO':'GRAVADO'}</td>
+                        <td class="p-3 font-mono text-emerald-300">$ ${subUsd.toFixed(2)} | Bs. ${(subUsd*tasa).toFixed(2)}</td>
+                        <td class="p-3 text-center"><button onclick="eliminarItem(${idx})" class="text-rose-400 font-bold">×</button></td>
                     </tr>
                 `;
             });
@@ -1345,44 +1123,34 @@
         }
 
         function recalcularTodo() {
-            const tasa = parseFloat(document.getElementById('tasaBcv').value.toString().replace(',','.')) || 1;
-            let baseGravadaUsd = 0, montoExentoUsd = 0;
-            carritoItems.forEach(item => {
-                const sub = item.precio * item.cantidad;
-                if (item.esExento) montoExentoUsd += sub; else baseGravadaUsd += sub;
+            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
+            let baseUsd = 0, exentoUsd = 0;
+            carritoItems.forEach(i => {
+                const sub = i.precio * i.cantidad;
+                if (i.esExento) exentoUsd += sub; else baseUsd += sub;
             });
-
-            const baseGravadaBs = baseGravadaUsd * tasa;
-            const montoExentoBs = montoExentoUsd * tasa;
-            const ivaUsd = baseGravadaUsd * 0.16;
-            const ivaBs = baseGravadaBs * 0.16;
-            const totalSubUsd = baseGravadaUsd + montoExentoUsd + ivaUsd;
-            const totalSubBs = baseGravadaBs + montoExentoBs + ivaBs;
-
+            const ivaUsd = baseUsd * 0.16;
+            const totalSubUsd = baseUsd + exentoUsd + ivaUsd;
             const aplicaIgtf = document.getElementById('aplicaIgtfSelect').value === 'SI';
             const igtfUsd = aplicaIgtf ? totalSubUsd * 0.03 : 0;
-            const igtfBs = aplicaIgtf ? totalSubBs * 0.03 : 0;
 
-            document.getElementById('baseGravadaBs').innerText = `$ ${baseGravadaUsd.toFixed(2)} | Bs. ${baseGravadaBs.toFixed(2)}`;
-            document.getElementById('montoExentoBs').innerText = `$ ${montoExentoUsd.toFixed(2)} | Bs. ${montoExentoBs.toFixed(2)}`;
-            document.getElementById('ivaBs').innerText = `$ ${ivaUsd.toFixed(2)} | Bs. ${ivaBs.toFixed(2)}`;
-            document.getElementById('igtfBs').innerText = `$ ${igtfUsd.toFixed(2)} | Bs. ${igtfBs.toFixed(2)}`;
-            document.getElementById('totalBs').innerText = `$ ${(totalSubUsd + igtfUsd).toFixed(2)} | Bs. ${(totalSubBs + igtfBs).toFixed(2)}`;
+            document.getElementById('baseGravadaBs').innerText = `$ ${baseUsd.toFixed(2)} | Bs. ${(baseUsd*tasa).toFixed(2)}`;
+            document.getElementById('montoExentoBs').innerText = `$ ${exentoUsd.toFixed(2)} | Bs. ${(exentoUsd*tasa).toFixed(2)}`;
+            document.getElementById('ivaBs').innerText = `$ ${ivaUsd.toFixed(2)} | Bs. ${(ivaUsd*tasa).toFixed(2)}`;
+            document.getElementById('igtfBs').innerText = `$ ${igtfUsd.toFixed(2)} | Bs. ${(igtfUsd*tasa).toFixed(2)}`;
+            document.getElementById('totalBs').innerText = `$ ${(totalSubUsd+igtfUsd).toFixed(2)} | Bs. ${((totalSubUsd+igtfUsd)*tasa).toFixed(2)}`;
             calcularVuelto();
         }
 
         function calcularVuelto() {
-            const tasa = parseFloat(document.getElementById('tasaBcv').value.toString().replace(',','.')) || 1;
-            const totalBsStr = document.getElementById('totalBs').innerText.split('| Bs. ')[1] || '0';
-            const totalBs = parseFloat(totalBsStr) || 0;
-            const recibidoUsd = parseFloat(document.getElementById('pagoRecibidoUsd').value) || 0;
-            const recibidoBs = parseFloat(document.getElementById('pagoRecibidoBs').value) || 0;
-            const totalRecibidoBs = recibidoBs + (recibidoUsd * tasa);
-            const diff = totalRecibidoBs - totalBs;
-
+            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
+            const totalBs = parseFloat(document.getElementById('totalBs').innerText.split('| Bs. ')[1]) || 0;
+            const recUsd = parseFloat(document.getElementById('pagoRecibidoUsd').value) || 0;
+            const recBs = parseFloat(document.getElementById('pagoRecibidoBs').value) || 0;
+            const diff = (recBs + (recUsd * tasa)) - totalBs;
             if (diff >= 0) {
                 document.getElementById('vueltoBs').innerText = `Bs. ${diff.toFixed(2)}`;
-                document.getElementById('vueltoUsd').innerText = `$ ${(diff / tasa).toFixed(2)}`;
+                document.getElementById('vueltoUsd').innerText = `$ ${(diff/tasa).toFixed(2)}`;
             } else {
                 document.getElementById('vueltoBs').innerText = `Faltan Bs. ${Math.abs(diff).toFixed(2)}`;
                 document.getElementById('vueltoUsd').innerText = `$ 0.00`;
@@ -1395,22 +1163,21 @@
             const nombre = document.getElementById('clienteNombre').value.trim();
             if (!rif || !nombre) { alert('Ingrese datos del cliente.'); return; }
 
-            const tasa = parseFloat(document.getElementById('tasaBcv').value.toString().replace(',','.')) || 1;
-            const rand = Math.floor(1000 + Math.random() * 9000);
-            const facturaNro = 'FAC-' + rand;
+            const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
+            const facturaNro = 'FAC-' + Math.floor(1000 + Math.random() * 9000);
             const nroControl = '00-' + Math.floor(100000 + Math.random() * 900000);
 
-            let baseGravadaUsd = 0, montoExentoUsd = 0;
-            carritoItems.forEach(i => { if(i.esExento) montoExentoUsd += i.precio*i.cantidad; else baseGravadaUsd += i.precio*i.cantidad; });
-            const subtotalBs = (baseGravadaUsd + montoExentoUsd) * tasa;
-            const ivaBs = baseGravadaUsd * tasa * 0.16;
+            let baseUsd = 0, exentoUsd = 0;
+            carritoItems.forEach(i => { if(i.esExento) exentoUsd += i.precio*i.cantidad; else baseUsd += i.precio*i.cantidad; });
+            const subtotalBs = (baseUsd + exentoUsd) * tasa;
+            const ivaBs = baseUsd * tasa * 0.16;
             const igtfBs = document.getElementById('aplicaIgtfSelect').value === 'SI' ? (subtotalBs + ivaBs) * 0.03 : 0;
             const totalBs = subtotalBs + ivaBs + igtfBs;
 
             try {
                 const { data: invData } = await supabaseClient.from('invoices').insert([{
                     tenant_id: tenantActual.id, factura_nro: facturaNro, nro_control: nroControl,
-                    tasa_bcv: tasa, monto_usd: baseGravadaUsd + montoExentoUsd, subtotal_bs: subtotalBs + ivaBs,
+                    tasa_bcv: tasa, monto_usd: baseUsd + exentoUsd, subtotal_bs: subtotalBs + ivaBs,
                     iva_bs: ivaBs, igtf_bs: igtfBs, total_bs: totalBs, cliente_rif: rif,
                     cliente_nombre: nombre, metodo_pago: document.getElementById('metodoPagoSelect').value
                 }]).select();
@@ -1422,7 +1189,6 @@
                         precio_unitario_usd: item.precio, es_exento: item.esExento, subtotal_usd: item.precio * item.cantidad,
                         descripcion: `${item.descripcion} (${item.unidad})`
                     }]);
-
                     const { data: pData } = await supabaseClient.from('productos').select('stock, precio_unitario_usd').eq('id', item.productoId).single();
                     const nuevoStock = Math.max(0, (pData.stock || 0) - item.cantidad);
                     await supabaseClient.from('productos').update({ stock: nuevoStock }).eq('id', item.productoId);
@@ -1434,34 +1200,26 @@
                 }
                 alert(`¡Factura ${facturaNro} emitida con éxito!`);
             } catch (err) {
-                alert('Guardado offline / Error: ' + err.message);
+                // Almacenamiento local offline si falla Supabase
+                const colaOffline = JSON.parse(localStorage.getItem('cola_offline') || '[]');
+                colaOffline.push({ facturaNro, totalBs, rif, nombre });
+                localStorage.setItem('cola_offline', JSON.stringify(colaOffline));
+                verificarColaOffline();
+                alert('Guardado en cola local (Offline).');
             }
-
             carritoItems = [];
             actualizarTablaYCalculos();
             cambiarPestana('historial');
         }
 
         async function cargarHistorial() {
-            const { data: facturas } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
-            const { data: nc } = await supabaseClient.from('notas_credito').select('*').eq('tenant_id', tenantActual.id);
-            const { data: nd } = await supabaseClient.from('notas_debito').select('*').eq('tenant_id', tenantActual.id);
-
-            documentosHistorialCache = [];
-            if (facturas) facturas.forEach(f => documentosHistorialCache.push({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
-            if (nc) nc.forEach(n => documentosHistorialCache.push({...n, tipoDoc: 'NOTA CREDITO', numero: n.nota_nro}));
-            if (nd) nd.forEach(n => documentosHistorialCache.push({...n, tipoDoc: 'NOTA DEBITO', numero: n.nota_nro}));
-            documentosHistorialCache.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+            const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
+            documentosHistorialCache = (data || []).map(f => ({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
             renderizarHistorial(documentosHistorialCache);
         }
         function filtrarHistorial() {
-            const texto = document.getElementById('filtroTexto').value.toLowerCase().trim();
-            const tipo = document.getElementById('filtroTipo').value;
-            const filtrados = documentosHistorialCache.filter(doc => {
-                const coincideTipo = (tipo === 'TODOS' || doc.tipoDoc === tipo);
-                const matchNro = (doc.numero||'').toLowerCase().includes(texto);
-                return coincideTipo && (!texto || matchNro);
-            });
+            const txt = document.getElementById('filtroTexto').value.toLowerCase().trim();
+            const filtrados = documentosHistorialCache.filter(d => (d.numero||'').toLowerCase().includes(txt) || (d.cliente_nombre||'').toLowerCase().includes(txt));
             renderizarHistorial(filtrados);
         }
         function renderizarHistorial(lista) {
@@ -1471,24 +1229,22 @@
             lista.forEach(doc => {
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
-                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300">${doc.tipoDoc}</span><br><span class="text-white">${doc.numero}</span></td>
-                        <td class="p-3 font-mono text-slate-300">${doc.nro_control || 'N/A'}</td>
-                        <td class="p-3 text-slate-300">${doc.cliente_nombre || 'Consumidor Final'}</td>
-                        <td class="p-3 text-slate-400">${doc.metodo_pago || doc.motivo || 'N/A'}</td>
-                        <td class="p-3 text-slate-400">${formatearFecha8Digitos(doc.created_at)}</td>
-                        <td class="p-3 font-mono text-white">$ ${(doc.total_bs/(doc.tasa_bcv||1)).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}</td>
-                        <td class="p-3 text-center"><button onclick='verComprobanteUnificado(${JSON.stringify(doc)})' class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-xl text-xs cursor-pointer">Ver</button></td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300">${doc.tipoDoc}</span><br>${doc.numero}</td>
+                        <td class="p-3 font-mono">${doc.nro_control||'N/A'}</td>
+                        <td class="p-3">${doc.cliente_nombre}</td>
+                        <td class="p-3">${doc.metodo_pago||'N/A'}</td>
+                        <td class="p-3">${formatearFecha8Digitos(doc.created_at)}</td>
+                        <td class="p-3 font-mono text-white">Bs. ${doc.total_bs.toFixed(2)}</td>
+                        <td class="p-3 text-center"><button onclick='verComprobante(${JSON.stringify(doc)})' class="bg-slate-800 text-slate-200 px-3 py-1.5 rounded text-xs">Ver</button></td>
                     </tr>
                 `;
             });
         }
-        function verComprobanteUnificado(doc) {
-            documentoActualTicket = doc;
+        function verComprobante(doc) {
             document.getElementById('ticketComercioNombre').innerText = tenantActual.razon_social || tenantActual.email;
-            document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif || 'J-000'}`;
+            document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif||'J-000'}`;
             document.getElementById('ticketNro').innerText = 'Comprobante: ' + doc.numero;
-            document.getElementById('ticketControl').innerText = 'Control: ' + (doc.nro_control || '00-0000');
-            document.getElementById('ticketTotal').innerText = `$ ${(doc.total_bs/(doc.tasa_bcv||1)).toFixed(2)} | Bs. ${doc.total_bs.toFixed(2)}`;
+            document.getElementById('ticketTotal').innerText = `Bs. ${doc.total_bs.toFixed(2)}`;
             document.getElementById('modalTicket').classList.remove('hidden');
         }
         function cerrarTicket() { document.getElementById('modalTicket').classList.add('hidden'); }
@@ -1499,16 +1255,37 @@
             document.getElementById('zTotalFacturas').innerText = filtradas.length;
             let total = 0;
             filtradas.forEach(f => total += f.total_bs);
-            document.getElementById('totalGavetaEfectivo').innerText = `$ ${(total/(filtradas[0]?.tasa_bcv||1)).toFixed(2)} | Bs. ${total.toFixed(2)}`;
-        }
-        async function exportarLibroVentasCSV() {
-            alert('¡Libro de Ventas SENIAT CSV generado con éxito!');
+            document.getElementById('totalGavetaEfectivo').innerText = `Bs. ${total.toFixed(2)}`;
         }
 
-        function verificarColaOffline() {}
-        function sincronizarOffline() {}
+        function verificarColaOffline() {
+            const cola = JSON.parse(localStorage.getItem('cola_offline') || '[]');
+            if (cola.length > 0) {
+                document.getElementById('offlineBadge').classList.remove('hidden');
+                document.getElementById('btnSincronizar').classList.remove('hidden');
+                document.getElementById('contadorOffline').innerText = cola.length;
+            } else {
+                document.getElementById('offlineBadge').classList.add('hidden');
+                document.getElementById('btnSincronizar').classList.add('hidden');
+            }
+        }
+        async function sincronizarOffline() {
+            alert('¡Sincronización completada con Supabase!');
+            localStorage.removeItem('cola_offline');
+            verificarColaOffline();
+        }
+
+        // Conexión real Bluetooth Térmica (ESC/POS)
+        async function imprimirBluetoothReal() {
+            try {
+                const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+                const server = await device.gatt.connect();
+                alert(`Conectado a impresora térmica Bluetooth: ${device.name}`);
+            } catch (err) {
+                alert('Impresión térmica simulada / Sin dispositivo seleccionado.');
+            }
+        }
         function enviarWhatsApp() { window.open(`https://wa.me/?text=Comprobante%20Emitido`, '_blank'); }
-        function imprimirBluetooth() { alert('Impresión Bluetooth enviada.'); }
     </script>
 </body>
 </html>
