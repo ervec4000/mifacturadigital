@@ -370,7 +370,7 @@
                 </div>
             </div>
 
-            <!-- SECCIÓN 5: KARDEX PPM (BLINDADO) -->
+            <!-- SECCIÓN 5: KARDEX PPM (SUPER OPTIMIZADO) -->
             <div id="seccionKardex" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
@@ -387,14 +387,13 @@
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                                 <tr>
                                     <th class="p-3">Fecha</th>
-                                    <th class="p-3">Artículo / Proveedor / Documento</th>
+                                    <th class="p-3">Artículo / Producto</th>
                                     <th class="p-3">Movimiento</th>
-                                    <th class="p-3">Ref</th>
-                                    <th class="p-3 text-center">Inicial</th>
+                                    <th class="p-3">Documento / Ref</th>
                                     <th class="p-3 text-center">Entradas (+)</th>
                                     <th class="p-3 text-center">Salidas (-)</th>
-                                    <th class="p-3 text-center">Saldo Total (=)</th>
-                                    <th class="p-3">Costo ($)</th>
+                                    <th class="p-3 text-center">Saldo Stock (=)</th>
+                                    <th class="p-3">Costo Promedio ($)</th>
                                 </tr>
                             </thead>
                             <tbody id="tablaKardexMovimientos" class="divide-y divide-slate-800/60"></tbody>
@@ -1013,12 +1012,12 @@
                 const margen = prodData?.margen_utilidad_porcentaje || 30;
                 const nuevoPrecioVenta = nuevoCostoProm * (1 + (margen / 100));
 
-                // 1. Actualizar producto y stock
+                // 1. Actualizar stock y costos en productos
                 await supabaseClient.from('productos').update({ 
                     stock: nuevoStock, costo_unitario_usd: nuevoCostoProm, precio_venta_usd: nuevoPrecioVenta, lote: loteIngresado || prodData?.lote 
                 }).eq('id', productoId);
 
-                // 2. Insertar movimiento de entrada en el Kardex usando estructura garantizada
+                // 2. Insertar movimiento de entrada en el Kardex
                 const { error: errKardex } = await supabaseClient.from('kardex_movimientos').insert([{
                     tenant_id: tenantActual.id,
                     producto_id: productoId,
@@ -1048,38 +1047,46 @@
             data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} [Stock: ${p.stock||0}]</option>`; });
         }
 
-        // --- KARDEX PPM ROBUSTO ---
+        // --- KARDEX PPM ROBUSTO & OPTIMIZADO ---
         async function cargarKardexMovimientos() {
-            const { data, error } = await supabaseClient.from('kardex_movimientos').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
-            
+            // Descargar en paralelo los movimientos y los productos para evitar bloqueos
+            const [resMovs, resProds] = await Promise.all([
+                supabaseClient.from('kardex_movimientos').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false }),
+                supabaseClient.from('productos').select('id, codigo_sku, descripcion').eq('tenant_id', tenantActual.id)
+            ]);
+
             const tbody = document.getElementById('tablaKardexMovimientos');
             tbody.innerHTML = '';
-            if (error || !data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex todavía. Registra compras o ventas.</td></tr>`;
+
+            const movimientos = resMovs.data || [];
+            if (resMovs.error || movimientos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex todavía. Registra compras o ventas.</td></tr>`;
                 return;
             }
 
-            for (const m of data) {
-                let nombreArticulo = 'Artículo / Servicio';
-                if (m.producto_id) {
-                    const { data: prod } = await supabaseClient.from('productos').select('descripcion, codigo_sku').eq('id', m.producto_id).single();
-                    if (prod) nombreArticulo = `${prod.codigo_sku || 'S/N'} - ${prod.descripcion}`;
-                }
+            // Crear un mapa de productos para acceso O(1)
+            const productosMap = {};
+            if (resProds.data) {
+                resProds.data.forEach(p => { productosMap[p.id] = p; });
+            }
+
+            movimientos.forEach(m => {
+                const prod = productosMap[m.producto_id];
+                const nombreArticulo = prod ? `${prod.codigo_sku || 'S/N'} - ${prod.descripcion}` : 'Artículo no encontrado';
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 text-slate-400">${formatearFecha8Digitos(m.created_at)}</td>
                         <td class="p-3 font-mono text-emerald-400">${nombreArticulo}</td>
                         <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${m.tipo_movimiento==='ENTRADA'?'bg-emerald-950 text-emerald-300':'bg-rose-950 text-rose-300'}">${m.tipo_movimiento}</span></td>
-                        <td class="p-3 font-mono">${m.documento_ref}</td>
-                        <td class="p-3 text-center">${m.cantidad_inicial||0}</td>
-                        <td class="p-3 text-center text-emerald-400">+${m.cantidad_in||0}</td>
-                        <td class="p-3 text-center text-rose-400">-${m.cantidad_out||0}</td>
-                        <td class="p-3 text-center font-bold">${m.saldo_cantidad}</td>
-                        <td class="p-3 font-mono text-emerald-300">$ ${(m.costo_promedio_usd||0).toFixed(2)}</td>
+                        <td class="p-3 font-mono">${m.documento_ref || 'S/REF'}</td>
+                        <td class="p-3 text-center text-emerald-400 font-bold">+${m.cantidad_in || 0}</td>
+                        <td class="p-3 text-center text-rose-400 font-bold">-${m.cantidad_out || 0}</td>
+                        <td class="p-3 text-center font-bold text-white">${m.saldo_cantidad}</td>
+                        <td class="p-3 font-mono text-emerald-300">$ ${(m.costo_promedio_usd || 0).toFixed(2)}</td>
                     </tr>
                 `;
-            }
+            });
         }
 
         async function cargarProductosSelect() {
