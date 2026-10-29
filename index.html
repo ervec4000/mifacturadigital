@@ -1051,7 +1051,7 @@ let carritoItems = [];
  tbody.innerHTML += `
  <tr class="hover:bg-slate-900">
  <td class="p-3 font-mono text-emerald-400 font-bold flex items-center gap-2">
- ${t.logo_url ? `<img src="${t.logo_url}" class="w-6 h-6 rounded object-cover">` : ''}
+ ${t.logo ? `<img src="${t.logo}" class="w-6 h-6 rounded object-cover">` : ''}
  ${t.razon_social || 'Sin Nombre'}
  </td>
  <td class="p-3 font-mono">${t.rif || 'J-000'}</td>
@@ -1104,7 +1104,7 @@ async function guardarTenantMaster() {
  password: document.getElementById('tenantPassword').value.trim(),
  telefono: document.getElementById('tenantTelefono').value.trim(),
  plan_activo: document.getElementById('tenantPlan').value,
- logo_url: document.getElementById('tenantLogo').value.trim(),
+ logo: document.getElementById('tenantLogo').value.trim(), // <--- Cambiado de logo_url a logo
  direccion: document.getElementById('tenantDireccion').value.trim(),
  rol: 'tenant'
  };
@@ -1126,7 +1126,7 @@ async function guardarTenantMaster() {
  limpiarFormTenant();
  cargarInquilinosMaster();
 }
-
+  
 async function eliminarTenantMaster(tenantId, email) {
  if (email === 'ervec2000@gmail.com') { alert('No se puede eliminar el administrador maestro principal.'); return; }
  if (!confirm(`¿Estás seguro de eliminar el tenant ${email}?`)) return;
