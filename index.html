@@ -719,19 +719,47 @@
  </div>
 
  <!-- [MAS-001] SECCIÓN 10: MASTER TENANTS -->
- <div id="seccionInquilinosMaster" class="hidden tab-master space-y-6">
+<div id="seccionInquilinosMaster" class="hidden tab-master space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
- <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🏢 Administración Master de Tenants</h3>
+ <div class="flex justify-between items-center">
+ <h3 id="tituloFormTenant" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🏢 Administración Master de Tenants / Inquilinos</h3>
+ <button onclick="exportarTenantsExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Tenants</button>
+ </div>
+ <input type="hidden" id="editTenantId">
+ <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+ <div><label class="block text-xs text-slate-400 mb-1">Razón Social / Comercio</label><input type="text" id="tenantRazonSocial" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" placeholder="COMERCIO C.A."></div>
+ <div><label class="block text-xs text-slate-400 mb-1">RIF</label><input type="text" id="tenantRif" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" placeholder="J-00000000-0"></div>
+ <div><label class="block text-xs text-slate-400 mb-1">Correo Electrónico (Acceso)</label><input type="email" id="tenantEmail" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" placeholder="tenant@correo.com"></div>
+ <div><label class="block text-xs text-slate-400 mb-1">Contraseña</label><input type="text" id="tenantPassword" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" placeholder="••••••"></div>
+ <div><label class="block text-xs text-slate-400 mb-1">Teléfono</label><input type="text" id="tenantTelefono" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" placeholder="0414-0000000"></div>
+ <div><label class="block text-xs text-slate-400 mb-1">Plan Activo</label>
+ <select id="tenantPlan" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-amber-400 font-semibold text-sm">
+ <option value="Freemium">Freemium</option>
+ <option value="Administración" selected>Administración</option>
+ <option value="Enterprise">Enterprise</option>
+ </select>
+ </div>
+ <div><label class="block text-xs text-slate-400 mb-1">URL del Logo (Imagen)</label><input type="text" id="tenantLogo" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" placeholder="https://.../logo.png"></div>
+ <div class="md:col-span-2"><label class="block text-xs text-slate-400 mb-1">Dirección Fiscal</label><input type="text" id="tenantDireccion" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" placeholder="San Felipe, Yaracuy"></div>
+ </div>
+ <div class="flex space-x-2 pt-2">
+ <button onclick="guardarTenantMaster()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs cursor-pointer shadow">Guardar / Registrar Tenant</button>
+ <button onclick="limpiarFormTenant()" id="btnCancelarTenant" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-xl text-xs cursor-pointer">Cancelar</button>
+ </div>
+ </div>
+
+ <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-3">
+ <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider">Inquilinos Registrados en el Sistema</h3>
  <div class="overflow-x-auto">
  <table class="w-full text-left text-xs text-slate-300">
  <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
- <tr><th class="p-3">Comercio</th><th class="p-3">RIF</th><th class="p-3">Plan</th><th class="p-3 text-center">Acción</th></tr>
+ <tr><th class="p-3">Comercio</th><th class="p-3">RIF</th><th class="p-3">Correo</th><th class="p-3">Plan</th><th class="p-3 text-center">Acciones</th></tr>
  </thead>
  <tbody id="tablaInquilinosMaster" class="divide-y divide-slate-800/60"></tbody>
  </table>
  </div>
  </div>
- </div>
+</div>
 
  </main>
 
