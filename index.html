@@ -1040,20 +1040,111 @@ let carritoItems = [];
  }
 
  async function cargarInquilinosMaster() {
- const { data } = await supabaseClient.from('tenants').select('*');
+ const { data, error } = await supabaseClient.from('tenants').select('*').order('created_at', { ascending: false });
  const tbody = document.getElementById('tablaInquilinosMaster');
  tbody.innerHTML = '';
- if (!data) return;
- data.forEach(t => {
- tbody.innerHTML += `<tr class="hover:bg-slate-900"><td class="p-3 font-mono text-emerald-400">${t.razon_social||'Sin Nombre'}</td><td class="p-3 font-mono">${t.rif||'J-000'}</td><td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300">${t.plan_activo||'Freemium'}</span></td><td class="p-3 text-center"><button onclick='eliminarTenantMaster("${t.id}", "${t.email}")' class="text-rose-400 text-xs">Eliminar</button></td></tr>`;
- });
+ if (error || !data || data.length === 0) {
+ tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin tenants registrados.</td></tr>`;
+ return;
  }
- async function eliminarTenantMaster(tenantId, email) {
- if (email === 'ervec2000@gmail.com') { alert('No se puede eliminar el administrador.'); return; }
- if (!confirm(`¿Eliminar tenant ${email}?`)) return;
+ data.forEach(t => {
+ tbody.innerHTML += `
+ <tr class="hover:bg-slate-900">
+ <td class="p-3 font-mono text-emerald-400 font-bold flex items-center gap-2">
+ ${t.logo_url ? `<img src="${t.logo_url}" class="w-6 h-6 rounded object-cover">` : ''}
+ ${t.razon_social || 'Sin Nombre'}
+ </td>
+ <td class="p-3 font-mono">${t.rif || 'J-000'}</td>
+ <td class="p-3 font-mono text-slate-400">${t.email}</td>
+ <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300 font-semibold">${t.plan_activo || 'Freemium'}</span></td>
+ <td class="p-3 text-center space-x-2">
+ <button onclick='editarTenant("${t.id}", ${JSON.stringify(t).replace(/"/g, '&quot;')})' class="text-sky-400 hover:underline">Editar</button>
+ <button onclick='eliminarTenantMaster("${t.id}", "${t.email}")' class="text-rose-400 hover:underline">Eliminar</button>
+ </td>
+ </tr>
+ `;
+ });
+}
+
+function editarTenant(id, t) {
+ document.getElementById('editTenantId').value = id;
+ document.getElementById('tenantRazonSocial').value = t.razon_social || '';
+ document.getElementById('tenantRif').value = t.rif || '';
+ document.getElementById('tenantEmail').value = t.email || '';
+ document.getElementById('tenantPassword').value = t.password || '';
+ document.getElementById('tenantTelefono').value = t.telefono || '';
+ document.getElementById('tenantPlan').value = t.plan_activo || 'Administración';
+ document.getElementById('tenantLogo').value = t.logo_url || '';
+ document.getElementById('tenantDireccion').value = t.direccion || '';
+ document.getElementById('tituloFormTenant').innerText = '✏️ Editar Inquilino / Tenant';
+ document.getElementById('btnCancelarTenant').classList.remove('hidden');
+ window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function limpiarFormTenant() {
+ document.getElementById('editTenantId').value = '';
+ document.getElementById('tenantRazonSocial').value = '';
+ document.getElementById('tenantRif').value = '';
+ document.getElementById('tenantEmail').value = '';
+ document.getElementById('tenantPassword').value = '';
+ document.getElementById('tenantTelefono').value = '';
+ document.getElementById('tenantPlan').value = 'Administración';
+ document.getElementById('tenantLogo').value = '';
+ document.getElementById('tenantDireccion').value = '';
+ document.getElementById('tituloFormTenant').innerText = '🏢 Administración Master de Tenants / Inquilinos';
+ document.getElementById('btnCancelarTenant').classList.add('hidden');
+}
+
+async function guardarTenantMaster() {
+ const editId = document.getElementById('editTenantId').value;
+ const payload = {
+ razon_social: document.getElementById('tenantRazonSocial').value.trim().toUpperCase(),
+ rif: document.getElementById('tenantRif').value.trim(),
+ email: document.getElementById('tenantEmail').value.trim().toLowerCase(),
+ password: document.getElementById('tenantPassword').value.trim(),
+ telefono: document.getElementById('tenantTelefono').value.trim(),
+ plan_activo: document.getElementById('tenantPlan').value,
+ logo_url: document.getElementById('tenantLogo').value.trim(),
+ direccion: document.getElementById('tenantDireccion').value.trim(),
+ rol: 'tenant'
+ };
+
+ if (!payload.email || !payload.razon_social) {
+ alert('El correo y la razón social son obligatorios.');
+ return;
+ }
+
+ if (editId) {
+ const { error } = await supabaseClient.from('tenants').update(payload).eq('id', editId);
+ if (error) { alert('Error al actualizar: ' + error.message); return; }
+ alert('¡Tenant actualizado con éxito!');
+ } else {
+ const { error } = await supabaseClient.from('tenants').insert([payload]);
+ if (error) { alert('Error al registrar: ' + error.message); return; }
+ alert('¡Tenant registrado con éxito!');
+ }
+ limpiarFormTenant();
+ cargarInquilinosMaster();
+}
+
+async function eliminarTenantMaster(tenantId, email) {
+ if (email === 'ervec2000@gmail.com') { alert('No se puede eliminar el administrador maestro principal.'); return; }
+ if (!confirm(`¿Estás seguro de eliminar el tenant ${email}?`)) return;
  await supabaseClient.from('tenants').delete().eq('id', tenantId);
  cargarInquilinosMaster();
- }
+}
+
+function exportarTenantsExcel() {
+ // Exportar lista master de inquilinos
+ supabaseClient.from('tenants').select('*').then(({ data }) => {
+ if (!data) return;
+ const excelData = data.map(t => ({ Comercio: t.razon_social, RIF: t.rif, Correo: t.email, Plan: t.plan_activo, Teléfono: t.telefono }));
+ const worksheet = XLSX.utils.json_to_sheet(excelData);
+ const workbook = XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(workbook, worksheet, "Tenants");
+ XLSX.writeFile(workbook, `Tenants_Master_${new Date().toISOString().slice(0,10)}.xlsx`);
+ });
+}
 
  // --- NOTAS DE DÉBITO Y CRÉDITO ---
  async function cargarFacturasAfectadasSelect() {
