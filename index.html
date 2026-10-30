@@ -1074,7 +1074,7 @@ function editarTenant(id, t) {
  document.getElementById('tenantPassword').value = t.password || '';
  document.getElementById('tenantTelefono').value = t.telefono || '';
  document.getElementById('tenantPlan').value = t.plan_activo || 'Administración';
- document.getElementById('tenantLogo').value = t.logo_url || '';
+ document.getElementById('tenantLogo').value = t.logo || '';
  document.getElementById('tenantDireccion').value = t.direccion || '';
  document.getElementById('tituloFormTenant').innerText = '✏️ Editar Inquilino / Tenant';
  document.getElementById('btnCancelarTenant').classList.remove('hidden');
@@ -1104,7 +1104,7 @@ async function guardarTenantMaster() {
  password: document.getElementById('tenantPassword').value.trim(),
  telefono: document.getElementById('tenantTelefono').value.trim(),
  plan_activo: document.getElementById('tenantPlan').value,
- logo: document.getElementById('tenantLogo').value.trim(), // <--- Cambiado de logo_url a logo
+ logo: document.getElementById('tenantLogo').value.trim(),
  direccion: document.getElementById('tenantDireccion').value.trim(),
  rol: 'tenant'
  };
@@ -1126,7 +1126,7 @@ async function guardarTenantMaster() {
  limpiarFormTenant();
  cargarInquilinosMaster();
 }
-  
+ 
 async function eliminarTenantMaster(tenantId, email) {
  if (email === 'ervec2000@gmail.com') { alert('No se puede eliminar el administrador maestro principal.'); return; }
  if (!confirm(`¿Estás seguro de eliminar el tenant ${email}?`)) return;
@@ -1135,7 +1135,6 @@ async function eliminarTenantMaster(tenantId, email) {
 }
 
 function exportarTenantsExcel() {
- // Exportar lista master de inquilinos
  supabaseClient.from('tenants').select('*').then(({ data }) => {
  if (!data) return;
  const excelData = data.map(t => ({ Comercio: t.razon_social, RIF: t.rif, Correo: t.email, Plan: t.plan_activo, Teléfono: t.telefono }));
