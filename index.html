@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="scroll-smooth">
 <head>
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,37 +16,81 @@
  .no-print { display: none !important; }
  }
  .tech-pattern {
- background-image: radial-gradient(rgba(16, 185, 129, 0.1) 1px, transparent 1px);
- background-size: 24px 24px;
+ background-image: radial-gradient(rgba(16, 185, 129, 0.12) 1px, transparent 1px);
+ background-size: 28px 28px;
  }
+ @keyframes pulse-slow {
+ 0%, 100% { transform: scale(1); }
+ 50% { transform: scale(1.06); }
+ }
+ .whatsapp-pulse { animation: pulse-slow 3s infinite; }
+ @keyframes fadeIn {
+ from { opacity: 0; transform: translateY(15px); }
+ to { opacity: 1; transform: translateY(0); }
+ }
+ .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans tech-pattern">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans tech-pattern relative">
 
- <!-- [SEC-001] NUEVA LANDING PAGE Y PANTALLA DE ACCESO INSTITUCIONAL -->
- <div id="vistaLogin" class="w-full max-w-6xl mx-auto px-4 my-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center py-12">
- <!-- Columna Izquierda: Presentación / Propuesta de Valor -->
+ <!-- [SEC-001] LANDING PAGE PROFESIONAL DE ÉLITE -->
+ <div id="vistaLogin" class="w-full max-w-7xl mx-auto px-4 py-12 flex flex-col justify-center space-y-16 animate-fade-in">
+ 
+ <!-- Header / Navbar Institucional de Landing -->
+ <header class="flex justify-between items-center border-b border-slate-900 pb-6">
+ <div class="flex items-center gap-3">
+ <div class="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400 font-mono font-bold text-base shadow-lg shadow-emerald-950">⚡</div>
+ <div>
+ <span class="font-extrabold tracking-wider text-white text-base">MiFacturaDigital<span class="text-emerald-400">.com.ve</span></span>
+ <p class="text-[10px] text-slate-400 font-mono uppercase tracking-widest">Enterprise Cloud 2026</p>
+ </div>
+ </div>
+ <div class="flex items-center gap-3">
+ <button onclick="abrirModalRegistroDemo()" class="bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-xs px-4 py-2 rounded-xl font-semibold transition cursor-pointer shadow">
+ ✨ Solicitar Demo / Registro SaaS
+ </button>
+ </div>
+ </header>
+
+ <!-- Hero Principal Split Grid -->
+ <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+ <!-- Columna Izquierda: Presentación y Propuesta de Valor -->
  <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
- <div class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 font-mono text-xs font-bold">
+ <div class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 font-mono text-xs font-bold shadow-inner">
  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
- ENTERPRISE CLOUD V2026 • SENIAT COMPLIANT
+ NORMATIVA SENIAT 2026 • CUMPLIMIENTO FISCAL ESTRICTO
  </div>
- <h1 class="text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
- Facturación Digital Rápida y <span class="text-emerald-400 underline decoration-emerald-500/50">Fiscalmente Segura</span>
+ <h1 class="text-4xl lg:text-6xl font-extrabold text-white tracking-tight leading-tight">
+ Facturación Digital Rápida y <span class="text-emerald-400 underline decoration-emerald-500/50 decoration-2">Fiscalmente Segura</span>
  </h1>
- <p class="text-slate-400 text-sm lg:text-base max-w-xl mx-auto lg:mx-0">
- La plataforma integral para comercios venezolanos. Emisión de facturas con control estricto, Notas de Crédito/Débito, Kardex PPM, Retenciones de IVA y gestión multi-depósito con códigos QR integrados.
+ <p class="text-slate-400 text-sm lg:text-base max-w-xl mx-auto lg:mx-0 leading-relaxed">
+ La plataforma integral nube para comercios, distribuidoras y autolavados en Venezuela. Emisión de facturas exactas, Notas de Crédito/Débito, Kardex PPM, Retenciones de IVA y programa de referidos automatizado.
  </p>
- <div class="flex flex-wrap gap-4 justify-center lg:justify-start pt-2 font-mono text-xs text-slate-400">
- <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800 px-3 py-2 rounded-xl">✔ Providencia SENIAT</div>
- <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800 px-3 py-2 rounded-xl">⚡ Facturación Flash</div>
- <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800 px-3 py-2 rounded-xl">📦 Inventario QR</div>
+ <div class="flex flex-wrap gap-3 justify-center lg:justify-start font-mono text-xs text-slate-300">
+ <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3.5 py-2 rounded-xl shadow">✔ Providencia SENIAT</div>
+ <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3.5 py-2 rounded-xl shadow">⚡ Facturación Flash POS</div>
+ <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3.5 py-2 rounded-xl shadow">📦 Inventario QR & Lotes</div>
+ </div>
+
+ <!-- Formulario de Lead Capture Rápido en Línea -->
+ <div class="bg-slate-900/80 backdrop-blur-md border border-slate-800 p-5 rounded-2xl max-w-lg mt-4 space-y-3 text-left shadow-2xl">
+ <h3 class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+ <span>✉️</span> ¿Deseas afiliar tu comercio o solicitar una demo gratuita?
+ </h3>
+ <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+ <input type="text" id="contactoNombre" placeholder="Tu Nombre / Comercio" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500 font-sans">
+ <input type="text" id="contactoTelefono" placeholder="Teléfono / WhatsApp" class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono">
+ </div>
+ <button onclick="enviarFormularioContactoLanding()" id="btnEnviarLead" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-300 font-semibold py-3 rounded-xl transition text-xs border border-slate-700 cursor-pointer shadow flex items-center justify-center gap-2">
+ <span>Solicitar Información por WhatsApp</span>
+ <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+ </button>
  </div>
  </div>
 
- <!-- Columna Derecha: Tarjeta de Acceso / Login -->
- <div class="lg:col-span-5 bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-slate-800 space-y-6 relative overflow-hidden">
- <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+ <!-- Columna Derecha: Tarjeta de Acceso / Login de Inquilinos -->
+ <div class="lg:col-span-5 bg-slate-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-slate-800/80 space-y-6 relative overflow-hidden">
+ <div class="absolute top-0 right-0 w-36 h-36 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
  
  <header class="space-y-1">
  <h2 class="text-xl font-bold text-white tracking-wide">Acceso al Sistema</h2>
@@ -63,8 +107,7 @@
  <input type="password" id="loginPassword" placeholder="••••••" autocomplete="new-password" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-emerald-500 font-mono">
  </div>
 
- <!-- [SEC-001] iniciarSesionTenant() -->
- <button onclick="iniciarSesionTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-xl transition duration-200 shadow-lg shadow-emerald-900/30 cursor-pointer text-sm flex items-center justify-center gap-2">
+ <button onclick="iniciarSesionTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-xl transition duration-200 shadow-xl shadow-emerald-950 cursor-pointer text-sm flex items-center justify-center gap-2">
  <span>Iniciar Sesión en MiFacturaDigital</span>
  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
  </button>
@@ -75,7 +118,60 @@
  </div>
  </div>
 
- <!-- [SEC-003] SISTEMA PRINCIPAL -->
+ <!-- GRID DE VALOR: CARACTERÍSTICAS Y BENEFICIOS CLAVE -->
+ <div class="pt-8 pb-4">
+ <div class="text-center space-y-2 mb-10">
+ <h2 class="text-xs font-bold text-emerald-400 uppercase tracking-widest font-mono">Arquitectura y Potencia Tecnológica</h2>
+ <h3 class="text-2xl font-bold text-white">Diseñado para la máxima eficiencia fiscal y operativa</h3>
+ </div>
+ <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+ <!-- Tarjeta 1 -->
+ <div class="bg-slate-900/60 backdrop-blur border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-3 hover:border-emerald-500/50 transition">
+ <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-lg">🛡️</div>
+ <h4 class="font-bold text-white text-base">Cumplimiento SENIAT 2026</h4>
+ <p class="text-xs text-slate-400 leading-relaxed">Facturación estricta, emisión de Notas de Crédito y Débito legalmente justificadas y cálculo riguroso de libros de ventas y compras oficiales.</p>
+ </div>
+ <!-- Tarjeta 2 -->
+ <div class="bg-slate-900/60 backdrop-blur border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-3 hover:border-emerald-500/50 transition">
+ <div class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 font-bold text-lg">📦</div>
+ <h4 class="font-bold text-white text-base">Multi-Depósito & Kardex PPM</h4>
+ <p class="text-xs text-slate-400 leading-relaxed">Control absoluto de inventarios, trazabilidad por lotes, transferencias entre sucursales y generación instantánea de etiquetas con códigos QR.</p>
+ </div>
+ <!-- Tarjeta 3 -->
+ <div class="bg-slate-900/60 backdrop-blur border border-slate-800/80 p-6 rounded-2xl shadow-xl space-y-3 hover:border-emerald-500/50 transition">
+ <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-lg">🧮</div>
+ <h4 class="font-bold text-white text-base">Multidivisa & Tasas BCV</h4>
+ <p class="text-xs text-slate-400 leading-relaxed">Sincronización de tasas oficiales, cálculo automático de IGTF (3%) en divisas, manejo de cuentas por cobrar y calculadora de vuelto exacto multidivisa.</p>
+ </div>
+ </div>
+ </div>
+
+ <!-- CARRUSEL / MARQUESINA DE CLIENTES Y COMERCIOS ALIADOS (SOCIAL PROOF) -->
+ <div class="bg-slate-900/40 border-y border-slate-900 py-4 overflow-hidden">
+ <div class="flex items-center justify-center text-center px-4">
+ <p class="text-xs font-mono text-slate-400 tracking-wider">
+ 🚀 Sistemas operativos activos en <span class="text-emerald-400 font-bold">comercios, distribuidoras y autolavados</span> bajo estándar Enterprise Cloud.
+ </p>
+ </div>
+ </div>
+
+ </div>
+
+ <!-- CHAT FLOTANTE DE WHATSAPP AVANZADO CON BURBUJA Y ESTADO EN LÍNEA -->
+ <div class="fixed bottom-6 right-6 z-50 flex items-center gap-3 no-print">
+ <div class="bg-slate-900 border border-slate-700/80 text-slate-200 px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-medium hidden sm:flex items-center gap-2">
+ <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+ <span>¡Hola! 👋 ¿Necesitas asesoría con MiFacturaDigital o planes SaaS?</span>
+ </div>
+ <div class="relative">
+ <span class="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-slate-950 rounded-full animate-pulse"></span>
+ <a href="https://api.whatsapp.com/send?text=Hola,%20me%20interesa%20obtener%20más%20información%20sobre%20los%20planes%20de%20MiFacturaDigital%20para%20mi%20comercio." target="_blank" class="whatsapp-pulse bg-emerald-600 hover:bg-emerald-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl transition cursor-pointer border-2 border-emerald-400">
+ 💬
+ </a>
+ </div>
+ </div>
+
+ <!-- [SEC-003] SISTEMA PRINCIPAL (POST-LOGIN) -->
  <div id="vistaPrincipal" class="hidden w-full max-w-7xl mx-auto bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 my-6 flex flex-col min-h-[90vh]">
  
 <!-- Header Shell Bar -->
@@ -116,6 +212,7 @@
  <button onclick="cambiarPestana('unidades')" id="btnTabUnidades" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📐 [CAT] Unidades</button>
  <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📦 [CAT] Artículos</button>
  <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">👥 [CAT] Clientes</button>
+ <button onclick="cambiarPestana('referidos')" id="btnTabReferidos" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-700/50 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🤝 [REF] Afiliados</button>
  <button onclick="cambiarPestana('inquilinosMaster')" id="btnTabInquilinosMaster" class="tab-master bg-emerald-950 border border-emerald-700/50 hover:bg-emerald-900 text-emerald-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🏢 [MAS] Master</button>
  </nav>
 
@@ -731,6 +828,51 @@
  </div>
  </div>
 
+ <!-- SECCIÓN NUEVA: SISTEMA DE REFERIDOS Y AFILIADOS -->
+ <div id="seccionReferidos" class="hidden space-y-6">
+ <div class="bg-slate-950/40 p-6 rounded-2xl border border-slate-800 space-y-6">
+ <div class="flex justify-between items-center flex-wrap gap-4">
+ <div>
+ <h3 class="text-sm font-bold text-amber-400 uppercase tracking-wider">🤝 Programa de Afiliados y Referidos</h3>
+ <p class="text-xs text-slate-400 mt-1">Comparte tu enlace único con otros comercios. Gana recompensas y meses de suscripción SaaS gratuitos.</p>
+ </div>
+ <div class="bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-right">
+ <p class="text-[10px] text-slate-400 font-mono">Comisiones / Bonos Acumulados</p>
+ <p class="text-base font-bold text-emerald-400 font-mono" id="referidosTotalBono">$ 0.00 USD (0 Meses)</p>
+ </div>
+ </div>
+
+ <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+ <label class="block text-xs font-semibold text-slate-300">Tu Enlace Único de Referido</label>
+ <div class="flex gap-2">
+ <input type="text" id="inputEnlaceReferido" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-emerald-400 text-xs font-mono" value="https://mifacturadigital.vercel.app/?ref=TENANT_ID">
+ <button onclick="copiarEnlaceReferido()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-3 rounded-xl text-xs cursor-pointer shadow whitespace-nowrap">📋 Copiar Enlace</button>
+ <button onclick="compartirWhatsAppReferido()" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-4 py-3 rounded-xl text-xs cursor-pointer shadow">💬 WhatsApp</button>
+ </div>
+ </div>
+
+ <div class="space-y-3">
+ <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Historial de Comercios Referidos</h4>
+ <div class="overflow-x-auto">
+ <table class="w-full text-left text-xs text-slate-300">
+ <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+ <tr>
+ <th class="p-3">Comercio Registrado</th>
+ <th class="p-3">RIF</th>
+ <th class="p-3">Fecha de Registro</th>
+ <th class="p-3">Plan Activo</th>
+ <th class="p-3 text-center">Bono / Estado</th>
+ </tr>
+ </thead>
+ <tbody id="tablaReferidosGestion" class="divide-y divide-slate-800/60">
+ <tr><td colspan="5" class="p-4 text-center text-slate-500">Aún no tienes comercios referidos registrados. ¡Comparte tu enlace!</td></tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ </div>
+ </div>
+
  <!-- SECCIÓN 10: MASTER TENANTS -->
 <div id="seccionInquilinosMaster" class="hidden tab-master space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
@@ -779,6 +921,35 @@
  <footer class="text-[11px] text-slate-500 text-center py-4 border-t border-slate-800/80 font-mono">
  MiFacturaDigital.com.ve &copy; 2026 - Sistema Fiscal Integrado
  </footer>
+ </div>
+
+ <!-- MODAL DE SOLICITUD DE DEMO / REGISTRO SAAS -->
+ <div id="modalRegistroDemo" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+ <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
+ <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+ <h3 class="text-base font-bold text-emerald-400">✨ Solicitar Demo / Acceso SaaS</h3>
+ <button onclick="cerrarModalRegistroDemo()" class="text-slate-400 hover:text-white cursor-pointer">✕</button>
+ </div>
+ <p class="text-xs text-slate-300">Completa tus datos y nos pondremos en contacto contigo para configurar tu inquilino en la nube.</p>
+ <div class="space-y-3 text-xs">
+ <div><label class="block text-slate-400 mb-1">Nombre del Comercio / Razón Social</label><input type="text" id="demoComercio" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white" placeholder="Mi Comercio C.A."></div>
+ <div><label class="block text-slate-400 mb-1">RIF</label><input type="text" id="demoRif" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white font-mono" placeholder="J-12345678-0"></div>
+ <div><label class="block text-slate-400 mb-1">Teléfono / WhatsApp</label><input type="text" id="demoTelefono" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white font-mono" placeholder="0414-0000000"></div>
+ <div>
+ <label class="block text-slate-400 mb-1">Plan de Interés</label>
+ <select id="demoPlanInteres" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-amber-400 font-semibold">
+ <option value="Freemium">Freemium (Básico)</option>
+ <option value="Administración" selected>Administración ($15/mes)</option>
+ <option value="Enterprise">Enterprise (Multisucursal)</option>
+ </select>
+ </div>
+ </div>
+ <div class="pt-2">
+ <button onclick="enviarSolicitudDemoWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl cursor-pointer text-xs shadow">
+ Enviar Solicitud por WhatsApp 🚀
+ </button>
+ </div>
+ </div>
  </div>
 
  <!-- MODAL TICKET / COMPROBANTE FISCAL RIGUROSO SENIAT -->
@@ -877,6 +1048,33 @@
  }
  };
 
+ function abrirModalRegistroDemo() { document.getElementById('modalRegistroDemo').classList.remove('hidden'); }
+ function cerrarModalRegistroDemo() { document.getElementById('modalRegistroDemo').classList.add('hidden'); }
+
+ function enviarSolicitudDemoWhatsApp() {
+ const comercio = document.getElementById('demoComercio').value.trim();
+ const rif = document.getElementById('demoRif').value.trim();
+ const tel = document.getElementById('demoTelefono').value.trim();
+ const plan = document.getElementById('demoPlanInteres').value;
+ if (!comercio || !tel) { alert('Por favor ingresa el nombre de tu comercio y teléfono.'); return; }
+ const texto = `Hola, deseo solicitar una demo y acceso SaaS para mi comercio *${comercio}* (RIF: ${rif || 'N/A'}, Tel: ${tel}). Plan de interés: *${plan}*.`;
+ window.open(`https://api.whatsapp.com/send?phone=584140000000&text=${encodeURIComponent(texto)}`, '_blank');
+ cerrarModalRegistroDemo();
+ }
+
+ function enviarFormularioContactoLanding() {
+ const nombre = document.getElementById('contactoNombre').value.trim();
+ const tel = document.getElementById('contactoTelefono').value.trim();
+ if (!nombre || !tel) { alert('Por favor ingresa tu nombre y teléfono.'); return; }
+ const btn = document.getElementById('btnEnviarLead');
+ btn.innerText = 'Enviando...';
+ setTimeout(() => {
+ btn.innerText = '✅ ¡Enviado con éxito!';
+ const texto = `Hola, mi nombre es ${nombre} (Tel: ${tel}). Deseo afiliar mi comercio a MiFacturaDigital.com.ve y conocer los planes SaaS.`;
+ window.open(`https://api.whatsapp.com/send?phone=584140000000&text=${encodeURIComponent(texto)}`, '_blank');
+ }, 500);
+ }
+
  function formatearFecha8Digitos(isoString) {
  if (!isoString) return '--/--/---- --:--';
  const d = new Date(isoString);
@@ -939,16 +1137,24 @@
  }
 
  function cambiarPestana(pestana) {
- const tabs = ['pos', 'historial', 'notasFiscales', 'cierrez', 'compras', 'retenciones', 'kardex', 'fisico', 'multideposito', 'etiquetas', 'cuentas', 'unidades', 'productos', 'clientes', 'inquilinosMaster'];
+ const tabs = ['pos', 'historial', 'notasFiscales', 'cierrez', 'compras', 'retenciones', 'kardex', 'fisico', 'multideposito', 'etiquetas', 'cuentas', 'unidades', 'productos', 'clientes', 'referidos', 'inquilinosMaster'];
  tabs.forEach(t => {
  const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
  const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
  if (!btn || !sec) return;
  if (t === pestana) {
+ if (t === 'referidos') {
+ btn.className = "bg-amber-600 text-white px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer shadow-md flex items-center gap-1.5";
+ } else {
  btn.className = "bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer shadow-md flex items-center gap-1.5";
+ }
  sec.classList.remove('hidden');
  } else {
+ if (t === 'referidos') {
+ btn.className = "bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-700/50 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5";
+ } else {
  btn.className = "bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5";
+ }
  sec.classList.add('hidden');
  }
  });
@@ -973,8 +1179,27 @@
  if (pestana === 'unidades') cargarUnidadesMedidaGestion();
  if (pestana === 'productos') { cargarUnidadesSelectForm(); cargarProductosGestion(); }
  if (pestana === 'clientes') cargarClientesGestion();
+ if (pestana === 'referidos') cargarDatosReferidos();
  if (pestana === 'inquilinosMaster') cargarInquilinosMaster();
  if (pestana === 'pos') { cargarProductosSelect(); cargarClientesSelect(); }
+ }
+
+ function cargarDatosReferidos() {
+ const link = `https://mifacturadigital.vercel.app/?ref=${tenantActual.id}`;
+ document.getElementById('inputEnlaceReferido').value = link;
+ }
+
+ function copiarEnlaceReferido() {
+ const input = document.getElementById('inputEnlaceReferido');
+ input.select();
+ navigator.clipboard.writeText(input.value);
+ alert('¡Enlace de referido copiado al portapapeles!');
+ }
+
+ function compartirWhatsAppReferido() {
+ const link = document.getElementById('inputEnlaceReferido').value;
+ const texto = `¡Hola! Te recomiendo *MiFacturaDigital.com.ve*, el sistema fiscal integrado con el SENIAT perfecto para comercios en Venezuela. Regístrate con mi enlace de referido y optimiza tu facturación: ${link}`;
+ window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank');
  }
 
  function calcularPrecioPorcentaje() {
