@@ -15,16 +15,42 @@
  #modalTicket { position: absolute; left: 0; top: 0; width: 100%; background: white; color: black; }
  .no-print { display: none !important; }
  }
+ .tech-pattern {
+ background-image: radial-gradient(rgba(16, 185, 129, 0.1) 1px, transparent 1px);
+ background-size: 24px 24px;
+ }
  </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans tech-pattern">
 
- <!-- [SEC-001] PANTALLA DE LOGIN -->
- <div id="vistaLogin" class="w-full max-w-md mx-auto bg-slate-900 rounded-2xl shadow-2xl p-8 border border-slate-800 my-auto space-y-6">
- <header class="text-center space-y-2">
- <div class="inline-block p-3 bg-emerald-600/20 border border-emerald-500/40 rounded-2xl text-emerald-400 font-mono text-xs font-bold mb-1">ENTERPRISE CLOUD V2026</div>
- <h1 class="text-2xl font-bold text-white tracking-wide">MiFacturaDigital</h1>
- <p class="text-xs text-slate-400">Sistema Fiscal Integrado SENIAT & Control de Inventario</p>
+ <!-- [SEC-001] NUEVA LANDING PAGE Y PANTALLA DE ACCESO INSTITUCIONAL -->
+ <div id="vistaLogin" class="w-full max-w-6xl mx-auto px-4 my-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center py-12">
+ <!-- Columna Izquierda: Presentación / Propuesta de Valor -->
+ <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+ <div class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 font-mono text-xs font-bold">
+ <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+ ENTERPRISE CLOUD V2026 • SENIAT COMPLIANT
+ </div>
+ <h1 class="text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
+ Facturación Digital Rápida y <span class="text-emerald-400 underline decoration-emerald-500/50">Fiscalmente Segura</span>
+ </h1>
+ <p class="text-slate-400 text-sm lg:text-base max-w-xl mx-auto lg:mx-0">
+ La plataforma integral para comercios venezolanos. Emisión de facturas con control estricto, Notas de Crédito/Débito, Kardex PPM, Retenciones de IVA y gestión multi-depósito con códigos QR integrados.
+ </p>
+ <div class="flex flex-wrap gap-4 justify-center lg:justify-start pt-2 font-mono text-xs text-slate-400">
+ <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800 px-3 py-2 rounded-xl">✔ Providencia SENIAT</div>
+ <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800 px-3 py-2 rounded-xl">⚡ Facturación Flash</div>
+ <div class="flex items-center gap-1.5 bg-slate-900/80 border border-slate-800 px-3 py-2 rounded-xl">📦 Inventario QR</div>
+ </div>
+ </div>
+
+ <!-- Columna Derecha: Tarjeta de Acceso / Login -->
+ <div class="lg:col-span-5 bg-slate-900/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-slate-800 space-y-6 relative overflow-hidden">
+ <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+ 
+ <header class="space-y-1">
+ <h2 class="text-xl font-bold text-white tracking-wide">Acceso al Sistema</h2>
+ <p class="text-xs text-slate-400">Ingrese sus credenciales de inquilino (tenant)</p>
  </header>
 
  <div class="space-y-4">
@@ -38,9 +64,14 @@
  </div>
 
  <!-- [SEC-001] iniciarSesionTenant() -->
- <button onclick="iniciarSesionTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition duration-200 shadow-lg shadow-emerald-900/30 cursor-pointer text-sm">
- Iniciar Sesión
+ <button onclick="iniciarSesionTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-xl transition duration-200 shadow-lg shadow-emerald-900/30 cursor-pointer text-sm flex items-center justify-center gap-2">
+ <span>Iniciar Sesión en MiFacturaDigital</span>
+ <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
  </button>
+ </div>
+ <footer class="text-[11px] text-center text-slate-500 font-mono pt-2">
+ Sistema autorizado y verificado • 2026
+ </footer>
  </div>
  </div>
 
@@ -50,7 +81,7 @@
 <!-- Header Shell Bar -->
  <header class="bg-slate-950 border-b border-slate-800 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 rounded-t-2xl">
  <div class="flex items-center gap-3">
- <div class="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500 flex items-center justify-center text-emerald-400 font-mono font-bold text-sm shadow">PWA</div>
+ <div class="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500 flex items-center justify-center text-emerald-400 font-mono font-bold text-sm shadow">⚡</div>
  <div>
  <h1 class="text-base font-bold text-white flex items-center gap-2">
  <span id="headerTenantNombre">Comercio Activo</span>
@@ -62,16 +93,14 @@
 
  <div class="flex items-center gap-3 flex-wrap">
  <div class="flex items-center gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-xl">
- <!-- [SEC-005] abrirModalPerfil() -->
  <button onclick="abrirModalPerfil()" class="hover:bg-slate-800 text-slate-300 hover:text-white text-xs px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1.5">⚙️ Perfil</button>
  <button onclick="abrirModalSuscripcion()" class="bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-700/50 text-xs px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer">💳 Renovar Plan</button>
- <!-- [SEC-004] cerrarSesion() -->
  <button onclick="cerrarSesion()" class="hover:bg-rose-950 text-rose-400 text-xs px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer">🚪 Salir</button>
  </div>
  </div>
  </header>
 
- <!-- Navegación por Pestañas Organizada (Mapeada a Códigos Estables) -->
+ <!-- Navegación por Pestañas Organizada -->
  <nav class="bg-slate-950/60 border-b border-slate-800 px-6 py-2.5 flex flex-wrap gap-2">
  <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer shadow-md flex items-center gap-1.5">🛒 [POS] Ventas</button>
  <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📋 [SEN] Comprobantes</button>
@@ -93,27 +122,24 @@
  <!-- CONTENEDOR DE SECCIONES -->
  <main class="p-6 flex-1 space-y-6">
 
- <!-- [POS-001 a POS-011] SECCIÓN 1: POS -->
+ <!-- SECCIÓN 1: POS -->
  <div id="seccionPos" class="space-y-6">
  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
  <div>
  <div class="flex justify-between items-center mb-1.5">
  <label class="block text-xs font-semibold text-slate-300">Tasa BCV Oficial (Bs. / $)</label>
- <!-- [POS-001] consultarTasaBcvApi() -->
  <button onclick="consultarTasaBcvApi()" class="text-[10px] text-emerald-400 hover:underline cursor-pointer">🔄 Consultar API</button>
  </div>
  <input type="number" step="0.0001" id="tasaBcv" value="888.1183" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-emerald-500 font-mono text-sm" oninput="recalcularTodo()">
  </div>
  <div>
  <label class="block text-xs font-semibold text-slate-300 mb-1.5">Seleccionar Cliente Rápido</label>
- <!-- [POS-003] cargarClientesSelect() -->
  <select id="clienteSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-emerald-500" onchange="seleccionarClientePredefinido()">
  <option value="">-- Seleccionar Cliente --</option>
  </select>
  </div>
  <div>
  <label class="block text-xs font-semibold text-slate-300 mb-1.5">Método de Pago Principal</label>
- <!-- [POS-007] verificarAplicacionIgtf() -->
  <select id="metodoPagoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-emerald-500" onchange="verificarAplicacionIgtf()">
  <option value="EFECTIVO DIVISAS">Efectivo Divisas ($ USD)</option>
  <option value="ZELLE">Zelle / Divisas Digitales</option>
@@ -147,7 +173,6 @@
  <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
  <div class="md:col-span-6">
  <label class="block text-xs text-slate-400 mb-1">Producto / Servicio</label>
- <!-- [POS-002] cargarProductosSelect() -->
  <select id="productoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-emerald-500">
  <option value="">Cargando catálogo...</option>
  </select>
@@ -157,7 +182,6 @@
  <input type="number" id="cantidadItem" min="1" value="1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-emerald-500 font-mono">
  </div>
  <div class="md:col-span-4">
- <!-- [POS-004] agregarItem() -->
  <button onclick="agregarItem()" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-300 font-semibold py-3 px-4 rounded-xl transition text-sm border border-slate-700 cursor-pointer shadow">
  + Añadir al Carrito
  </button>
@@ -177,7 +201,6 @@
  <th class="p-3 text-center">Acción</th>
  </tr>
  </thead>
- <!-- [POS-005, POS-006] eliminarItemCarrito() / actualizarTablaYCalculos() -->
  <tbody id="tablaItems" class="divide-y divide-slate-800/60"></tbody>
  </table>
  </div>
@@ -209,7 +232,6 @@
  </div>
  </div>
  <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1.5 font-mono">
- <!-- [POS-008] calcularVuelto() -->
  <div class="flex justify-between text-slate-300 font-semibold"><span>Vuelto en Bolívares:</span><span id="vueltoBs" class="text-amber-400">Bs. 0.00</span></div>
  <div class="flex justify-between text-slate-300 font-semibold"><span>Vuelto en Dólares:</span><span id="vueltoUsd" class="text-emerald-400">$ 0.00</span></div>
  </div>
@@ -217,32 +239,27 @@
  </div>
 
  <div class="flex gap-3">
- <!-- [POS-009] emitirFactura() -->
  <button onclick="emitirFactura()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-2xl transition shadow-lg shadow-emerald-900/30 cursor-pointer text-sm tracking-wide">
  Emitir Factura Fiscal Definitiva (SENIAT)
  </button>
- <!-- [POS-010] conectarImpresoraFiscalWebSerial() -->
  <button onclick="conectarImpresoraFiscalWebSerial()" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold py-3.5 px-6 rounded-2xl transition cursor-pointer text-xs shadow">
  🖨️ Conectar Impresora Fiscal (USB/Serial)
  </button>
  </div>
  </div>
 
- <!-- [SEN-001 a SEN-003] SECCIÓN 2: HISTORIAL / COMPROBANTES -->
+ <!-- SECCIÓN 2: HISTORIAL / COMPROBANTES -->
  <div id="seccionHistorial" class="hidden space-y-6">
  <div class="flex flex-col md:flex-row justify-between items-center gap-3">
  <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📋 Historial de Comprobantes Fiscales (Facturas, NC y ND)</h3>
  <div class="flex gap-2">
- <!-- [SEN-006] exportarHistorialExcel() -->
  <button onclick="exportarHistorialExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Comprobantes (Excel)</button>
- <!-- [SEN-001] cargarHistorial() -->
  <button onclick="cargarHistorial()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Actualizar</button>
  </div>
  </div>
  <div class="grid grid-cols-1 md:grid-cols-2 gap-3 bg-slate-950/40 p-4 rounded-2xl border border-slate-800">
  <div>
  <label class="block text-xs text-slate-400 mb-1">Filtrar por Nro / Cliente</label>
- <!-- [SEN-002] filtrarHistorial() -->
  <input type="text" id="filtroTexto" placeholder="Ej. FAC-0001, NC-, ND-" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-xs font-mono" oninput="filtrarHistorial()">
  </div>
  <div>
@@ -273,7 +290,7 @@
  </div>
  </div>
 
- <!-- [SEN-004, SEN-005] SECCIÓN: NOTAS DE DÉBITO Y CRÉDITO -->
+ <!-- SECCIÓN: NOTAS DE DÉBITO Y CRÉDITO -->
  <div id="seccionNotasFiscales" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📑 Emisión de Notas de Débito y Crédito (Providencia SENIAT)</h3>
@@ -298,7 +315,6 @@
  <input type="text" id="motivoNota" placeholder="Ej. Devolución de mercancía defectuosa según factura afectada" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
  </div>
  <div class="flex items-end">
- <!-- [SEN-005] emitirNotaFiscal() -->
  <button onclick="emitirNotaFiscal()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs cursor-pointer shadow">
  Emitir Nota Fiscal Definitiva
  </button>
@@ -307,7 +323,7 @@
  </div>
  </div>
 
- <!-- [CIE-001 a CIE-004] SECCIÓN 3: REPORTE Z Y LIBROS SENIAT -->
+ <!-- SECCIÓN 3: REPORTE Z Y LIBROS SENIAT -->
  <div id="seccionCierrez" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-6">
  <div class="flex flex-col md:flex-row justify-between items-center gap-3">
@@ -316,9 +332,7 @@
  </div>
  <div class="flex gap-2 flex-wrap">
  <button onclick="generarReporteZ()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer">🔄 Recalcular</button>
- <!-- [CIE-002] descargarLibroVentasOficialExcel() -->
  <button onclick="descargarLibroVentasOficialExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Descargar Libro de Ventas</button>
- <!-- [CIE-003] descargarLibroComprasOficialExcel() -->
  <button onclick="descargarLibroComprasOficialExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3.5 py-2.5 rounded-xl font-semibold cursor-pointer shadow">📥 Descargar Libro de Compras</button>
  </div>
  </div>
@@ -350,7 +364,7 @@
  </div>
  </div>
 
- <!-- [COM-001, COM-002] SECCIÓN 4: COMPRAS -->
+ <!-- SECCIÓN 4: COMPRAS -->
  <div id="seccionCompras" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <div class="flex justify-between items-center">
@@ -395,7 +409,7 @@
  </div>
  </div>
 
- <!-- [IMP-001, IMP-002] SECCIÓN: RETENCIONES DE IVA (75% / 100%) -->
+ <!-- SECCIÓN: RETENCIONES DE IVA -->
  <div id="seccionRetenciones" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <div class="flex justify-between items-center">
@@ -442,7 +456,7 @@
  </div>
  </div>
 
- <!-- [INV-001] SECCIÓN 5: KARDEX PPM -->
+ <!-- SECCIÓN 5: KARDEX PPM -->
  <div id="seccionKardex" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <div class="flex justify-between items-center">
@@ -474,7 +488,7 @@
  </div>
  </div>
 
- <!-- [INV-002 a INV-006] SECCIÓN: INVENTARIO FÍSICO Y CONCILIACIÓN -->
+ <!-- SECCIÓN: INVENTARIO FÍSICO Y CONCILIACIÓN -->
  <div id="seccionFisico" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <div class="flex flex-col md:flex-row justify-between items-center gap-3">
@@ -536,7 +550,6 @@
  </div>
  </div>
 
- <!-- TABLA HISTÓRICO DE INVENTARIOS FÍSICOS -->
  <div id="contenedorHistoricoFisico" class="hidden bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-3">
  <h4 class="text-sm font-bold text-sky-400 uppercase tracking-wider">📜 Histórico de Tomas de Inventario Físico (Supabase)</h4>
  <div class="overflow-x-auto">
@@ -557,7 +570,7 @@
  </div>
  </div>
 
- <!-- [INV-009] SECCIÓN: GESTIÓN MULTI-DEPÓSITO / TRANSFERENCIAS -->
+ <!-- SECCIÓN: GESTIÓN MULTI-DEPÓSITO -->
  <div id="seccionMultideposito" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🏢 Gestión Multi-Depósito y Transferencias Internas</h3>
@@ -587,7 +600,7 @@
  </div>
  </div>
 
- <!-- [CAT-004] SECCIÓN 6: ETIQUETAS QR -->
+ <!-- SECCIÓN 6: ETIQUETAS QR -->
  <div id="seccionEtiquetas" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <div class="flex justify-between items-center">
@@ -601,7 +614,7 @@
  </div>
  </div>
 
- <!-- [CAT-007] SECCIÓN 7: CUENTAS POR COBRAR -->
+ <!-- SECCIÓN 7: CUENTAS POR COBRAR -->
  <div id="seccionCuentas" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <div class="flex justify-between items-center">
@@ -621,7 +634,7 @@
  </div>
  </div>
 
- <!-- [CAT-005] SECCIÓN UNIDADES -->
+ <!-- SECCIÓN UNIDADES -->
  <div id="seccionUnidades" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">📐 Maestro de Unidades de Medida</h3>
@@ -645,7 +658,7 @@
  </div>
  </div>
 
- <!-- [CAT-001 a CAT-003] SECCIÓN 8: STOCK / PRODUCTOS -->
+ <!-- SECCIÓN 8: STOCK / PRODUCTOS -->
  <div id="seccionProductos" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <div class="flex justify-between items-center">
@@ -691,7 +704,7 @@
  </div>
  </div>
 
- <!-- [CAT-006] SECCIÓN 9: CLIENTES -->
+ <!-- SECCIÓN 9: CLIENTES -->
  <div id="seccionClientes" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <div class="flex justify-between items-center">
@@ -718,7 +731,7 @@
  </div>
  </div>
 
- <!-- [MAS-001] SECCIÓN 10: MASTER TENANTS -->
+ <!-- SECCIÓN 10: MASTER TENANTS -->
 <div id="seccionInquilinosMaster" class="hidden tab-master space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <div class="flex justify-between items-center">
@@ -802,9 +815,7 @@
  <div class="space-y-2 pt-2 no-print">
  <div class="grid grid-cols-3 gap-1">
  <button onclick="window.print()" class="bg-slate-900 text-white py-2 rounded font-sans font-semibold cursor-pointer text-[10px]">🖨️ PDF</button>
- <!-- [POS-011] enviarWhatsApp() -->
  <button onclick="enviarWhatsApp()" class="bg-emerald-600 text-white py-2 rounded font-sans font-semibold cursor-pointer text-[10px]">📱 WhatsApp</button>
- <!-- [CIE-004] imprimirBluetoothReal() -->
  <button onclick="imprimirBluetoothReal()" class="bg-sky-600 text-white py-2 rounded font-sans font-semibold cursor-pointer text-[10px]">📶 BT Térmica</button>
  </div>
  <button onclick="cerrarTicket()" class="w-full bg-slate-200 text-slate-800 py-1.5 rounded font-sans font-semibold cursor-pointer text-xs">Cerrar</button>
@@ -843,14 +854,14 @@
  </div>
  </div>
 
- <!-- SCRIPT GENERAL Y MÓDULOS (SIN ALTERAR NINGUNA LÓGICA) -->
+ <!-- SCRIPT GENERAL Y MÓDULOS -->
  <script>
  const SUPABASE_URL = 'https://pursobbuinxbbmkipivu.supabase.co';
  const SUPABASE_ANON_KEY = 'sb_publishable_78guLKFnFoK_RBIprxxl1w_CF-G0zji'; 
 
-let supabaseClient = null;
+ let supabaseClient = null;
  let tenantActual = null; 
-let carritoItems = [];
+ let carritoItems = [];
  let productosCache = [];
  let clientesCache = [];
  let unidadesCache = [];
@@ -1064,9 +1075,9 @@ let carritoItems = [];
  </tr>
  `;
  });
-}
+ }
 
-function editarTenant(id, t) {
+ function editarTenant(id, t) {
  document.getElementById('editTenantId').value = id;
  document.getElementById('tenantRazonSocial').value = t.razon_social || '';
  document.getElementById('tenantRif').value = t.rif || '';
@@ -1079,9 +1090,9 @@ function editarTenant(id, t) {
  document.getElementById('tituloFormTenant').innerText = '✏️ Editar Inquilino / Tenant';
  document.getElementById('btnCancelarTenant').classList.remove('hidden');
  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+ }
 
-function limpiarFormTenant() {
+ function limpiarFormTenant() {
  document.getElementById('editTenantId').value = '';
  document.getElementById('tenantRazonSocial').value = '';
  document.getElementById('tenantRif').value = '';
@@ -1093,9 +1104,9 @@ function limpiarFormTenant() {
  document.getElementById('tenantDireccion').value = '';
  document.getElementById('tituloFormTenant').innerText = '🏢 Administración Master de Tenants / Inquilinos';
  document.getElementById('btnCancelarTenant').classList.add('hidden');
-}
+ }
 
-async function guardarTenantMaster() {
+ async function guardarTenantMaster() {
  const editId = document.getElementById('editTenantId').value;
  const payload = {
  razon_social: document.getElementById('tenantRazonSocial').value.trim().toUpperCase(),
@@ -1125,16 +1136,16 @@ async function guardarTenantMaster() {
  }
  limpiarFormTenant();
  cargarInquilinosMaster();
-}
+ }
  
-async function eliminarTenantMaster(tenantId, email) {
+ async function eliminarTenantMaster(tenantId, email) {
  if (email === 'ervec2000@gmail.com') { alert('No se puede eliminar el administrador maestro principal.'); return; }
  if (!confirm(`¿Estás seguro de eliminar el tenant ${email}?`)) return;
  await supabaseClient.from('tenants').delete().eq('id', tenantId);
  cargarInquilinosMaster();
-}
+ }
 
-function exportarTenantsExcel() {
+ function exportarTenantsExcel() {
  supabaseClient.from('tenants').select('*').then(({ data }) => {
  if (!data) return;
  const excelData = data.map(t => ({ Comercio: t.razon_social, RIF: t.rif, Correo: t.email, Plan: t.plan_activo, Teléfono: t.telefono }));
@@ -1143,9 +1154,8 @@ function exportarTenantsExcel() {
  XLSX.utils.book_append_sheet(workbook, worksheet, "Tenants");
  XLSX.writeFile(workbook, `Tenants_Master_${new Date().toISOString().slice(0,10)}.xlsx`);
  });
-}
+ }
 
- // --- NOTAS DE DÉBITO Y CRÉDITO ---
  async function cargarFacturasAfectadasSelect() {
  const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
  const select = document.getElementById('facturaAfectadaSelect');
@@ -1176,15 +1186,15 @@ function exportarTenantsExcel() {
 
  await supabaseClient.from('invoices').insert([{
  tenant_id: tenantActual.id, 
-factura_nro: nroNota, 
-nro_control: nroControl, 
-tasa_bcv: tasa,
+ factura_nro: nroNota, 
+ nro_control: nroControl, 
+ tasa_bcv: tasa,
  monto_usd: montoUsd, 
-subtotal_bs: montoBs, 
-iva_bs: montoBs * 0.16, 
-total_bs: montoBs * 1.16,
+ subtotal_bs: montoBs, 
+ iva_bs: montoBs * 0.16, 
+ total_bs: montoBs * 1.16,
  cliente_rif: invOriginal?.cliente_rif || 'V-0', 
-cliente_nombre: invOriginal?.cliente_nombre || 'CLIENTE',
+ cliente_nombre: invOriginal?.cliente_nombre || 'CLIENTE',
  metodo_pago: `${tipoNota} | AFECTA FAC: ${facturaAfectada} | MOTIVO: ${motivo}`
  }]);
 
@@ -1192,7 +1202,6 @@ cliente_nombre: invOriginal?.cliente_nombre || 'CLIENTE',
  cambiarPestana('historial');
  }
 
- // --- RETENCIONES DE IVA (75% / 100%) ---
  async function generarComprobanteRetencion() {
  const facRef = document.getElementById('retFacturaRef').value.trim();
  const baseUsd = parseFloat(document.getElementById('retBaseUsd').value) || 0;
@@ -1233,7 +1242,6 @@ cliente_nombre: invOriginal?.cliente_nombre || 'CLIENTE',
  });
  }
 
- // --- WEBSERIAL API IMPRESORAS ---
  async function conectarImpresoraFiscalWebSerial() {
  if (!('serial' in navigator)) { alert('Tu navegador no soporta WebSerial API.'); return; }
  try {
@@ -1245,7 +1253,6 @@ cliente_nombre: invOriginal?.cliente_nombre || 'CLIENTE',
  }
  }
 
- // --- GESTIÓN MULTI-DEPÓSITO ---
  async function cargarProductosSelectTransf() {
  const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
  const select = document.getElementById('transfProductoSelect');
@@ -1277,7 +1284,6 @@ cliente_nombre: invOriginal?.cliente_nombre || 'CLIENTE',
  cargarKardexMovimientos();
  }
 
- // --- INVENTARIO FÍSICO Y CONCILIACIÓN ---
  async function cargarInventarioFisico() {
  const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
  inventarioFisicoCache = data || [];
@@ -1401,7 +1407,7 @@ cliente_nombre: invOriginal?.cliente_nombre || 'CLIENTE',
  const firstSheet = workbook.SheetNames[0];
  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
  
-rows.forEach(r => {
+ rows.forEach(r => {
  const sku = r.SKU || r.sku;
  const real = parseFloat(r.StockFísicoReal || r.StockFisicoReal || r.stock_real);
  if (sku && !isNaN(real)) {
@@ -1427,7 +1433,6 @@ rows.forEach(r => {
  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank');
  }
 
- // --- EXPORTACIÓN OFICIAL SENIAT ---
  function descargarExcelMatriz(matrizDatos, nombreArchivo, nombreHoja) {
  const worksheet = XLSX.utils.aoa_to_sheet(matrizDatos);
  const workbook = XLSX.utils.book_new();
@@ -1492,7 +1497,7 @@ rows.forEach(r => {
 
  if (!productoId || cantidad <= 0 || costo <= 0) { alert('Complete los datos correctamente.'); return; }
  
-try {
+ try {
  const { data: prodData } = await supabaseClient.from('productos').select('*').eq('id', productoId).single();
  const stockActual = prodData ? (prodData.stock || 0) : 0;
  const costoActual = prodData ? (prodData.costo_unitario_usd || costo) : costo;
@@ -1502,8 +1507,8 @@ try {
  const nuevoPrecioVenta = nuevoCostoProm * (1 + (margen / 100));
 
  await supabaseClient.from('productos').update({ 
-stock: nuevoStock, costo_unitario_usd: nuevoCostoProm, precio_venta_usd: nuevoPrecioVenta, lote: loteIngresado || prodData?.lote 
-}).eq('id', productoId);
+ stock: nuevoStock, costo_unitario_usd: nuevoCostoProm, precio_venta_usd: nuevoPrecioVenta, lote: loteIngresado || prodData?.lote 
+ }).eq('id', productoId);
 
  await supabaseClient.from('kardex_movimientos').insert([{
  tenant_id: tenantActual.id,
@@ -1577,6 +1582,7 @@ stock: nuevoStock, costo_unitario_usd: nuevoCostoProm, precio_venta_usd: nuevoPr
  select.innerHTML += `<option value="${prod.id}" data-precio="${pv}" data-exento="${prod.es_exento}" data-unidad="${prod.unidad_medida||'UND'}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">${prod.descripcion} - P.V: $${pv.toFixed(2)}</option>`;
  });
  }
+
  async function cargarProductosGestion() {
  const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
  const tbody = document.getElementById('tablaProductosGestion');
@@ -1800,7 +1806,7 @@ stock: nuevoStock, costo_unitario_usd: nuevoCostoProm, precio_venta_usd: nuevoPr
 
  const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
  
-const { count } = await supabaseClient.from('invoices').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantActual.id);
+ const { count } = await supabaseClient.from('invoices').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantActual.id);
  const correlativoNum = (count || 0) + 1;
  const facturaNro = 'FAC-' + String(correlativoNum).padStart(4, '0');
  const nroControl = '00-' + String(75000 + correlativoNum).padStart(8, '0');
@@ -1912,7 +1918,7 @@ const { count } = await supabaseClient.from('invoices').select('*', { count: 'ex
  document.getElementById('ticketComercioRif').innerText = `RIF: ${tenantActual.rif}`;
  document.getElementById('ticketComercioDir').innerText = tenantActual.direccion || 'VENEZUELA';
  
-const numUpper = (doc.numero || '').toUpperCase();
+ const numUpper = (doc.numero || '').toUpperCase();
  let tituloDoc = 'FACTURA FISCAL DIGITAL';
  if (numUpper.startsWith('NC')) tituloDoc = 'NOTA DE CRÉDITO FISCAL';
  if (numUpper.startsWith('ND')) tituloDoc = 'NOTA DE DÉBITO FISCAL';
@@ -1926,7 +1932,7 @@ const numUpper = (doc.numero || '').toUpperCase();
  document.getElementById('ticketClienteRif').innerText = 'RIF/Cédula: ' + (doc.cliente_rif || 'V-0');
  document.getElementById('ticketMetodoPago').innerText = 'Detalle: ' + (doc.metodo_pago || 'EFECTIVO');
  
-const refExtra = document.getElementById('ticketReferenciaExtra');
+ const refExtra = document.getElementById('ticketReferenciaExtra');
  if (doc.metodo_pago && (doc.metodo_pago.includes('NOTA') || doc.metodo_pago.includes('AFECTA'))) {
  refExtra.innerText = doc.metodo_pago;
  refExtra.classList.remove('hidden');
@@ -1989,7 +1995,7 @@ const refExtra = document.getElementById('ticketReferenciaExtra');
  container.innerHTML = '';
  if (!data || data.length === 0) { container.innerHTML = '<p class="text-slate-500">Sin artículos.</p>'; return; }
  
-data.forEach((p, idx) => {
+ data.forEach((p, idx) => {
  const textoQr = encodeURIComponent(`SKU:${p.codigo_sku||'N/A'}|DESC:${p.descripcion}|LOTE:${p.lote||'SIN-LOTE'}|UBI:${p.ubicacion||'DEP'}`);
  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${textoQr}`;
 
