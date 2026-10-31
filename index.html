@@ -33,7 +33,7 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans tech-pattern relative">
 
- <!-- [SEC-001] LANDING PAGE PROFESIONAL DE ÉLITE -->
+ <!-- [SEC-001] LANDING PAGE PÚBLICA -->
  <div id="vistaLogin" class="w-full max-w-7xl mx-auto px-4 py-12 flex flex-col justify-center space-y-16 animate-fade-in">
  
  <!-- Header / Navbar Institucional de Landing -->
@@ -64,11 +64,11 @@
  Facturación Digital Rápida y <span class="text-emerald-400 underline decoration-emerald-500/50 decoration-2">Fiscalmente Segura</span>
  </h1>
  <p class="text-slate-400 text-sm lg:text-base max-w-xl mx-auto lg:mx-0 leading-relaxed">
- La plataforma integral nube para comercios, distribuidoras y autolavados en Venezuela. Emisión de facturas exactas, Notas de Crédito/Débito, Kardex PPM, Retenciones de IVA y programa de referidos automatizado.
+ La plataforma integral en la nube para comercios, supermercados y licorerías en Venezuela. Facturación con lectura de códigos de barras, Notas de Crédito/Débito, Kardex PPM, Retenciones de IVA y referidos.
  </p>
  <div class="flex flex-wrap gap-3 justify-center lg:justify-start font-mono text-xs text-slate-300">
  <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3.5 py-2 rounded-xl shadow">✔ Providencia SENIAT</div>
- <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3.5 py-2 rounded-xl shadow">⚡ Facturación Flash POS</div>
+ <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3.5 py-2 rounded-xl shadow">⚡ POS & Código de Barras</div>
  <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3.5 py-2 rounded-xl shadow">📦 Inventario QR & Lotes</div>
  </div>
 
@@ -150,15 +150,15 @@
  <div class="bg-slate-900/40 border-y border-slate-900 py-4 overflow-hidden">
  <div class="flex items-center justify-center text-center px-4">
  <p class="text-xs font-mono text-slate-400 tracking-wider">
- 🚀 Sistemas operativos activos en <span class="text-emerald-400 font-bold">comercios, distribuidoras y autolavados</span> bajo estándar Enterprise Cloud.
+ 🚀 Sistemas operativos activos en <span class="text-emerald-400 font-bold">comercios, supermercados, licorerías y distribuidoras</span> bajo estándar Enterprise Cloud.
  </p>
  </div>
  </div>
 
  </div>
 
- <!-- CHAT FLOTANTE DE WHATSAPP AVANZADO CON BURBUJA Y ESTADO EN LÍNEA -->
- <div class="fixed bottom-6 right-6 z-50 flex items-center gap-3 no-print">
+ <!-- CHAT FLOTANTE DE WHATSAPP (ÚNICAMENTE EN LANDING PAGE) -->
+ <div id="chatFlotanteWhatsapp" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 no-print">
  <div class="bg-slate-900 border border-slate-700/80 text-slate-200 px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-medium hidden sm:flex items-center gap-2">
  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
  <span>¡Hola! 👋 ¿Necesitas asesoría con MiFacturaDigital o planes SaaS?</span>
@@ -219,7 +219,7 @@
  <!-- CONTENEDOR DE SECCIONES -->
  <main class="p-6 flex-1 space-y-6">
 
- <!-- SECCIÓN 1: POS -->
+ <!-- SECCIÓN 1: POS CON SOPORTE DE CÓDIGO DE BARRAS / SKU -->
  <div id="seccionPos" class="space-y-6">
  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
  <div>
@@ -264,12 +264,22 @@
  </div>
  </div>
 
- <!-- Productos Carrito -->
+ <!-- Productos Carrito & Lector de Código de Barras / SKU -->
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
- <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">🛒 Detalle de Artículos y Servicios</h3>
+ <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+ <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">🛒 Detalle de Artículos y Servicios (POS Caja)</h3>
+ <div class="flex items-center gap-2 w-full md:w-auto">
+ <div class="relative flex-1 md:w-80">
+ <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-emerald-400">📷</span>
+ <input type="text" id="inputScanBarra" placeholder="Escanear Código de Barras / SKU o usar Pistola..." class="w-full bg-slate-900 border border-emerald-500/50 rounded-xl pl-10 pr-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400 font-mono shadow-inner" onkeydown="manejarEscaneoBarra(event)">
+ </div>
+ <button onclick="abrirEscanearCamaraMovil()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer flex items-center gap-1 shadow">📱 Cámara</button>
+ </div>
+ </div>
+
  <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
  <div class="md:col-span-6">
- <label class="block text-xs text-slate-400 mb-1">Producto / Servicio</label>
+ <label class="block text-xs text-slate-400 mb-1">Producto / Servicio (Búsqueda Manual)</label>
  <select id="productoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-emerald-500">
  <option value="">Cargando catálogo...</option>
  </select>
@@ -289,6 +299,7 @@
  <table class="w-full text-left text-xs text-slate-300">
  <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
  <tr>
+ <th class="p-3">SKU / Barras</th>
  <th class="p-3">Descripción</th>
  <th class="p-3">Cant</th>
  <th class="p-3">Unidad</th>
@@ -755,7 +766,7 @@
  </div>
  </div>
 
- <!-- SECCIÓN 8: STOCK / PRODUCTOS -->
+ <!-- SECCIÓN 8: STOCK / PRODUCTOS (CON CÓDIGO DE BARRAS / SKU) -->
  <div id="seccionProductos" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <div class="flex justify-between items-center">
@@ -764,7 +775,10 @@
  </div>
  <input type="hidden" id="editProductoId">
  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
- <div><label class="block text-xs text-slate-400 mb-1">SKU / Código</label><input type="text" id="prodSku" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
+ <div>
+ <label class="block text-xs text-slate-400 mb-1">SKU / Código de Barras</label>
+ <input type="text" id="prodSku" placeholder="Escanee o escriba ej. 7591000..." class="w-full bg-slate-900 border border-emerald-500/50 rounded-xl p-3 text-white text-sm font-mono shadow-inner">
+ </div>
  <div><label class="block text-xs text-slate-400 mb-1">Categoría</label><input type="text" id="prodCategoria" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
  <div><label class="block text-xs text-slate-400 mb-1">Ubicación (Depósito)</label><input type="text" id="prodUbicacion" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
  <div>
@@ -793,7 +807,7 @@
  <div class="overflow-x-auto">
  <table class="w-full text-left text-xs text-slate-300">
  <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
- <tr><th class="p-3">SKU</th><th class="p-3">Categoría</th><th class="p-3">Descripción</th><th class="p-3">Ubicación</th><th class="p-3">Stock</th><th class="p-3">P. Venta ($)</th><th class="p-3 text-center">Acciones</th></tr>
+ <tr><th class="p-3">SKU / Barras</th><th class="p-3">Categoría</th><th class="p-3">Descripción</th><th class="p-3">Ubicación</th><th class="p-3">Stock</th><th class="p-3">P. Venta ($)</th><th class="p-3 text-center">Acciones</th></tr>
  </thead>
  <tbody id="tablaProductosGestion" class="divide-y divide-slate-800/60"></tbody>
  </table>
@@ -939,7 +953,7 @@
  <label class="block text-slate-400 mb-1">Plan de Interés</label>
  <select id="demoPlanInteres" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-amber-400 font-semibold">
  <option value="Freemium">Freemium (Básico)</option>
- <option value="Administración" selected>Administración (Pago/mes)</option>
+ <option value="Administración" selected>Administración ($15/mes)</option>
  <option value="Enterprise">Enterprise (Multisucursal)</option>
  </select>
  </div>
@@ -991,6 +1005,18 @@
  </div>
  <button onclick="cerrarTicket()" class="w-full bg-slate-200 text-slate-800 py-1.5 rounded font-sans font-semibold cursor-pointer text-xs">Cerrar</button>
  </div>
+ </div>
+ </div>
+
+ <!-- MODAL ESCANER CÁMARA MÓVIL / PISTOLA VIRTUAL -->
+ <div id="modalEscanerMovil" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
+ <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4 text-center">
+ <h3 class="text-base font-bold text-emerald-400">📱 Selección Rápida (Cámara / Táctil)</h3>
+ <p class="text-xs text-slate-400">Toca cualquier artículo para agregarlo al instante a la caja (POS).</p>
+ <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 max-h-[50vh] overflow-y-auto" id="listaEscaneoRapidoCamara">
+ <!-- Se renderiza dinámicamente -->
+ </div>
+ <button onclick="cerrarEscanearCamaraMovil()" class="w-full bg-slate-800 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cerrar Escáner</button>
  </div>
  </div>
 
@@ -1116,6 +1142,7 @@
 
  function activarVistaPrincipal() {
  document.getElementById('vistaLogin').classList.add('hidden');
+ document.getElementById('chatFlotanteWhatsapp').classList.add('hidden'); // Ocultar chat de WhatsApp al entrar al sistema
  document.getElementById('vistaPrincipal').classList.remove('hidden');
  document.getElementById('headerTenantNombre').innerText = tenantActual.razon_social || tenantActual.email;
  document.getElementById('headerTenantRif').innerText = tenantActual.rif || 'J-00000000-0';
@@ -1134,6 +1161,7 @@
  tenantActual = null;
  document.getElementById('vistaPrincipal').classList.add('hidden');
  document.getElementById('vistaLogin').classList.remove('hidden');
+ document.getElementById('chatFlotanteWhatsapp').classList.remove('hidden'); // Mostrar chat al salir a la Landing
  }
 
  function cambiarPestana(pestana) {
@@ -1757,7 +1785,7 @@
  const select = document.getElementById('compraProductoSelect');
  select.innerHTML = '';
  if (!data) return;
- data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} [Stock: ${p.stock||0}]</option>`; });
+ data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} [SKU: ${p.codigo_sku||'S/N'} | Stock: ${p.stock||0}]</option>`; });
  }
 
  async function cargarKardexMovimientos() {
@@ -1804,7 +1832,7 @@
  select.innerHTML = '';
  productosCache.forEach(prod => {
  const pv = prod.precio_venta_usd || prod.precio_unitario_usd || 0;
- select.innerHTML += `<option value="${prod.id}" data-precio="${pv}" data-exento="${prod.es_exento}" data-unidad="${prod.unidad_medida||'UND'}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">${prod.descripcion} - P.V: $${pv.toFixed(2)}</option>`;
+ select.innerHTML += `<option value="${prod.id}" data-precio="${pv}" data-exento="${prod.es_exento}" data-unidad="${prod.unidad_medida||'UND'}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">[${prod.codigo_sku||'S/N'}] ${prod.descripcion} - P.V: $${pv.toFixed(2)}</option>`;
  });
  }
 
@@ -1948,13 +1976,89 @@
  const manejaInventario = opt.dataset.maneja === 'true';
  const cantidad = parseFloat(document.getElementById('cantidadItem').value) || 1;
 
- carritoItems.push({ productoId: prodId, descripcion: desc, precio, cantidad, esExento, unidad, manejaInventario });
+ carritoItems.push({ productoId: prodId, sku: 'S/N', descripcion: desc, precio, cantidad, esExento, unidad, manejaInventario });
  actualizarTablaYCalculos();
  }
 
  function eliminarItemCarrito(index) {
  carritoItems.splice(index, 1);
  actualizarTablaYCalculos();
+ }
+
+ function manejarEscaneoBarra(e) {
+ if (e.key === 'Enter') {
+ e.preventDefault();
+ const input = document.getElementById('inputScanBarra');
+ const codigo = input.value.trim().toUpperCase();
+ if (!codigo) return;
+
+ const prodEncontrado = productosCache.find(p => (p.codigo_sku || '').toUpperCase() === codigo);
+ if (prodEncontrado) {
+ const pv = prodEncontrado.precio_venta_usd || prodEncontrado.precio_unitario_usd || 0;
+ carritoItems.push({
+ productoId: prodEncontrado.id,
+ sku: prodEncontrado.codigo_sku || 'S/N',
+ descripcion: prodEncontrado.descripcion,
+ precio: pv,
+ cantidad: 1,
+ esExento: prodEncontrado.es_exento,
+ unidad: prodEncontrado.unidad_medida || 'UND',
+ manejaInventario: prodEncontrado.maneja_inventario
+ });
+ actualizarTablaYCalculos();
+ input.value = '';
+ } else {
+ alert(`⚠️ Producto con código "${codigo}" no encontrado en el catálogo.`);
+ input.select();
+ }
+ }
+ }
+
+ function abrirEscanearCamaraMovil() {
+ const container = document.getElementById('listaEscaneoRapidoCamara');
+ container.innerHTML = '';
+ if (productosCache.length === 0) {
+ container.innerHTML = '<p class="text-slate-500 text-xs">No hay productos en el catálogo.</p>';
+ } else {
+ productosCache.forEach(prod => {
+ const pv = prod.precio_venta_usd || 0;
+ container.innerHTML += `
+ <div onclick='seleccionarProdRapidoCamara("${prod.id}")' class="bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex items-center justify-between cursor-pointer text-left">
+ <div>
+ <p class="font-bold text-emerald-400 font-mono text-xs">${prod.codigo_sku || 'S/N'}</p>
+ <p class="text-sm font-semibold text-white">${prod.descripcion}</p>
+ </div>
+ <div class="text-right font-mono text-emerald-300 text-sm font-bold">
+ $ ${pv.toFixed(2)}
+ </div>
+ </div>
+ `;
+ });
+ }
+ document.getElementById('modalEscanerMovil').classList.remove('hidden');
+ }
+
+ function cerrarEscanearCamaraMovil() {
+ document.getElementById('modalEscanerMovil').classList.add('hidden');
+ }
+
+ function seleccionarProdRapidoCamara(prodId) {
+ const prodEncontrado = productosCache.find(p => p.id === prodId);
+ if (prodEncontrado) {
+ const pv = prodEncontrado.precio_venta_usd || prodEncontrado.precio_unitario_usd || 0;
+ carritoItems.push({
+ productoId: prodEncontrado.id,
+ sku: prodEncontrado.codigo_sku || 'S/N',
+ descripcion: prodEncontrado.descripcion,
+ precio: pv,
+ cantidad: 1,
+ esExento: prodEncontrado.es_exento,
+ unidad: prodEncontrado.unidad_medida || 'UND',
+ manejaInventario: prodEncontrado.maneja_inventario
+ });
+ actualizarTablaYCalculos();
+ cerrarEscanearCamaraMovil();
+ }
  }
 
  function actualizarTablaYCalculos() {
@@ -1967,6 +2071,7 @@
  if (item.esExento) montoExento += sub; else baseGravada += sub;
  tbody.innerHTML += `
  <tr class="hover:bg-slate-900">
+ <td class="p-3 font-mono text-emerald-400">${item.sku}</td>
  <td class="p-3">${item.descripcion}</td>
  <td class="p-3 font-mono">${item.cantidad}</td>
  <td class="p-3">${item.unidad}</td>
