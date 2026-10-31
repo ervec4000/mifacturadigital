@@ -273,7 +273,7 @@
  <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-emerald-400">📷</span>
  <input type="text" id="inputScanBarra" placeholder="Escanear Código de Barras / SKU o usar Pistola..." class="w-full bg-slate-900 border border-emerald-500/50 rounded-xl pl-10 pr-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-400 font-mono shadow-inner" onkeydown="manejarEscaneoBarra(event)">
  </div>
- <button onclick="abrirEscanearCamaraMovil()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer flex items-center gap-1 shadow">📱 Cámara</button>
+ <button onclick="abrirEscanearCamaraMovil('pos')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer flex items-center gap-1 shadow">📱 Cámara</button>
  </div>
  </div>
 
@@ -766,7 +766,7 @@
  </div>
  </div>
 
- <!-- SECCIÓN 8: STOCK / PRODUCTOS (CON CÓDIGO DE BARRAS / SKU) -->
+ <!-- SECCIÓN 8: STOCK / PRODUCTOS (CON CÓDIGO DE BARRAS / SKU Y ESCANEO MÓVIL/PISTOLA) -->
  <div id="seccionProductos" class="hidden tab-admin space-y-6">
  <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
  <div class="flex justify-between items-center">
@@ -776,8 +776,11 @@
  <input type="hidden" id="editProductoId">
  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
  <div>
- <label class="block text-xs text-slate-400 mb-1">SKU / Código de Barras</label>
- <input type="text" id="prodSku" placeholder="Escanee o escriba ej. 7591000..." class="w-full bg-slate-900 border border-emerald-500/50 rounded-xl p-3 text-white text-sm font-mono shadow-inner">
+ <div class="flex justify-between items-center mb-1">
+ <label class="block text-xs text-slate-400">SKU / Código de Barras</label>
+ <button onclick="abrirEscanearCamaraProdForm()" class="text-[10px] text-emerald-400 hover:underline cursor-pointer flex items-center gap-1">📱 Escanear / Pistola</button>
+ </div>
+ <input type="text" id="prodSku" placeholder="Escanee o escriba ej. 7591000..." class="w-full bg-slate-900 border border-emerald-500/50 rounded-xl p-3 text-white text-sm font-mono shadow-inner" onkeydown="manejarEscaneoBarraProdForm(event)">
  </div>
  <div><label class="block text-xs text-slate-400 mb-1">Categoría</label><input type="text" id="prodCategoria" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
  <div><label class="block text-xs text-slate-400 mb-1">Ubicación (Depósito)</label><input type="text" id="prodUbicacion" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
@@ -1011,8 +1014,8 @@
  <!-- MODAL ESCANER CÁMARA MÓVIL / PISTOLA VIRTUAL -->
  <div id="modalEscanerMovil" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center p-4 z-50">
  <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4 text-center">
- <h3 class="text-base font-bold text-emerald-400">📱 Selección Rápida (Cámara / Táctil)</h3>
- <p class="text-xs text-slate-400">Toca cualquier artículo para agregarlo al instante a la caja (POS).</p>
+ <h3 class="text-base font-bold text-emerald-400" id="tituloModalEscaner">📱 Selección Rápida (Cámara / Táctil)</h3>
+ <p class="text-xs text-slate-400" id="subtituloModalEscaner">Toca cualquier artículo para agregarlo al instante a la caja (POS).</p>
  <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 max-h-[50vh] overflow-y-auto" id="listaEscaneoRapidoCamara">
  <!-- Se renderiza dinámicamente -->
  </div>
@@ -1066,6 +1069,7 @@
  let inventarioFisicoCache = [];
  let portSerialFiscal = null;
  let comprobanteActualCache = null;
+ let modoEscanerActivo = 'pos'; // 'pos' o 'productoForm'
 
  window.onload = function() {
  if (window.supabase) {
@@ -1838,6 +1842,7 @@
 
  async function cargarProductosGestion() {
  const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+ productosCache = data || [];
  const tbody = document.getElementById('tablaProductosGestion');
  tbody.innerHTML = '';
  if (!data) return;
@@ -2014,9 +2019,32 @@
  }
  }
 
- function abrirEscanearCamaraMovil() {
+ function manejarEscaneoBarraProdForm(e) {
+ if (e.key === 'Enter') {
+ e.preventDefault();
+ const input = document.getElementById('prodSku');
+ const codigo = input.value.trim().toUpperCase();
+ if (!codigo) return;
+ 
+ // Buscar si ya existe para editarlo o dejarlo listo
+ const prodEncontrado = productosCache.find(p => (p.codigo_sku || '').toUpperCase() === codigo);
+ if (prodEncontrado) {
+ editarProducto(prodEncontrado.id, prodEncontrado);
+ alert(`🔍 Artículo encontrado y cargado en el formulario: ${prodEncontrado.descripcion}`);
+ } else {
+ alert(`✨ Código "${codigo}" listo para registrar un nuevo artículo.`);
+ }
+ }
+ }
+
+ function abrirEscanearCamaraMovil(modo = 'pos') {
+ modoEscanerActivo = modo;
  const container = document.getElementById('listaEscaneoRapidoCamara');
  container.innerHTML = '';
+
+ if (modo === 'pos') {
+ document.getElementById('tituloModalEscaner').innerText = '📱 Selección Rápida (Cámara / Táctil POS)';
+ document.getElementById('subtituloModalEscaner').innerText = 'Toca cualquier artículo para agregarlo al instante a la caja (POS).';
  if (productosCache.length === 0) {
  container.innerHTML = '<p class="text-slate-500 text-xs">No hay productos en el catálogo.</p>';
  } else {
@@ -2035,7 +2063,46 @@
  `;
  });
  }
+ } else {
+ document.getElementById('tituloModalEscaner').innerText = '📱 Escáner / Selección de Código (Artículos)';
+ document.getElementById('subtituloModalEscaner').innerText = 'Toca un código existente para asignarlo o generar uno nuevo.';
+ 
+ container.innerHTML += `
+ <div onclick="asignarSkuAuto('SKU-' + Math.floor(100000 + Math.random() * 900000))" class="bg-emerald-950/40 hover:bg-emerald-900/60 p-3 rounded-xl border border-emerald-500/50 flex items-center justify-between cursor-pointer text-left">
+ <div>
+ <p class="font-bold text-emerald-400 font-mono text-xs">⚡ GENERAR SKU AUTOMÁTICO</p>
+ <p class="text-xs text-slate-300">Crear código de barras único</p>
+ </div>
+ </div>
+ `;
+
+ if (productosCache.length > 0) {
+ productosCache.forEach(prod => {
+ container.innerHTML += `
+ <div onclick='asignarSkuAuto("${prod.codigo_sku || ''}")' class="bg-slate-900 hover:bg-slate-800 p-3 rounded-xl border border-slate-800 flex items-center justify-between cursor-pointer text-left">
+ <div>
+ <p class="font-bold text-emerald-400 font-mono text-xs">${prod.codigo_sku || 'S/N'}</p>
+ <p class="text-sm font-semibold text-white">${prod.descripcion}</p>
+ </div>
+ <div class="text-right text-xs text-sky-400 font-bold">
+ Usar este SKU
+ </div>
+ </div>
+ `;
+ });
+ }
+ }
+
  document.getElementById('modalEscanerMovil').classList.remove('hidden');
+ }
+
+ function abrirEscanearCamaraProdForm() {
+ abrirEscanearCamaraMovil('productoForm');
+ }
+
+ function asignarSkuAuto(sku) {
+ document.getElementById('prodSku').value = sku;
+ cerrarEscanearCamaraMovil();
  }
 
  function cerrarEscanearCamaraMovil() {
