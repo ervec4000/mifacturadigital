@@ -518,11 +518,18 @@
                         <button onclick="exportarProveedoresExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Proveedores</button>
                     </div>
                     <input type="hidden" id="editProveedorId">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div><label class="block text-xs text-slate-400 mb-1">RIF Proveedor</label><input type="text" id="provRif" placeholder="J-12345678-0" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
                         <div><label class="block text-xs text-slate-400 mb-1">Teléfono</label><input type="text" id="provTelefono" placeholder="0414-0000000" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
-                        <div class="md:col-span-3"><label class="block text-xs text-slate-400 mb-1">Razón Social / Proveedor</label><input type="text" id="provRazonSocial" placeholder="PROVEEDOR C.A." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
-                        <div class="md:col-span-3"><label class="block text-xs text-slate-400 mb-1">Dirección Fiscal</label><input type="text" id="provDireccion" placeholder="Barquisimeto, Lara" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1">¿Contribuyente Especial?</label>
+                            <select id="provContribuyenteEspecial" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-semibold">
+                                <option value="true" selected>SÍ - Contribuyente Especial</option>
+                                <option value="false">NO - Ordinario</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-4"><label class="block text-xs text-slate-400 mb-1">Razón Social / Proveedor</label><input type="text" id="provRazonSocial" placeholder="PROVEEDOR C.A." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
+                        <div class="md:col-span-4"><label class="block text-xs text-slate-400 mb-1">Dirección Fiscal</label><input type="text" id="provDireccion" placeholder="Barquisimeto, Lara" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
                     </div>
                     <div class="flex space-x-2 pt-2">
                         <button onclick="guardarProveedor()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs cursor-pointer shadow">Guardar / Actualizar Proveedor</button>
@@ -534,7 +541,7 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
-                                <tr><th class="p-3">RIF</th><th class="p-3">Razón Social</th><th class="p-3">Teléfono</th><th class="p-3">Dirección</th><th class="p-3 text-center">Acciones</th></tr>
+                                <tr><th class="p-3">RIF</th><th class="p-3">Razón Social</th><th class="p-3">Teléfono</th><th class="p-3">Especial</th><th class="p-3">Dirección</th><th class="p-3 text-center">Acciones</th></tr>
                             </thead>
                             <tbody id="tablaProveedoresGestion" class="divide-y divide-slate-800/60"></tbody>
                         </table>
@@ -1765,7 +1772,7 @@
         async function exportarProveedoresExcel() {
             const { data } = await supabaseClient.from('proveedores').select('*').eq('tenant_id', tenantActual.id);
             if (!data) return;
-            const excelData = data.map(p => ({ RIF: p.rif, Razón: p.razon_social, Teléfono: p.telefono, Dirección: p.direccion }));
+            const excelData = data.map(p => ({ RIF: p.rif, Razón: p.razon_social, Teléfono: p.telefono, 'Contribuyente Especial': p.es_contribuyente_especial ? 'SÍ' : 'NO', Dirección: p.direccion }));
             descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Proveedores', 'Proveedores');
         }
 
@@ -1848,21 +1855,24 @@
         }
 
         async function cargarProveedoresGestion() {
-            const { data } = await supabaseClient.from('proveedores').select('*').eq('tenant_id', tenantActual.id);
+            const { data, error } = await supabaseClient.from('proveedores').select('*').eq('tenant_id', tenantActual.id);
+            if (error) { console.error('Error cargando proveedores:', error); return; }
             proveedoresCache = data || [];
             const tbody = document.getElementById('tablaProveedoresGestion');
             if (!tbody) return;
             tbody.innerHTML = '';
             if (!proveedoresCache.length) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin proveedores registrados.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Sin proveedores registrados.</td></tr>`;
                 return;
             }
             proveedoresCache.forEach(prov => {
+                const esEsp = prov.es_contribuyente_especial ?? true;
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-900">
                         <td class="p-3 font-mono text-emerald-400">${prov.rif}</td>
                         <td class="p-3 font-semibold text-white">${prov.razon_social}</td>
                         <td class="p-3 font-mono">${prov.telefono || 'N/A'}</td>
+                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${esEsp?'bg-emerald-950 text-emerald-300':'bg-slate-800 text-slate-300'}">${esEsp?'SÍ':'NO'}</span></td>
                         <td class="p-3 text-slate-300">${prov.direccion || 'N/A'}</td>
                         <td class="p-3 text-center space-x-2">
                             <button onclick='editarProveedor("${prov.id}", ${JSON.stringify(prov).replace(/"/g, '&quot;')})' class="text-sky-400 hover:underline">Editar</button>
@@ -1877,6 +1887,7 @@
             document.getElementById('editProveedorId').value = id;
             document.getElementById('provRif').value = prov.rif || '';
             document.getElementById('provTelefono').value = prov.telefono || '';
+            document.getElementById('provContribuyenteEspecial').value = String(prov.es_contribuyente_especial ?? true);
             document.getElementById('provRazonSocial').value = prov.razon_social || '';
             document.getElementById('provDireccion').value = prov.direccion || '';
             document.getElementById('tituloFormProveedor').innerText = '✏️ Editar Proveedor';
@@ -1888,6 +1899,7 @@
             document.getElementById('editProveedorId').value = '';
             document.getElementById('provRif').value = '';
             document.getElementById('provTelefono').value = '';
+            document.getElementById('provContribuyenteEspecial').value = 'true';
             document.getElementById('provRazonSocial').value = '';
             document.getElementById('provDireccion').value = '';
             document.getElementById('tituloFormProveedor').innerText = '🏭 Maestro de Proveedores';
@@ -1899,6 +1911,7 @@
             const payload = {
                 rif: document.getElementById('provRif').value.trim(),
                 telefono: document.getElementById('provTelefono').value.trim(),
+                es_contribuyente_especial: document.getElementById('provContribuyenteEspecial').value === 'true',
                 razon_social: document.getElementById('provRazonSocial').value.trim().toUpperCase(),
                 direccion: document.getElementById('provDireccion').value.trim(),
                 tenant_id: tenantActual.id
@@ -1910,11 +1923,13 @@
             }
 
             if (editId) {
-                await supabaseClient.from('proveedores').update(payload).eq('id', editId);
+                const { error } = await supabaseClient.from('proveedores').update(payload).eq('id', editId);
+                if (error) { alert('Error al actualizar: ' + error.message); return; }
                 alert('¡Proveedor actualizado con éxito!');
             } else {
-                await supabaseClient.from('proveedores').insert([payload]);
-                alert('¡Proveedor guardado con éxito!');
+                const { error } = await supabaseClient.from('proveedores').insert([payload]);
+                if (error) { alert('Error al registrar: ' + error.message); return; }
+                alert('¡Proveedor guardado con éxito en Supabase!');
             }
             limpiarFormProveedor();
             cargarProveedoresGestion();
