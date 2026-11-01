@@ -189,6 +189,7 @@
             <button onclick="cambiarPestana('notasFiscales')" id="btnTabNotasFiscales" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📑 [SEN] Notas Déb/Créd</button>
             <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📊 [CIE] Reporte Z & Libros</button>
             <button onclick="cambiarPestana('compras')" id="btnTabCompras" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📥 [COM] Compras</button>
+            <button onclick="cambiarPestana('proveedores')" id="btnTabProveedores" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🏭 [CAT] Proveedores</button>
             <button onclick="cambiarPestana('retenciones')" id="btnTabRetenciones" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🧾 [IMP] Retenciones IVA</button>
             <button onclick="cambiarPestana('kardex')" id="btnTabKardex" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">📦 [INV] Kardex PPM</button>
             <button onclick="cambiarPestana('fisico')" id="btnTabFisico" class="tab-admin bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5">🔍 [INV] Inv. Físico & Conciliación</button>
@@ -487,6 +488,12 @@
                             <input type="text" id="compraDocRef" placeholder="FACT-PROV-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
                         </div>
                         <div>
+                            <label class="block text-xs text-slate-400 mb-1">Seleccionar Proveedor</label>
+                            <select id="compraProveedorSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" onchange="seleccionarProveedorCompra()">
+                                <option value="">-- Seleccionar Proveedor --</option>
+                            </select>
+                        </div>
+                        <div>
                             <label class="block text-xs text-slate-400 mb-1">RIF Proveedor</label>
                             <input type="text" id="compraProvRif" placeholder="J-12345678-0" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
                         </div>
@@ -499,6 +506,38 @@
                                 Registrar Entrada & Libro Compras
                             </button>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN: PROVEEDORES -->
+            <div id="seccionProveedores" class="hidden tab-admin space-y-6">
+                <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 id="tituloFormProveedor" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">🏭 Maestro de Proveedores</h3>
+                        <button onclick="exportarProveedoresExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Proveedores</button>
+                    </div>
+                    <input type="hidden" id="editProveedorId">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label class="block text-xs text-slate-400 mb-1">RIF Proveedor</label><input type="text" id="provRif" placeholder="J-12345678-0" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Teléfono</label><input type="text" id="provTelefono" placeholder="0414-0000000" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
+                        <div class="md:col-span-3"><label class="block text-xs text-slate-400 mb-1">Razón Social / Proveedor</label><input type="text" id="provRazonSocial" placeholder="PROVEEDOR C.A." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
+                        <div class="md:col-span-3"><label class="block text-xs text-slate-400 mb-1">Dirección Fiscal</label><input type="text" id="provDireccion" placeholder="Barquisimeto, Lara" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></div>
+                    </div>
+                    <div class="flex space-x-2 pt-2">
+                        <button onclick="guardarProveedor()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs cursor-pointer shadow">Guardar / Actualizar Proveedor</button>
+                        <button onclick="limpiarFormProveedor()" id="btnCancelarProv" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-xl text-xs cursor-pointer">Cancelar</button>
+                    </div>
+                </div>
+                <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-3">
+                    <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider">Proveedores Registrados</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                                <tr><th class="p-3">RIF</th><th class="p-3">Razón Social</th><th class="p-3">Teléfono</th><th class="p-3">Dirección</th><th class="p-3 text-center">Acciones</th></tr>
+                            </thead>
+                            <tbody id="tablaProveedoresGestion" class="divide-y divide-slate-800/60"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -807,22 +846,26 @@
             <div id="seccionClientes" class="hidden tab-admin space-y-6">
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider">👥 Maestro de Clientes</h3>
-                        <button onclick="cargarClientesGestion()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-200 cursor-pointer">🔄 Actualizar Clientes</button>
+                        <h3 id="tituloFormCliente" class="text-sm font-bold text-emerald-400 uppercase tracking-wider">👥 Maestro de Clientes</h3>
+                        <button onclick="exportarClientesExcel()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-3.5 py-2 rounded-xl font-semibold cursor-pointer shadow">📥 Exportar Clientes</button>
                     </div>
+                    <input type="hidden" id="editClienteId">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div><label class="block text-xs text-slate-400 mb-1">RIF / Cédula</label><input type="text" id="cliRif" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" placeholder="J-12345678-0"></div>
                         <div><label class="block text-xs text-slate-400 mb-1">Teléfono</label><input type="text" id="cliTelefono" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" placeholder="0414-1234567"></div>
                         <div class="md:col-span-2"><label class="block text-xs text-slate-400 mb-1">Razón Social</label><input type="text" id="cliRazonSocial" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" placeholder="CLIENTE C.A."></div>
                         <div class="md:col-span-2"><label class="block text-xs text-slate-400 mb-1">Dirección</label><input type="text" id="cliDireccion" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" placeholder="San Felipe, Yaracuy"></div>
                     </div>
-                    <button onclick="guardarCliente()" class="bg-emerald-600 text-white py-2.5 px-5 rounded-xl font-semibold cursor-pointer text-xs shadow">Guardar Cliente</button>
+                    <div class="flex space-x-2 pt-2">
+                        <button onclick="guardarCliente()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-xs cursor-pointer shadow">Guardar / Actualizar Cliente</button>
+                        <button onclick="limpiarFormCliente()" id="btnCancelarCli" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-200 px-5 py-2.5 rounded-xl text-xs cursor-pointer">Cancelar</button>
+                    </div>
                 </div>
                 <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-3">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs text-slate-300">
                             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
-                                <tr><th class="p-3">RIF / Cédula</th><th class="p-3">Razón Social</th><th class="p-3">Teléfono</th><th class="p-3 text-center">Acción</th></tr>
+                                <tr><th class="p-3">RIF / Cédula</th><th class="p-3">Razón Social</th><th class="p-3">Teléfono</th><th class="p-3 text-center">Acciones</th></tr>
                             </thead>
                             <tbody id="tablaClientesGestion" class="divide-y divide-slate-800/60"></tbody>
                         </table>
@@ -1047,6 +1090,7 @@
         let carritoItems = [];
         let productosCache = [];
         let clientesCache = [];
+        let proveedoresCache = [];
         let unidadesCache = [];
         let documentosHistorialCache = [];
         let inventarioFisicoCache = [];
@@ -1152,7 +1196,7 @@
         }
 
         function cambiarPestana(pestana) {
-            const tabs = ['pos', 'historial', 'notasFiscales', 'cierrez', 'compras', 'retenciones', 'kardex', 'fisico', 'multideposito', 'etiquetas', 'cuentas', 'unidades', 'productos', 'clientes', 'referidos', 'inquilinosMaster'];
+            const tabs = ['pos', 'historial', 'notasFiscales', 'cierrez', 'compras', 'proveedores', 'retenciones', 'kardex', 'fisico', 'multideposito', 'etiquetas', 'cuentas', 'unidades', 'productos', 'clientes', 'referidos', 'inquilinosMaster'];
             tabs.forEach(t => {
                 const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
                 const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -1181,7 +1225,8 @@
                 document.getElementById('filtroFechaHasta').value = hoy;
                 generarReporteZ();
             }
-            if (pestana === 'compras') cargarProductosSelectCompra();
+            if (pestana === 'compras') { cargarProductosSelectCompra(); cargarProveedoresSelectCompra(); }
+            if (pestana === 'proveedores') cargarProveedoresGestion();
             if (pestana === 'retenciones') cargarRetenciones();
             if (pestana === 'kardex') cargarKardexMovimientos();
             if (pestana === 'fisico') {
@@ -1713,8 +1758,15 @@
         async function exportarClientesExcel() {
             const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
             if (!data) return;
-            const excelData = data.map(c => ({ RIF: c.rif, Razón: c.razon_social, Teléfono: c.telefono }));
+            const excelData = data.map(c => ({ RIF: c.rif, Razón: c.razon_social, Teléfono: c.telefono, Dirección: c.direccion }));
             descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Clientes', 'Clientes');
+        }
+
+        async function exportarProveedoresExcel() {
+            const { data } = await supabaseClient.from('proveedores').select('*').eq('tenant_id', tenantActual.id);
+            if (!data) return;
+            const excelData = data.map(p => ({ RIF: p.rif, Razón: p.razon_social, Teléfono: p.telefono, Dirección: p.direccion }));
+            descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Proveedores', 'Proveedores');
         }
 
         async function exportarComprasExcel() { descargarLibroComprasOficialExcel(); }
@@ -1773,6 +1825,105 @@
             select.innerHTML = '';
             if (!data) return;
             data.forEach(p => { select.innerHTML += `<option value="${p.id}">${p.descripcion} [SKU: ${p.codigo_sku||'S/N'} | Stock: ${p.stock||0}]</option>`; });
+        }
+
+        async function cargarProveedoresSelectCompra() {
+            const { data } = await supabaseClient.from('proveedores').select('*').eq('tenant_id', tenantActual.id);
+            proveedoresCache = data || [];
+            const select = document.getElementById('compraProveedorSelect');
+            if (!select) return;
+            select.innerHTML = '<option value="">-- Seleccionar Proveedor --</option>';
+            proveedoresCache.forEach(p => {
+                select.innerHTML += `<option value="${p.id}">${p.razon_social} (${p.rif})</option>`;
+            });
+        }
+
+        function seleccionarProveedorCompra() {
+            const provId = document.getElementById('compraProveedorSelect').value;
+            const prov = proveedoresCache.find(x => x.id === provId);
+            if (prov) {
+                document.getElementById('compraProvRif').value = prov.rif || '';
+                document.getElementById('compraProvNombre').value = prov.razon_social || '';
+            }
+        }
+
+        async function cargarProveedoresGestion() {
+            const { data } = await supabaseClient.from('proveedores').select('*').eq('tenant_id', tenantActual.id);
+            proveedoresCache = data || [];
+            const tbody = document.getElementById('tablaProveedoresGestion');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (!proveedoresCache.length) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin proveedores registrados.</td></tr>`;
+                return;
+            }
+            proveedoresCache.forEach(prov => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900">
+                        <td class="p-3 font-mono text-emerald-400">${prov.rif}</td>
+                        <td class="p-3 font-semibold text-white">${prov.razon_social}</td>
+                        <td class="p-3 font-mono">${prov.telefono || 'N/A'}</td>
+                        <td class="p-3 text-slate-300">${prov.direccion || 'N/A'}</td>
+                        <td class="p-3 text-center space-x-2">
+                            <button onclick='editarProveedor("${prov.id}", ${JSON.stringify(prov).replace(/"/g, '&quot;')})' class="text-sky-400 hover:underline">Editar</button>
+                            <button onclick='eliminarProveedor("${prov.id}")' class="text-rose-400 hover:underline">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function editarProveedor(id, prov) {
+            document.getElementById('editProveedorId').value = id;
+            document.getElementById('provRif').value = prov.rif || '';
+            document.getElementById('provTelefono').value = prov.telefono || '';
+            document.getElementById('provRazonSocial').value = prov.razon_social || '';
+            document.getElementById('provDireccion').value = prov.direccion || '';
+            document.getElementById('tituloFormProveedor').innerText = '✏️ Editar Proveedor';
+            document.getElementById('btnCancelarProv').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function limpiarFormProveedor() {
+            document.getElementById('editProveedorId').value = '';
+            document.getElementById('provRif').value = '';
+            document.getElementById('provTelefono').value = '';
+            document.getElementById('provRazonSocial').value = '';
+            document.getElementById('provDireccion').value = '';
+            document.getElementById('tituloFormProveedor').innerText = '🏭 Maestro de Proveedores';
+            document.getElementById('btnCancelarProv').classList.add('hidden');
+        }
+
+        async function guardarProveedor() {
+            const editId = document.getElementById('editProveedorId').value;
+            const payload = {
+                rif: document.getElementById('provRif').value.trim(),
+                telefono: document.getElementById('provTelefono').value.trim(),
+                razon_social: document.getElementById('provRazonSocial').value.trim().toUpperCase(),
+                direccion: document.getElementById('provDireccion').value.trim(),
+                tenant_id: tenantActual.id
+            };
+
+            if (!payload.rif || !payload.razon_social) {
+                alert('Ingrese RIF y Razón Social del proveedor.');
+                return;
+            }
+
+            if (editId) {
+                await supabaseClient.from('proveedores').update(payload).eq('id', editId);
+                alert('¡Proveedor actualizado con éxito!');
+            } else {
+                await supabaseClient.from('proveedores').insert([payload]);
+                alert('¡Proveedor guardado con éxito!');
+            }
+            limpiarFormProveedor();
+            cargarProveedoresGestion();
+        }
+
+        async function eliminarProveedor(id) {
+            if (!confirm('¿Estás seguro de eliminar este proveedor?')) return;
+            await supabaseClient.from('proveedores').delete().eq('id', id);
+            cargarProveedoresGestion();
         }
 
         async function cargarKardexMovimientos() {
@@ -1929,31 +2080,74 @@
 
         async function cargarClientesGestion() {
             let { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
+            clientesCache = data || [];
             const tbody = document.getElementById('tablaClientesGestion');
             if (!tbody) return;
             tbody.innerHTML = '';
-            if (!data || data.length === 0) {
+            if (!clientesCache.length) {
                 tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">Sin clientes registrados.</td></tr>`;
                 return;
             }
-            data.forEach(c => {
-                tbody.innerHTML += `<tr class="hover:bg-slate-900"><td class="p-3 font-mono text-emerald-400">${c.rif}</td><td class="p-3">${c.razon_social}</td><td class="p-3">${c.telefono||''}</td><td class="p-3 text-center"><button onclick='eliminarCliente("${c.rif}")' class="text-rose-400">Eliminar</button></td></tr>`;
+            clientesCache.forEach(c => {
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-900">
+                        <td class="p-3 font-mono text-emerald-400">${c.rif}</td>
+                        <td class="p-3 font-semibold text-white">${c.razon_social}</td>
+                        <td class="p-3 font-mono">${c.telefono||'N/A'}</td>
+                        <td class="p-3 text-center space-x-2">
+                            <button onclick='editarCliente("${c.id}", ${JSON.stringify(c).replace(/"/g, '&quot;')})' class="text-sky-400 hover:underline">Editar</button>
+                            <button onclick='eliminarCliente("${c.id}")' class="text-rose-400 hover:underline">Eliminar</button>
+                        </td>
+                    </tr>
+                `;
             });
         }
 
-        async function eliminarCliente(rif) {
-            await supabaseClient.from('clientes').delete().eq('tenant_id', tenantActual.id).eq('rif', rif);
+        function editarCliente(id, c) {
+            document.getElementById('editClienteId').value = id;
+            document.getElementById('cliRif').value = c.rif || '';
+            document.getElementById('cliTelefono').value = c.telefono || '';
+            document.getElementById('cliRazonSocial').value = c.razon_social || '';
+            document.getElementById('cliDireccion').value = c.direccion || '';
+            document.getElementById('tituloFormCliente').innerText = '✏️ Editar Cliente';
+            document.getElementById('btnCancelarCli').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function limpiarFormCliente() {
+            document.getElementById('editClienteId').value = '';
+            document.getElementById('cliRif').value = '';
+            document.getElementById('cliTelefono').value = '';
+            document.getElementById('cliRazonSocial').value = '';
+            document.getElementById('cliDireccion').value = '';
+            document.getElementById('tituloFormCliente').innerText = '👥 Maestro de Clientes';
+            document.getElementById('btnCancelarCli').classList.add('hidden');
+        }
+
+        async function eliminarCliente(id) {
+            if (!confirm('¿Estás seguro de eliminar este cliente?')) return;
+            await supabaseClient.from('clientes').delete().eq('id', id);
             cargarClientesGestion();
         }
 
         async function guardarCliente() {
+            const editId = document.getElementById('editClienteId').value;
             const rif = document.getElementById('cliRif').value.trim();
-            const razon_social = document.getElementById('cliRazonSocial').value.trim();
+            const razon_social = document.getElementById('cliRazonSocial').value.trim().toUpperCase();
             const direccion = document.getElementById('cliDireccion').value.trim();
             const telefono = document.getElementById('cliTelefono').value.trim();
             if (!rif || !razon_social) { alert('Ingrese RIF y Razón Social.'); return; }
-            await supabaseClient.from('clientes').insert([{ tenant_id: tenantActual.id, rif, razon_social, direccion, telefono }]);
-            alert('¡Cliente guardado con éxito!');
+
+            const payload = { tenant_id: tenantActual.id, rif, razon_social, direccion, telefono };
+
+            if (editId) {
+                await supabaseClient.from('clientes').update(payload).eq('id', editId);
+                alert('¡Cliente actualizado con éxito!');
+            } else {
+                await supabaseClient.from('clientes').insert([payload]);
+                alert('¡Cliente guardado con éxito!');
+            }
+            limpiarFormCliente();
             cargarClientesGestion();
         }
 
