@@ -4,6 +4,10 @@
  <meta charset="UTF-8">
  <meta name="viewport" content="width=device-width, initial-scale=1.0">
  <title>MiFacturaDigital.com.ve - Sistema Fiscal Integrado SENIAT Enterprise 2026</title>
+ 
+ const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+   
  <script src="https://cdn.tailwindcss.com"></script>
  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -1161,18 +1165,56 @@
  }
 
  async function iniciarSesionTenant() {
- const email = document.getElementById('loginEmail').value.trim();
- const pass = document.getElementById('loginPassword').value.trim();
- if (!email) { alert('Ingrese un correo.'); return; }
- const { data, error } = await supabaseClient.from('tenants').select('*').eq('email', email).single();
- if (error || !data) { alert('Correo no registrado.'); return; }
- if (data.password && data.password !== pass) { alert('Contraseña incorrecta.'); return; }
- tenantActual = data;
- if (!tenantActual.plan_activo) tenantActual.plan_activo = 'Freemium';
- localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
- activarVistaPrincipal();
- }
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPassword').value.trim();
+  
+  if (!email || !pass) {
+    alert('Por favor, ingrese correo y contraseña.');
+    return;
+  }
 
+  // 1. Autenticación segura mediante Supabase Auth (Sin contraseñas en texto plano)
+  const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: pass
+  });
+
+  if (authError) {
+    alert('Error de autenticación: Credenciales inválidas o acceso no autorizado.');
+    console.error(authError);
+    return;
+  }
+
+  // 2. Obtener el registro del Tenant vinculado al usuario autenticado de forma segura
+  const { data: tenantData, error: tenantError } = await supabaseClient
+    .from('tenants')
+    .select('*')
+    .eq('auth_user_id', authData.user.id)
+    .single();
+
+  if (tenantError || !tenantData) {
+    // Fallback por correo si el auth_user_id aún no fue enlazado manualmente
+    const { data: fallbackData, error: fallbackError } = await supabaseClient
+      .from('tenants')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (fallbackError || !fallbackData) {
+      alert('No se encontró un perfil de comercio asociado a este usuario.');
+      return;
+    }
+    tenantActual = fallbackData;
+  } else {
+    tenantActual = tenantData;
+  }
+
+  if (!tenantActual.plan_activo) tenantActual.plan_activo = 'Freemium';
+  
+  // Guardar sesión validada (sin almacenar contraseñas)
+  localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
+  activarVistaPrincipal();
+}
  function verificarSesionGuardada() {
  const guardado = localStorage.getItem('tenant_actual');
  if (guardado) { tenantActual = JSON.parse(guardado); activarVistaPrincipal(); }
