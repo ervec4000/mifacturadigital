@@ -1,6 +1,6 @@
 /**
  * /js/auth.js
- * Módulo de Autenticación, Seguridad (RBAC), Sesión y Control Multi-Tenant (SENIAT 2026)
+ * Módulo de Autenticación, Seguridad (RBAC), Sesión y Multi-Tenant (SENIAT 2026)
  */
 
 let tenantActual = null;
@@ -120,11 +120,10 @@ function cambiarPestana(pestana) {
     document.getElementById('fisicoFecha').value = new Date().toISOString().slice(0,10);
     cargarInventarioFisico();
   }
-  if (pestana === 'multideposito') cargarProductosSelectTransf();
   if (pestana === 'etiquetas') renderizarEtiquetasQr();
   if (pestana === 'cuentas') cargarCuentasPorCobrar();
   if (pestana === 'unidades') cargarUnidadesMedidaGestion();
-  if (pestana === 'productos') { cargarUnidadesSelectForm(); cargarProductosGestion(); }
+  if (pestana === 'productos') cargarProductosGestion();
   if (pestana === 'clientes') cargarClientesGestion();
   if (pestana === 'referidos') cargarDatosReferidos();
   if (pestana === 'inquilinosMaster') cargarInquilinosMaster();
@@ -132,6 +131,7 @@ function cambiarPestana(pestana) {
 }
 
 function abrirModalPerfil() {
+  if (!tenantActual) return;
   document.getElementById('perfilEmail').value = tenantActual.email || '';
   document.getElementById('perfilRazonSocial').value = tenantActual.razon_social || '';
   document.getElementById('perfilRif').value = tenantActual.rif || '';
