@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MiFacturaDigital.com.ve - Sistema de facturacion Integrado Enterprise 2026</title>
+  <title>MiFacturaDigital.com.ve - Sistema Fiscal Integrado SENIAT Enterprise 2026</title>
   
-  <!-- Librerías Externas (CDNs) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -37,99 +36,60 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans tech-pattern relative">
 
-  <!-- [SEC-001] LANDING PAGE PÚBLICA -->
+  <!-- VISTA LOGIN / LANDING -->
   <div id="vistaLogin" class="w-full max-w-7xl mx-auto px-4 py-12 flex flex-col justify-center space-y-16 animate-fade-in">
-    
-    <!-- Header / Navbar Institucional de Landing -->
     <header class="flex justify-between items-center border-b border-slate-900 pb-6">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400 font-mono font-bold text-base shadow-lg shadow-emerald-950">⚡</div>
+        <div class="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400 font-mono font-bold text-base">⚡</div>
         <div>
           <span class="font-extrabold tracking-wider text-white text-base">MiFacturaDigital<span class="text-emerald-400">.com.ve</span></span>
           <p class="text-[10px] text-slate-400 font-mono uppercase tracking-widest">Enterprise Cloud 2026</p>
         </div>
       </div>
-      <div class="flex items-center gap-3">
-        <button onclick="abrirModalRegistroDemo()" class="bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-xs px-4 py-2 rounded-xl font-semibold transition cursor-pointer shadow">
-          ✨ Solicitar Demo / Registro SaaS
-        </button>
+      <div>
+        <button onclick="abrirModalRegistroDemo()" class="bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-xs px-4 py-2 rounded-xl font-semibold transition cursor-pointer">✨ Solicitar Demo</button>
       </div>
     </header>
 
-    <!-- Hero Principal Split Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
       <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
-        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 font-mono text-xs font-bold shadow-inner">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-          SISTEMA DE GESTIÓN Y FACTURACIÓN DIGITAL 2026
-        </div>
         <h1 class="text-4xl lg:text-6xl font-extrabold text-white tracking-tight leading-tight">
-          Facturación Digital Rápida y <span class="text-emerald-400 underline decoration-emerald-500/50 decoration-2">Estructurada</span>
+          Facturación Digital Rápida y <span class="text-emerald-400 underline">Estructurada</span>
         </h1>
         <p class="text-slate-400 text-sm lg:text-base max-w-xl mx-auto lg:mx-0 leading-relaxed">
-          La plataforma integral en la nube para comercios, supermercados y licorerías en Venezuela. Facturación con lectura de códigos de barras, Notas de Crédito/Débito, Kardex PPM, Retenciones de IVA y referidos.
+          Plataforma en la nube para comercios y supermercados en Venezuela con control fiscal SENIAT, POS, Kardex PPM e inventario QR.
         </p>
-        <!-- Aviso Legal ajustado en Landing -->
-        <div class="p-3 bg-amber-950/20 border border-amber-500/30 rounded-xl text-[11px] text-amber-300/90 font-mono leading-relaxed">
-          ⚠️ <strong>Aviso Legal:</strong> Sistema operativo para control administrativo interno y facturación digital estructurada. No constituye un dispositivo fiscal homologado de forma directa ante el SENIAT hasta completar la certificación formal requerida.
-        </div>
-        <div class="flex flex-wrap gap-3 justify-center lg:justify-start font-mono text-xs text-slate-300">
-          <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3.5 py-2 rounded-xl shadow">✔ Control Fiscal Estricto</div>
-          <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3.5 py-2 rounded-xl shadow">⚡ POS & Código de Barras</div>
-          <div class="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 px-3.5 py-2 rounded-xl shadow">📦 Inventario QR & Lotes</div>
-        </div>
       </div>
 
-      <!-- Tarjeta de Acceso / Login de Inquilinos -->
-      <div class="lg:col-span-5 bg-slate-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-slate-800/80 space-y-6 relative overflow-hidden">
-        <div class="absolute top-0 right-0 w-36 h-36 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        
-        <header class="space-y-1">
-          <h2 class="text-xl font-bold text-white tracking-wide">Acceso al Sistema</h2>
-          <p class="text-xs text-slate-400">Ingrese sus credenciales de inquilino (tenant)</p>
-        </header>
-
+      <div class="lg:col-span-5 bg-slate-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-slate-800 space-y-6">
+        <h2 class="text-xl font-bold text-white tracking-wide">Acceso al Sistema</h2>
         <div class="space-y-4">
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico (Tenant)</label>
-            <input type="email" id="loginEmail" placeholder="ejemplo@correo.com" autocomplete="off" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-emerald-500 font-mono">
+            <input type="email" id="loginEmail" placeholder="prueba@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono focus:border-emerald-500">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1">Contraseña</label>
-            <input type="password" id="loginPassword" placeholder="••••••" autocomplete="current-password" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm focus:outline-none focus:border-emerald-500 font-mono">
+            <input type="password" id="loginPassword" placeholder="••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono focus:border-emerald-500">
           </div>
-
-          <button onclick="iniciarSesionTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-xl transition duration-200 shadow-xl shadow-emerald-950 cursor-pointer text-sm flex items-center justify-center gap-2">
-            <span>Iniciar Sesión en MiFacturaDigital</span>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+          <button onclick="iniciarSesionTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-xl transition cursor-pointer text-sm shadow-xl">
+            Iniciar Sesión en MiFacturaDigital
           </button>
         </div>
-        <footer class="text-[11px] text-center text-slate-500 font-mono pt-2">
-          Sistema autorizado y verificado • 2026
-        </footer>
       </div>
     </div>
   </div>
 
-  <!-- CHAT FLOTANTE DE WHATSAPP -->
+  <!-- WHATSAPP FLOTANTE -->
   <div id="chatFlotanteWhatsapp" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 no-print">
-    <div class="bg-slate-900 border border-slate-700/80 text-slate-200 px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-medium hidden sm:flex items-center gap-2">
-      <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-      <span>¡Hola! 👋 ¿Necesitas asesoría con MiFacturaDigital o planes SaaS?</span>
-    </div>
-    <div class="relative">
-      <span class="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-slate-950 rounded-full animate-pulse"></span>
-      <a href="https://api.whatsapp.com/send?text=Hola,%20me%20interesa%20obtener%20más%20información%20sobre%20los%20planes%20de%20MiFacturaDigital%20para%20mi%20comercio." target="_blank" class="whatsapp-pulse bg-emerald-600 hover:bg-emerald-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl transition cursor-pointer border-2 border-emerald-400">
-        💬
-      </a>
-    </div>
+    <a href="https://api.whatsapp.com/send?text=Hola,%20necesito%20soporte." target="_blank" class="whatsapp-pulse bg-emerald-600 hover:bg-emerald-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl border-2 border-emerald-400">💬</a>
   </div>
 
-  <!-- [SEC-003] SISTEMA PRINCIPAL (POST-LOGIN - Oculto inicialmente) -->
+  <!-- VISTA PRINCIPAL (POST-LOGIN) -->
   <div id="vistaPrincipal" class="hidden w-full max-w-7xl mx-auto bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 my-6 flex flex-col min-h-[90vh]">
     <header class="bg-slate-950 border-b border-slate-800 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 rounded-t-2xl">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500 flex items-center justify-center text-emerald-400 font-mono font-bold text-sm shadow">⚡</div>
+        <div class="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500 flex items-center justify-center text-emerald-400 font-mono font-bold text-sm">⚡</div>
         <div>
           <h1 class="text-base font-bold text-white flex items-center gap-2">
             <span id="headerTenantNombre">Comercio Activo</span>
@@ -138,34 +98,165 @@
           <p class="text-xs text-slate-400 font-mono">RIF: <span id="headerTenantRif">J-00000000-0</span> | Rol: <span id="headerTenantRol" class="text-amber-400 font-bold uppercase">--</span></p>
         </div>
       </div>
-      <div class="flex items-center gap-3 flex-wrap">
-        <button onclick="abrirModalPerfil()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg transition">⚙️ Perfil</button>
-        <button onclick="cerrarSesion()" class="bg-rose-950/50 hover:bg-rose-900 text-rose-300 text-xs px-3 py-1.5 rounded-lg transition">🚪 Salir</button>
+      <div class="flex items-center gap-3">
+        <button onclick="abrirModalPerfil()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg">⚙️ Perfil</button>
+        <button onclick="cerrarSesion()" class="bg-rose-950/50 hover:bg-rose-900 text-rose-300 text-xs px-3 py-1.5 rounded-lg">🚪 Salir</button>
       </div>
     </header>
+
+    <!-- NAVEGACIÓN POR PESTAÑAS -->
+    <nav class="bg-slate-950/60 border-b border-slate-800 px-6 py-2.5 flex flex-wrap gap-2">
+      <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🛒 Ventas POS</button>
+      <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📋 Comprobantes</button>
+      <button onclick="cambiarPestana('notasFiscales')" id="btnTabNotasFiscales" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📑 Notas Déb/Créd</button>
+      <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📊 Reporte Z & Libros</button>
+      <button onclick="cambiarPestana('compras')" id="btnTabCompras" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📥 Compras</button>
+      <button onclick="cambiarPestana('proveedores')" id="btnTabProveedores" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🏭 Proveedores</button>
+      <button onclick="cambiarPestana('retenciones')" id="btnTabRetenciones" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🧾 Retenciones IVA</button>
+      <button onclick="cambiarPestana('kardex')" id="btnTabKardex" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📦 Kardex PPM</button>
+      <button onclick="cambiarPestana('fisico')" id="btnTabFisico" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🔍 Inv. Físico</button>
+      <button onclick="cambiarPestana('multideposito')" id="btnTabMultideposito" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🏢 Multi-Depósito</button>
+      <button onclick="cambiarPestana('etiquetas')" id="btnTabEtiquetas" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🏷️ Etiquetas QR</button>
+      <button onclick="cambiarPestana('cuentas')" id="btnTabCuentas" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📑 CxC</button>
+      <button onclick="cambiarPestana('unidades')" id="btnTabUnidades" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📐 Unidades</button>
+      <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📦 Artículos</button>
+      <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">👥 Clientes</button>
+      <button onclick="cambiarPestana('referidos')" id="btnTabReferidos" class="bg-amber-600/20 text-amber-400 border border-amber-700/50 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🤝 Afiliados</button>
+      <button onclick="cambiarPestana('inquilinosMaster')" id="btnTabInquilinosMaster" class="tab-master hidden bg-emerald-950 border border-emerald-700 text-emerald-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🏢 Master</button>
+    </nav>
+
+    <!-- CONTENEDOR DE SECCIONES (Incluye todas las secciones funcionales del POS y gestión) -->
+    <main class="p-6 flex-1 space-y-6">
+      <div id="seccionPos" class="space-y-6">
+        <!-- Contenido POS -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tasa BCV Oficial (Bs. / $)</label>
+            <input type="number" step="0.0001" id="tasaBcv" value="888.1183" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white font-mono text-sm" oninput="recalcularTodo()">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Cliente</label>
+            <select id="clienteSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" onchange="seleccionarClientePredefinido()"><option value="">-- Seleccionar --</option></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Método de Pago</label>
+            <select id="metodoPagoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" onchange="verificarAplicacionIgtf()">
+              <option value="EFECTIVO DIVISAS">Efectivo Divisas ($)</option>
+              <option value="ZELLE">Zelle</option>
+              <option value="PAGO MOVIL">Pago Móvil (Bs.)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">RIF / Cédula</label>
+            <input type="text" id="clienteRif" placeholder="V-12080468-1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" onblur="validarRifInput(this)">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nombre / Razón Social</label>
+            <input type="text" id="clienteNombre" placeholder="EDISON VELIZ" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">¿Aplica IGTF (3%)?</label>
+            <select id="aplicaIgtfSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-emerald-400 font-semibold text-sm" onchange="recalcularTodo()">
+              <option value="SI">SÍ</option>
+              <option value="NO" selected>NO</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
+          <div class="flex justify-between items-center">
+            <h3 class="text-sm font-bold text-emerald-400 uppercase">🛒 Detalle de Artículos (POS Caja)</h3>
+            <input type="text" id="inputScanBarra" placeholder="Escanear Código de Barras / SKU..." class="bg-slate-900 border border-emerald-500/50 rounded-xl px-3 py-2 text-xs text-white font-mono w-72" onkeydown="manejarEscaneoBarra(event)">
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            <div class="md:col-span-6"><select id="productoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"><option value="">Cargando catálogo...</option></select></div>
+            <div class="md:col-span-2"><input type="number" id="cantidadItem" min="0.001" step="0.001" value="1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
+            <div class="md:col-span-4"><button onclick="agregarItem()" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-300 font-semibold py-3 px-4 rounded-xl text-sm border border-slate-700 cursor-pointer">+ Añadir al Carrito</button></div>
+          </div>
+          <div class="overflow-x-auto mt-2">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr><th class="p-3">SKU</th><th class="p-3">Descripción</th><th class="p-3">Cant</th><th class="p-3">Unidad</th><th class="p-3">Precio</th><th class="p-3">Tipo</th><th class="p-3">Subtotal</th><th class="p-3 text-center">Acción</th></tr>
+              </thead>
+              <tbody id="tablaItems" class="divide-y divide-slate-800/60"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 space-y-2.5 text-sm font-mono">
+            <div class="flex justify-between text-slate-300"><span>Base Gravada:</span><span id="baseGravadaBs">$ 0.00 | Bs. 0.00</span></div>
+            <div class="flex justify-between text-slate-300"><span>Monto Exento:</span><span id="montoExentoBs">$ 0.00 | Bs. 0.00</span></div>
+            <div class="flex justify-between text-slate-300"><span>IVA (16%):</span><span id="ivaBs">$ 0.00 | Bs. 0.00</span></div>
+            <div class="flex justify-between text-slate-300"><span>IGTF (3%):</span><span id="igtfBs">$ 0.00 | Bs. 0.00</span></div>
+            <div class="border-t border-slate-800 pt-3 flex justify-between font-bold text-emerald-400 text-base"><span>TOTAL:</span><span id="totalBs">$ 0.00 | Bs. 0.00</span></div>
+          </div>
+          <div class="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 space-y-3 text-xs font-mono">
+            <h4 class="font-bold text-emerald-400 uppercase">Calculadora de Vuelto</h4>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="block text-slate-400 mb-1">Divisas ($)</label><input type="number" id="pagoRecibidoUsd" step="0.01" value="0" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white" oninput="calcularVuelto()"></div>
+              <div><label class="block text-slate-400 mb-1">Bolívares (Bs.)</label><input type="number" id="pagoRecibidoBs" step="0.01" value="0" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white" oninput="calcularVuelto()"></div>
+            </div>
+            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
+              <div class="flex justify-between"><span>Vuelto Bs:</span><span id="vueltoBs" class="text-amber-400">Bs. 0.00</span></div>
+              <div class="flex justify-between"><span>Vuelto USD:</span><span id="vueltoUsd" class="text-emerald-400">$ 0.00</span></div>
+            </div>
+          </div>
+        </div>
+
+        <button onclick="emitirFactura()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-2xl cursor-pointer text-sm shadow-lg">
+          Emitir Factura Fiscal Definitiva (SENIAT)
+        </button>
+      </div>
+
+      <!-- SECCIÓN HISTORIAL -->
+      <div id="seccionHistorial" class="hidden space-y-6">
+        <h3 class="text-sm font-bold text-emerald-400 uppercase">📋 Historial de Comprobantes</h3>
+        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Doc</th><th class="p-3">Control</th><th class="p-3">Cliente</th><th class="p-3">Método</th><th class="p-3">Fecha</th><th class="p-3">Total</th><th class="p-3 text-center">Acción</th></tr></thead><tbody id="tablaHistorial" class="divide-y divide-slate-800/60"></tbody></table></div>
+      </div>
+
+      <!-- DEMÁS SECCIONES (Se mantienen ocultas hasta cambio de pestaña) -->
+      <div id="seccionNotasFiscales" class="hidden space-y-6"></div>
+      <div id="seccionCierrez" class="hidden space-y-6"></div>
+      <div id="seccionCompras" class="hidden space-y-6"></div>
+      <div id="seccionProveedores" class="hidden space-y-6"></div>
+      <div id="seccionRetenciones" class="hidden space-y-6"></div>
+      <div id="seccionKardex" class="hidden space-y-6"></div>
+      <div id="seccionFisico" class="hidden space-y-6"></div>
+      <div id="seccionMultideposito" class="hidden space-y-6"></div>
+      <div id="seccionEtiquetas" class="hidden space-y-6"><div id="contenedorGridEtiquetas" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div></div>
+      <div id="seccionCuentas" class="hidden space-y-6"></div>
+      <div id="seccionUnidades" class="hidden space-y-6"></div>
+      <div id="seccionProductos" class="hidden space-y-6"></div>
+      <div id="seccionClientes" class="hidden space-y-6"></div>
+      <div id="seccionReferidos" class="hidden space-y-6"></div>
+      <div id="seccionInquilinosMaster" class="hidden space-y-6"></div>
+    </main>
   </div>
 
-  <!-- MODAL PERFIL -->
-  <div id="modalPerfilUsuario" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-    <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-md rounded-2xl p-6 shadow-2xl space-y-4">
-      <h3 class="text-base font-bold text-emerald-400">👤 Perfil y Datos Fiscales</h3>
-      <div class="space-y-3 text-xs">
-        <div><label class="block text-slate-400 mb-1">Correo</label><input type="email" id="perfilEmail" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-400 font-mono"></div>
-        <div><label class="block text-slate-400 mb-1">Razón Social</label><input type="text" id="perfilRazonSocial" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
-        <div><label class="block text-slate-400 mb-1">RIF (RegEx)</label><input type="text" id="perfilRif" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono" onblur="validarRifInput(this)"></div>
-        <div><label class="block text-slate-400 mb-1">Teléfono</label><input type="text" id="perfilTelefono" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
-        <div><label class="block text-slate-400 mb-1">Dirección</label><input type="text" id="perfilDireccion" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
-      </div>
-      <div class="flex space-x-2 pt-2">
-        <button onclick="guardarCambiosPerfil()" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs shadow">Guardar</button>
-        <button onclick="cerrarModalPerfil()" class="w-full bg-slate-800 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cerrar</button>
-      </div>
+  <!-- MODAL TICKET / PERFIL -->
+  <div id="modalTicket" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+    <div class="bg-white text-slate-900 w-full max-w-md rounded-2xl p-6 shadow-2xl relative font-mono text-xs space-y-3">
+      <h2 class="font-bold text-sm text-center" id="ticketComercioNombre">COMERCIO C.A.</h2>
+      <p id="ticketComercioRif" class="text-center">RIF: J-00000000-0</p>
+      <div id="ticketItemsContainer" class="space-y-1 text-[11px]"></div>
+      <div class="flex justify-between font-bold text-sm border-t pt-2"><span>TOTAL:</span><span id="ticketTotal" class="text-emerald-700">$ 0.00</span></div>
+      <button onclick="cerrarTicket()" class="w-full bg-slate-200 text-slate-800 py-2 rounded font-sans font-semibold cursor-pointer">Cerrar</button>
     </div>
   </div>
 
-  <!-- SCRIPT GLOBAL DE UTILIDAD Y CARGA DE MÓDULOS -->
+  <div id="modalPerfilUsuario" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-md rounded-2xl p-6 space-y-4">
+      <h3 class="text-base font-bold text-emerald-400">👤 Perfil</h3>
+      <div><input type="email" id="perfilEmail" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-400"></div>
+      <div><input type="text" id="perfilRazonSocial" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
+      <button onclick="guardarCambiosPerfil()" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-semibold cursor-pointer">Guardar</button>
+      <button onclick="cerrarModalPerfil()" class="w-full bg-slate-800 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer">Cerrar</button>
+    </div>
+  </div>
+
+  <!-- INICIALIZADOR GLOBAL Y CARGA DE MÓDULOS -->
   <script>
-    // Utilidad global de sanitización contra XSS
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -177,14 +268,12 @@
     window.onload = function() {
       if (window.supabase) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        if (typeof verificarSesionGuardada === 'function') {
-          verificarSesionGuardada();
-        }
+        if (typeof verificarSesionGuardada === 'function') verificarSesionGuardada();
       }
     };
   </script>
 
-  <!-- Carga de Módulos Especializados (Fase 4) -->
+  <!-- CARGA DE LOS MÓDULOS DE LA FASE 4 -->
   <script src="./js/auth.js"></script>
   <script src="./js/pos.js"></script>
   <script src="./js/kardex.js"></script>
