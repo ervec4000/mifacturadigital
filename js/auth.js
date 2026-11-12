@@ -15,7 +15,7 @@ function validarRifInput(inputEl) {
   const val = inputEl.value.trim();
   if (val && !validarRifVzla(val)) {
     inputEl.classList.add('border-rose-500');
-    alert('⚠️ Formato de RIF o Cédula inválido. Utilice formato venezolano estándar (ej. J-12345678-0).');
+    alert('⚠️ Formato de RIF o Cédula inválido. Utilice formato venezolano estándar (ej. J-12345678-0 o V-12080468-1).');
   } else {
     inputEl.classList.remove('border-rose-500');
   }
@@ -96,28 +96,61 @@ function cambiarPestana(pestana) {
     const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
     if (!btn || !sec) return;
     if (t === pestana) {
-      btn.className = "bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer shadow-md";
+      btn.className = "bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer shadow-md flex items-center gap-1.5";
       sec.classList.remove('hidden');
     } else {
-      btn.className = "bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer";
+      btn.className = "bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5";
       sec.classList.add('hidden');
     }
   });
 
-  if (pestana === 'historial' && typeof cargarHistorial === 'function') cargarHistorial();
-  if (pestana === 'pos' && typeof cargarProductosSelect === 'function') { cargarProductosSelect(); cargarClientesSelect(); }
+  if (pestana === 'historial') cargarHistorial();
+  if (pestana === 'notasFiscales') cargarFacturasAfectadasSelect();
+  if (pestana === 'cierrez') {
+    const hoy = new Date().toISOString().slice(0,10);
+    document.getElementById('filtroFechaDesde').value = hoy;
+    document.getElementById('filtroFechaHasta').value = hoy;
+    generarReporteZ();
+  }
+  if (pestana === 'compras') { cargarProductosSelectCompra(); cargarProveedoresSelectCompra(); }
+  if (pestana === 'proveedores') cargarProveedoresGestion();
+  if (pestana === 'retenciones') cargarRetenciones();
+  if (pestana === 'kardex') cargarKardexMovimientos();
+  if (pestana === 'fisico') {
+    document.getElementById('fisicoFecha').value = new Date().toISOString().slice(0,10);
+    cargarInventarioFisico();
+  }
+  if (pestana === 'multideposito') cargarProductosSelectTransf();
+  if (pestana === 'etiquetas') renderizarEtiquetasQr();
+  if (pestana === 'cuentas') cargarCuentasPorCobrar();
+  if (pestana === 'unidades') cargarUnidadesMedidaGestion();
+  if (pestana === 'productos') { cargarUnidadesSelectForm(); cargarProductosGestion(); }
+  if (pestana === 'clientes') cargarClientesGestion();
+  if (pestana === 'referidos') cargarDatosReferidos();
+  if (pestana === 'inquilinosMaster') cargarInquilinosMaster();
+  if (pestana === 'pos') { cargarProductosSelect(); cargarClientesSelect(); }
 }
 
 function abrirModalPerfil() {
   document.getElementById('perfilEmail').value = tenantActual.email || '';
   document.getElementById('perfilRazonSocial').value = tenantActual.razon_social || '';
+  document.getElementById('perfilRif').value = tenantActual.rif || '';
+  document.getElementById('perfilTelefono').value = tenantActual.telefono || '';
+  document.getElementById('perfilDireccion').value = tenantActual.direccion || '';
   document.getElementById('modalPerfilUsuario').classList.remove('hidden');
 }
 
 function cerrarModalPerfil() { document.getElementById('modalPerfilUsuario').classList.add('hidden'); }
 
 async function guardarCambiosPerfil() {
-  const payload = { razon_social: document.getElementById('perfilRazonSocial').value.trim() };
+  const rifVal = document.getElementById('perfilRif').value.trim();
+  if (rifVal && !validarRifVzla(rifVal)) { alert('Formato de RIF inválido.'); return; }
+  const payload = {
+    razon_social: document.getElementById('perfilRazonSocial').value.trim(),
+    rif: rifVal,
+    telefono: document.getElementById('perfilTelefono').value.trim(),
+    direccion: document.getElementById('perfilDireccion').value.trim()
+  };
   await supabaseClient.from('tenants').update(payload).eq('id', tenantActual.id);
   tenantActual = {...tenantActual, ...payload};
   localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
