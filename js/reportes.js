@@ -1,33 +1,38 @@
 /**
  * /js/reportes.js
- * Módulo de Cierres Z, Reportes Fiscales y Libros de Ventas SENIAT
+ * Módulo de Cierres Z, Historial y Libros Fiscales SENIAT
  */
 
-document.addEventListener("DOMContentLoaded", () => {
-  const secCierrez = document.getElementById('seccionCierrez');
-  if (secCierrez) {
-    secCierrez.innerHTML = `
-      <div class="space-y-6">
-        <h3 class="text-sm font-bold text-emerald-400 uppercase">📊 Reporte Z y Libros Fiscales (SENIAT)</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
-            <h4 class="text-xs font-bold text-slate-300 uppercase">Generar Cierre Z Diario</h4>
-            <button onclick="emitirReporteZ()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs cursor-pointer">Emitir Cierre Z Fiscal</button>
-          </div>
-          <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
-            <h4 class="text-xs font-bold text-slate-300 uppercase">Libro de Ventas Mensual</h4>
-            <button onclick="exportarLibroVentasExcel()" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-300 font-semibold py-3 rounded-xl text-xs border border-slate-700 cursor-pointer">📥 Descargar Libro Excel / TXT</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-});
-
-function emitirReporteZ() {
-  alert('📊 Cierre Z emitido y registrado exitosamente ante el servidor fiscal.');
+async function cargarHistorial() {
+  const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
+  documentosHistorialCache = (data || []).map(f => ({...f, tipoDoc: 'FACTURA', numero: f.factura_nro}));
+  renderizarHistorial(documentosHistorialCache);
 }
 
-function exportarLibroVentasExcel() {
-  alert('📥 Libro de Ventas exportado correctamente en formato compatible con exigencias del SENIAT.');
+function renderizarHistorial(lista) {
+  const tbody = document.getElementById('tablaHistorial');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!lista.length) { tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin comprobantes.</td></tr>`; return; }
+  lista.forEach(doc => {
+    tbody.innerHTML += `
+      <tr class="hover:bg-slate-900">
+        <td class="p-3 font-mono font-bold text-white">${esc(doc.numero)}</td>
+        <td class="p-3 font-mono">${esc(doc.nro_control||'N/A')}</td>
+        <td class="p-3">${esc(doc.cliente_nombre)}</td>
+        <td class="p-3 text-slate-300">${esc(doc.metodo_pago)}</td>
+        <td class="p-3 text-slate-400">${new Date(doc.created_at).toLocaleString()}</td>
+        <td class="p-3 font-mono text-emerald-400 font-bold">Bs. ${doc.total_bs.toFixed(2)}</td>
+        <td class="p-3 text-center"><button onclick='verComprobante(${JSON.stringify(doc)})' class="bg-slate-800 px-3 py-1.5 rounded text-xs text-slate-200">Ver</button></td>
+      </tr>
+    `;
+  });
+}
+
+async function generarReporteZ() {
+  const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
+  const filtradas = data || [];
+  document.getElementById('zTotalFacturas').innerText = filtradas.length;
+  let total = 0; filtradas.forEach(f => { total += f.total_bs; });
+  document.getElementById('totalGavetaEfectivo').innerText = `Bs. ${total.toFixed(2)}`;
 }
