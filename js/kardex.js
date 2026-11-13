@@ -1,20 +1,18 @@
 /**
  * /js/kardex.js
- * Módulo de Control de Inventario, Entradas y Kardex PPM
+ * Módulo de Kardex PPM, Compras y Movimientos de Inventario
  */
 
 async function cargarKardexMovimientos() {
+  if (!tenantActual) return;
   const { data } = await supabaseClient.from('kardex_movimientos').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
   const tbody = document.getElementById('tablaKardexMovimientos');
   if (!tbody) return;
   tbody.innerHTML = '';
-  if (!data || data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex.</td></tr>`;
-    return;
-  }
+  if (!data || data.length === 0) { tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex.</td></tr>`; return; }
   data.forEach(m => {
     tbody.innerHTML += `
-      <tr class="hover:bg-slate-900">
+      <tr class="hover:bg-slate-900 border-b border-slate-800/40">
         <td class="p-3 text-slate-400">${new Date(m.created_at).toLocaleString()}</td>
         <td class="p-3 font-mono text-emerald-400">${esc(m.documento_ref)}</td>
         <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] ${m.tipo_movimiento==='ENTRADA'?'bg-emerald-950 text-emerald-300':'bg-rose-950 text-rose-300'}">${esc(m.tipo_movimiento)}</span></td>
@@ -24,6 +22,28 @@ async function cargarKardexMovimientos() {
         <td class="p-3 font-mono text-emerald-300">$ ${(m.costo_promedio_usd || 0).toFixed(2)}</td>
       </tr>
     `;
+  });
+}
+
+async function cargarProductosSelectCompra() {
+  if (!tenantActual) return;
+  const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+  const sel = document.getElementById('compraProductoSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- Seleccionar Producto --</option>';
+  (data || []).forEach(p => {
+    sel.innerHTML += `<option value="${p.id}">${esc(p.descripcion)}</option>`;
+  });
+}
+
+async function cargarProveedoresSelectCompra() {
+  if (!tenantActual) return;
+  const { data } = await supabaseClient.from('proveedores').select('*').eq('tenant_id', tenantActual.id);
+  const sel = document.getElementById('compraProveedorSelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- Seleccionar Proveedor --</option>';
+  (data || []).forEach(p => {
+    sel.innerHTML += `<option value="${p.id}">${esc(p.razon_social)}</option>`;
   });
 }
 
