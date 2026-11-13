@@ -1,22 +1,22 @@
 /**
  * /js/inventarioFisico.js
- * Módulo de Inventario Físico y Generación de Etiquetas QR
+ * Módulo de Toma de Inventario Físico y Generación de Etiquetas QR
  */
 
+let inventarioFisicoCache = [];
+
 async function cargarInventarioFisico() {
+  if (!tenantActual) return;
   const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
   inventarioFisicoCache = data || [];
   const tbody = document.getElementById('tablaInventarioFisico');
   if (!tbody) return;
   tbody.innerHTML = '';
-  if (!inventarioFisicoCache.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Sin artículos registrados.</td></tr>`;
-    return;
-  }
+  if (!inventarioFisicoCache.length) { tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-500">Sin artículos registrados.</td></tr>`; return; }
   inventarioFisicoCache.forEach(p => {
     const stockTeorico = p.stock || 0;
     tbody.innerHTML += `
-      <tr class="hover:bg-slate-900">
+      <tr class="hover:bg-slate-900 border-b border-slate-800/40">
         <td class="p-3 font-mono">${esc(p.codigo_sku||'S/N')}</td>
         <td class="p-3">${esc(p.descripcion)}</td>
         <td class="p-3 text-center font-bold text-sky-400">${stockTeorico}</td>
@@ -27,6 +27,7 @@ async function cargarInventarioFisico() {
 }
 
 async function renderizarEtiquetasQr() {
+  if (!tenantActual) return;
   const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
   const container = document.getElementById('contenedorGridEtiquetas');
   if (!container) return;
