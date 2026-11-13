@@ -1,9 +1,11 @@
 /**
  * /js/pos.js
- * Módulo de Facturación POS, Carrito y Emisión de Comprobantes Fiscales SENIAT
+ * Módulo de POS, Carrito, Cálculos Fiscales (IVA/IGTF) y Emisión de Facturas
  */
 
 let carritoItems = [];
+let productosCache = [];
+let clientesCache = [];
 
 async function consultarTasaBcvApi() {
   try {
@@ -20,6 +22,7 @@ async function consultarTasaBcvApi() {
 }
 
 async function cargarProductosSelect() {
+  if (!tenantActual) return;
   const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
   productosCache = data || [];
   const select = document.getElementById('productoSelect');
@@ -29,6 +32,26 @@ async function cargarProductosSelect() {
     const pv = prod.precio_venta_usd || prod.precio_unitario_usd || 0;
     select.innerHTML += `<option value="${prod.id}" data-precio="${pv}" data-exento="${prod.es_exento}" data-unidad="${esc(prod.unidad_medida||'UND')}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">[${esc(prod.codigo_sku||'S/N')}] ${esc(prod.descripcion)} - P.V: $${pv.toFixed(2)}</option>`;
   });
+}
+
+async function cargarClientesSelect() {
+  if (!tenantActual) return;
+  const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
+  clientesCache = data || [];
+  const select = document.getElementById('clienteSelect');
+  if (!select) return;
+  select.innerHTML = '<option value="">-- Seleccionar Cliente --</option>';
+  clientesCache.forEach(c => {
+    select.innerHTML += `<option value="${c.id}" data-rif="${esc(c.rif)}" data-nombre="${esc(c.nombre)}">${esc(c.nombre)} (${esc(c.rif)})</option>`;
+  });
+}
+
+function seleccionarClientePredefinido() {
+  const select = document.getElementById('clienteSelect');
+  const opt = select.options[select.selectedIndex];
+  if (!opt.value) return;
+  document.getElementById('clienteRif').value = opt.dataset.rif || '';
+  document.getElementById('clienteNombre').value = opt.dataset.nombre || '';
 }
 
 function agregarItem() {
@@ -67,7 +90,7 @@ function actualizarTablaYCalculos() {
     const sub = item.precio * item.cantidad;
     if (item.esExento) montoExento += sub; else baseGravada += sub;
     tbody.innerHTML += `
-      <tr class="hover:bg-slate-900">
+      <tr class="hover:bg-slate-900 border-b border-slate-800/40">
         <td class="p-3 font-mono text-emerald-400">${esc(item.sku)}</td>
         <td class="p-3">${esc(item.descripcion)}</td>
         <td class="p-3 font-mono">${item.cantidad}</td>
