@@ -36,7 +36,7 @@ async function renderizarEtiquetasQr() {
 
   data.forEach((p, idx) => {
     const qrId = `qr_div_${idx}`;
-    const textoQr = `SKU:${p.codigo_sku||'N/A'}|DESC:${p.descripcion}`;
+    const textoQr = `SKU:${p.codigo_sku||'N/A'}|DESC:${p.descripcion}|LOTE:${p.lote||'SIN-LOTE'}|UBI:${p.ubicacion||'DEP'}`;
     container.innerHTML += `
       <div class="bg-white text-slate-900 p-4 rounded-xl border flex items-center justify-between font-mono text-xs">
         <div>
