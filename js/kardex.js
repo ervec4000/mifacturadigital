@@ -1,6 +1,6 @@
 /**
  * /js/kardex.js
- * Módulo completo de Kardex PPM, Compras y Entradas al Almacén
+ * Módulo completo de Kardex PPM, Entradas al Almacén y Compras
  */
 
 function formatearFecha8Digitos(fechaStr) {
