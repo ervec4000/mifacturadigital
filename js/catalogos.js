@@ -1,6 +1,6 @@
 /**
  * /js/catalogos.js
- * Módulo completo de Gestión de Artículos, Clientes, Proveedores y Unidades (SENIAT 2026)
+ * Módulo completo de Gestión de Artículos, Clientes, Proveedores y Unidades de Medida
  */
 
 async function cargarProductosGestion() {
@@ -132,11 +132,18 @@ async function cargarProveedoresGestion() {
 function editarProveedor(id, prov) {
   const idEl = document.getElementById('editProveedorId');
   if (idEl) idEl.value = id;
-  document.getElementById('provRif').value = prov.rif || '';
-  document.getElementById('provTelefono').value = prov.telefono || '';
-  document.getElementById('provContribuyenteEspecial').value = String(prov.es_contribuyente_especial ?? true);
-  document.getElementById('provRazonSocial').value = prov.razon_social || '';
-  document.getElementById('provDireccion').value = prov.direccion || '';
+  const pRif = document.getElementById('provRif');
+  const pTel = document.getElementById('provTelefono');
+  const pEsp = document.getElementById('provContribuyenteEspecial');
+  const pRaz = document.getElementById('provRazonSocial');
+  const pDir = document.getElementById('provDireccion');
+
+  if (pRif) pRif.value = prov.rif || '';
+  if (pTel) pTel.value = prov.telefono || '';
+  if (pEsp) pEsp.value = String(prov.es_contribuyente_especial ?? true);
+  if (pRaz) pRaz.value = prov.razon_social || '';
+  if (pDir) pDir.value = prov.direccion || '';
+
   const titulo = document.getElementById('tituloFormProveedor');
   if (titulo) titulo.innerText = '✏️ Editar Proveedor';
   const btnCanc = document.getElementById('btnCancelarProv');
@@ -205,6 +212,10 @@ async function cargarUnidadesMedidaGestion() {
     <tr class="hover:bg-slate-900 border-b border-slate-800/40"><td class="p-3 font-mono text-emerald-400">LTS</td><td class="p-3">Litros</td></tr>
     <tr class="hover:bg-slate-900 border-b border-slate-800/40"><td class="p-3 font-mono text-emerald-400">MT</td><td class="p-3">Metros</td></tr>
   `;
+}
+
+function cargarUnidadesSelectForm() {
+  // Opcional para formularios de artículos
 }
 
 function cargarDatosReferidos() {
