@@ -1,6 +1,6 @@
 /**
  * /js/auth.js
- * Módulo de Autenticación, Seguridad (RBAC), Sesión y Multi-Tenant (SENIAT 2026)
+ * Módulo de Autenticación, Seguridad (RBAC), Sesión, RIF y Control Multi-Tenant (SENIAT 2026)
  */
 
 let tenantActual = null;
@@ -65,13 +65,23 @@ function verificarSesionGuardada() {
 }
 
 function activarVistaPrincipal() {
-  document.getElementById('vistaLogin').classList.add('hidden');
-  document.getElementById('chatFlotanteWhatsapp').classList.add('hidden');
-  document.getElementById('vistaPrincipal').classList.remove('hidden');
-  document.getElementById('headerTenantNombre').innerText = tenantActual.razon_social || tenantActual.email;
-  document.getElementById('headerTenantRif').innerText = tenantActual.rif || 'J-00000000-0';
-  document.getElementById('headerTenantRol').innerText = (tenantActual.rol || 'freemium').toUpperCase();
-  document.getElementById('headerTenantPlan').innerText = (tenantActual.plan_activo || 'Freemium').toUpperCase();
+  const vistaLogin = document.getElementById('vistaLogin');
+  const chatW = document.getElementById('chatFlotanteWhatsapp');
+  const vistaPrin = document.getElementById('vistaPrincipal');
+
+  if (vistaLogin) vistaLogin.classList.add('hidden');
+  if (chatW) chatW.classList.add('hidden');
+  if (vistaPrin) vistaPrin.classList.remove('hidden');
+
+  const nombreEl = document.getElementById('headerTenantNombre');
+  const rifEl = document.getElementById('headerTenantRif');
+  const rolEl = document.getElementById('headerTenantRol');
+  const planEl = document.getElementById('headerTenantPlan');
+
+  if (nombreEl) nombreEl.innerText = tenantActual.razon_social || tenantActual.email;
+  if (rifEl) rifEl.innerText = tenantActual.rif || 'J-00000000-0';
+  if (rolEl) rolEl.innerText = (tenantActual.rol || 'freemium').toUpperCase();
+  if (planEl) planEl.innerText = (tenantActual.plan_activo || 'Freemium').toUpperCase();
 
   const esMaster = tenantActual.rol === 'master' || tenantActual.email === 'ervec2000@gmail.com';
   document.querySelectorAll('.tab-master').forEach(el => {
@@ -84,9 +94,13 @@ function activarVistaPrincipal() {
 function cerrarSesion() {
   localStorage.removeItem('tenant_actual');
   tenantActual = null;
-  document.getElementById('vistaPrincipal').classList.add('hidden');
-  document.getElementById('vistaLogin').classList.remove('hidden');
-  document.getElementById('chatFlotanteWhatsapp').classList.remove('hidden');
+  const vistaPrin = document.getElementById('vistaPrincipal');
+  const vistaLogin = document.getElementById('vistaLogin');
+  const chatW = document.getElementById('chatFlotanteWhatsapp');
+
+  if (vistaPrin) vistaPrin.classList.add('hidden');
+  if (vistaLogin) vistaLogin.classList.remove('hidden');
+  if (chatW) chatW.classList.remove('hidden');
 }
 
 function cambiarPestana(pestana) {
@@ -108,8 +122,10 @@ function cambiarPestana(pestana) {
   if (pestana === 'notasFiscales') cargarFacturasAfectadasSelect();
   if (pestana === 'cierrez') {
     const hoy = new Date().toISOString().slice(0,10);
-    document.getElementById('filtroFechaDesde').value = hoy;
-    document.getElementById('filtroFechaHasta').value = hoy;
+    const dDesde = document.getElementById('filtroFechaDesde');
+    const dHasta = document.getElementById('filtroFechaHasta');
+    if (dDesde) dDesde.value = hoy;
+    if (dHasta) dHasta.value = hoy;
     generarReporteZ();
   }
   if (pestana === 'compras') { cargarProductosSelectCompra(); cargarProveedoresSelectCompra(); }
@@ -117,13 +133,14 @@ function cambiarPestana(pestana) {
   if (pestana === 'retenciones') cargarRetenciones();
   if (pestana === 'kardex') cargarKardexMovimientos();
   if (pestana === 'fisico') {
-    document.getElementById('fisicoFecha').value = new Date().toISOString().slice(0,10);
+    const fFisico = document.getElementById('fisicoFecha');
+    if (fFisico) fFisico.value = new Date().toISOString().slice(0,10);
     cargarInventarioFisico();
   }
   if (pestana === 'etiquetas') renderizarEtiquetasQr();
   if (pestana === 'cuentas') cargarCuentasPorCobrar();
   if (pestana === 'unidades') cargarUnidadesMedidaGestion();
-  if (pestana === 'productos') cargarProductosGestion();
+  if (pestana === 'productos') { cargarUnidadesSelectForm(); cargarProductosGestion(); }
   if (pestana === 'clientes') cargarClientesGestion();
   if (pestana === 'referidos') cargarDatosReferidos();
   if (pestana === 'inquilinosMaster') cargarInquilinosMaster();
@@ -154,7 +171,14 @@ async function guardarCambiosPerfil() {
   await supabaseClient.from('tenants').update(payload).eq('id', tenantActual.id);
   tenantActual = {...tenantActual, ...payload};
   localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
-  alert('¡Perfil actualizado!');
+  alert('¡Perfil actualizado con éxito!');
   cerrarModalPerfil();
   activarVistaPrincipal();
+}
+
+function enviarFormularioContactoLanding() {
+  const nom = document.getElementById('contactoNombre')?.value || 'Interesado';
+  const tel = document.getElementById('contactoTelefono')?.value || '';
+  const urlW = `https://api.whatsapp.com/send?text=Hola,%20mi%20nombre%20es%20${encodeURIComponent(nom)}%20y%20mi%20teléfono%20es%20${encodeURIComponent(tel)}. Deseo solicitar más información y demo de MiFacturaDigital.`;
+  window.open(urlW, '_blank');
 }
