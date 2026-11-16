@@ -1,6 +1,6 @@
 /**
  * /js/pos.js
- * Módulo de POS, Carrito, Cálculos Fiscales (IVA/IGTF) y Emisión de Facturas
+ * Módulo de Punto de Venta, Carrito, IVA, IGTF y Facturación Fiscal SENIAT 2026
  */
 
 let carritoItems = [];
