@@ -11,11 +11,16 @@ function validarRifVzla(rif) {
   return regexRif.test(rif.trim());
 }
 
+function avisarAuth(mensaje, tipo = 'warning') {
+  if (typeof notificarSistema === 'function') notificarSistema(mensaje, tipo, 6000);
+  else console.log(`[${tipo}]`, mensaje);
+}
+
 function validarRifInput(inputEl) {
   const val = inputEl.value.trim();
   if (val && !validarRifVzla(val)) {
     inputEl.classList.add('border-rose-500');
-    alert('⚠️ Formato de RIF o Cédula inválido. Utilice formato venezolano estándar (ej. J-12345678-0 o V-12080468-1).');
+    avisarAuth('⚠️ Formato de RIF o Cédula inválido. Utilice formato venezolano estándar (ej. J-12345678-0 o V-12080468-1).', 'warning');
   } else {
     inputEl.classList.remove('border-rose-500');
   }
@@ -25,7 +30,7 @@ async function iniciarSesionTenant() {
   const email = document.getElementById('loginEmail').value.trim().toLowerCase();
   const pass = document.getElementById('loginPassword').value.trim();
   
-  if (!email || !pass) { alert('Por favor, ingrese correo y contraseña.'); return; }
+  if (!email || !pass) { avisarAuth('Por favor, ingrese correo y contraseña.', 'warning'); return; }
 
   let authExitoso = false;
   let authUserId = null;
@@ -45,14 +50,14 @@ async function iniciarSesionTenant() {
     }
   }
 
-  if (!authExitoso) { alert('⚠️ Error de autenticación: Correo o contraseña incorrectos.'); return; }
+  if (!authExitoso) { avisarAuth('⚠️ Error de autenticación: Correo o contraseña incorrectos.', 'error'); return; }
 
   if (!tenantActual) {
     const { data: tenantData } = await supabaseClient.from('tenants').select('*').eq('auth_user_id', authUserId).single();
     tenantActual = tenantData || (await supabaseClient.from('tenants').select('*').eq('email', email).single()).data;
   }
 
-  if (!tenantActual) { alert('No se encontró un perfil de comercio asociado.'); return; }
+  if (!tenantActual) { avisarAuth('No se encontró un perfil de comercio asociado.', 'error'); return; }
   if (!tenantActual.plan_activo) tenantActual.plan_activo = 'Freemium';
 
   localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
@@ -65,10 +70,12 @@ function verificarSesionGuardada() {
 }
 
 function activarVistaPrincipal() {
+  const vistaLanding = document.getElementById('vistaLanding');
   const vistaLogin = document.getElementById('vistaLogin');
   const chatW = document.getElementById('chatFlotanteWhatsapp');
   const vistaPrin = document.getElementById('vistaPrincipal');
 
+  if (vistaLanding) vistaLanding.classList.add('hidden');
   if (vistaLogin) vistaLogin.classList.add('hidden');
   if (chatW) chatW.classList.add('hidden');
   if (vistaPrin) vistaPrin.classList.remove('hidden');
@@ -95,16 +102,18 @@ function cerrarSesion() {
   localStorage.removeItem('tenant_actual');
   tenantActual = null;
   const vistaPrin = document.getElementById('vistaPrincipal');
+  const vistaLanding = document.getElementById('vistaLanding');
   const vistaLogin = document.getElementById('vistaLogin');
   const chatW = document.getElementById('chatFlotanteWhatsapp');
 
   if (vistaPrin) vistaPrin.classList.add('hidden');
-  if (vistaLogin) vistaLogin.classList.remove('hidden');
+  if (vistaLogin) vistaLogin.classList.add('hidden');
+  if (vistaLanding) vistaLanding.classList.remove('hidden');
   if (chatW) chatW.classList.remove('hidden');
 }
 
 function cambiarPestana(pestana) {
-  const tabs = ['pos', 'historial', 'notasFiscales', 'cierrez', 'compras', 'proveedores', 'retenciones', 'kardex', 'fisico', 'multideposito', 'etiquetas', 'cuentas', 'unidades', 'productos', 'clientes', 'referidos', 'inquilinosMaster'];
+  const tabs = ['pos', 'historial', 'notasFiscales', 'cierrez', 'compras', 'proveedores', 'retenciones', 'kardex', 'fisico', 'sucursales', 'almacenes', 'lotes', 'etiquetas', 'cuentas', 'unidades', 'tiposIva', 'viasPago', 'productos', 'clientes', 'referidos', 'inquilinosMaster'];
   tabs.forEach(t => {
     const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
     const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
@@ -129,7 +138,7 @@ function cambiarPestana(pestana) {
     generarReporteZ();
   }
   if (pestana === 'compras') { cargarProductosSelectCompra(); cargarProveedoresSelectCompra(); }
-  if (pestana === 'proveedores') cargarProveedoresGestion();
+  if (pestana === 'proveedores' && typeof cargarProveedoresGestion === 'function') cargarProveedoresGestion();
   if (pestana === 'retenciones') cargarRetenciones();
   if (pestana === 'kardex') cargarKardexMovimientos();
   if (pestana === 'fisico') {
@@ -137,14 +146,34 @@ function cambiarPestana(pestana) {
     if (fFisico) fFisico.value = new Date().toISOString().slice(0,10);
     cargarInventarioFisico();
   }
-  if (pestana === 'etiquetas') renderizarEtiquetasQr();
-  if (pestana === 'cuentas') cargarCuentasPorCobrar();
-  if (pestana === 'unidades') cargarUnidadesMedidaGestion();
-  if (pestana === 'productos') { cargarUnidadesSelectForm(); cargarProductosGestion(); }
-  if (pestana === 'clientes') cargarClientesGestion();
-  if (pestana === 'referidos') cargarDatosReferidos();
-  if (pestana === 'inquilinosMaster') cargarInquilinosMaster();
-  if (pestana === 'pos') { cargarProductosSelect(); cargarClientesSelect(); }
+  if (pestana === 'sucursales' && typeof cargarSucursalesGestion === 'function') cargarSucursalesGestion();
+  if (pestana === 'almacenes') {
+    if (typeof cargarSucursalesSelectAlmacen === 'function') cargarSucursalesSelectAlmacen();
+    if (typeof cargarAlmacenesGestion === 'function') cargarAlmacenesGestion();
+  }
+  if (pestana === 'lotes') {
+    if (typeof cargarProductosSelectLote === 'function') cargarProductosSelectLote();
+    if (typeof cargarAlmacenesSelectLote === 'function') cargarAlmacenesSelectLote();
+    if (typeof cargarLotesGestion === 'function') cargarLotesGestion();
+  }
+  if (pestana === 'etiquetas' && typeof renderizarEtiquetasQr === 'function') renderizarEtiquetasQr();
+  if (pestana === 'cuentas' && typeof cargarCuentasPorCobrar === 'function') cargarCuentasPorCobrar();
+  if (pestana === 'unidades' && typeof cargarUnidadesMedidaGestion === 'function') cargarUnidadesMedidaGestion();
+  if (pestana === 'tiposIva' && typeof cargarTiposIvaGestion === 'function') cargarTiposIvaGestion();
+  if (pestana === 'viasPago' && typeof cargarViasPagoGestion === 'function') cargarViasPagoGestion();
+  if (pestana === 'productos') {
+    if (typeof cargarUnidadesSelectForm === 'function') cargarUnidadesSelectForm();
+    if (typeof cargarTiposIvaSelectForm === 'function') cargarTiposIvaSelectForm();
+    if (typeof cargarProductosGestion === 'function') cargarProductosGestion();
+  }
+  if (pestana === 'clientes' && typeof cargarClientesGestion === 'function') cargarClientesGestion();
+  if (pestana === 'referidos' && typeof cargarDatosReferidos === 'function') cargarDatosReferidos();
+  if (pestana === 'inquilinosMaster' && typeof cargarInquilinosMaster === 'function') cargarInquilinosMaster();
+  if (pestana === 'pos') {
+    if (typeof cargarProductosSelect === 'function') cargarProductosSelect();
+    if (typeof cargarClientesSelect === 'function') cargarClientesSelect();
+    if (typeof cargarViasPagoSelectPos === 'function') cargarViasPagoSelectPos();
+  }
 }
 
 function abrirModalPerfil() {
@@ -161,17 +190,18 @@ function cerrarModalPerfil() { document.getElementById('modalPerfilUsuario').cla
 
 async function guardarCambiosPerfil() {
   const rifVal = document.getElementById('perfilRif').value.trim();
-  if (rifVal && !validarRifVzla(rifVal)) { alert('Formato de RIF inválido.'); return; }
+  if (rifVal && !validarRifVzla(rifVal)) { avisarAuth('Formato de RIF inválido.', 'warning'); return; }
   const payload = {
     razon_social: document.getElementById('perfilRazonSocial').value.trim(),
     rif: rifVal,
     telefono: document.getElementById('perfilTelefono').value.trim(),
     direccion: document.getElementById('perfilDireccion').value.trim()
   };
-  await supabaseClient.from('tenants').update(payload).eq('id', tenantActual.id);
+  const { error } = await supabaseClient.from('tenants').update(payload).eq('id', tenantActual.id);
+  if (error) { avisarAuth('Error al actualizar perfil: ' + error.message, 'error'); return; }
   tenantActual = {...tenantActual, ...payload};
   localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
-  alert('¡Perfil actualizado con éxito!');
+  avisarAuth('¡Perfil actualizado con éxito!', 'success');
   cerrarModalPerfil();
   activarVistaPrincipal();
 }

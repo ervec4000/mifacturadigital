@@ -1,0 +1,16 @@
+{
+  "name": "mifacturadigital",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MiFacturaDigital.com.ve - Sistema Fiscal Integrado SENIAT Enterprise 2026",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "node --check server.js",
+    "lint": "node --check server.js && node --check js/landing.js && node --check js/auth.js && node --check js/pos.js && node --check js/kardex.js && node --check js/inventarioFisico.js && node --check js/reportes.js && node --check js/catalogos.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

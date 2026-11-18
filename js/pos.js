@@ -23,26 +23,30 @@ async function consultarTasaBcvApi() {
 
 async function cargarProductosSelect() {
   if (!tenantActual) return;
-  const { data } = await supabaseClient.from('productos').select('*').eq('tenant_id', tenantActual.id);
+  const tenantId = tenantActual.id;
+  const { data } = await supabaseClient.from('productos').select('*, tipos_iva(porcentaje)').eq('tenant_id', tenantId);
   productosCache = data || [];
   const select = document.getElementById('productoSelect');
   if (!select) return;
   select.innerHTML = '<option value="">-- Seleccionar Artículo --</option>';
   productosCache.forEach(prod => {
-    const pv = prod.precio_venta_usd || prod.precio_unitario_usd || 0;
-    select.innerHTML += `<option value="${prod.id}" data-precio="${pv}" data-exento="${prod.es_exento}" data-unidad="${esc(prod.unidad_medida||'UND')}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">[${esc(prod.codigo_sku||'S/N')}] ${esc(prod.descripcion)} - P.V: $${pv.toFixed(2)}</option>`;
+    const pv = Number(prod.precio_venta_usd ?? prod.precio_unitario_usd ?? 0);
+    const esExento = prod.tipos_iva ? Number(prod.tipos_iva.porcentaje) === 0 : Boolean(prod.es_exento);
+    select.innerHTML += `<option value="${prod.id}" data-precio="${pv}" data-exento="${esExento}" data-unidad="${esc(prod.unidad_medida||'UND')}" data-stock="${prod.stock||0}" data-maneja="${prod.maneja_inventario}">[${esc(prod.codigo_sku||'S/N')}] ${esc(prod.descripcion)} - P.V: $${pv.toFixed(2)}</option>`;
   });
 }
 
 async function cargarClientesSelect() {
   if (!tenantActual) return;
-  const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantActual.id);
+  const tenantId = tenantActual.id;
+  const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantId);
   clientesCache = data || [];
   const select = document.getElementById('clienteSelect');
   if (!select) return;
   select.innerHTML = '<option value="">-- Seleccionar Cliente --</option>';
   clientesCache.forEach(c => {
-    select.innerHTML += `<option value="${c.id}" data-rif="${esc(c.rif)}" data-nombre="${esc(c.nombre)}">${esc(c.nombre)} (${esc(c.rif)})</option>`;
+    const nombreCli = c.razon_social || c.nombre || 'Sin nombre';
+    select.innerHTML += `<option value="${c.id}" data-rif="${esc(c.rif)}" data-nombre="${esc(nombreCli)}">${esc(nombreCli)} (${esc(c.rif)})</option>`;
   });
 }
 

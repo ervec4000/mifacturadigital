@@ -225,17 +225,33 @@ function renderizarLandingPage() {
     <footer class="py-8 px-4 bg-slate-950 border-t border-slate-800 text-center text-xs text-slate-500">
       <p>© 2026 MiFacturaDigital.com.ve — Sistema Fiscal Integrado SENIAT Enterprise. Todos los derechos reservados.</p>
     </footer>
-
-    <!-- BOTÓN FLOTANTE WHATSAPP -->
-    <a href="[suspicious link removed]" target="_blank" class="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 flex items-center justify-center text-3xl shadow-2xl shadow-emerald-500/40 z-50 transition-all hover:scale-110">
-      💬
-    </a>
   `;
+}
+
+function mostrarVistaLogin() {
+  const landing = document.getElementById('vistaLanding');
+  const login = document.getElementById('vistaLogin');
+  if (landing) landing.classList.add('hidden');
+  if (login) login.classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function mostrarVistaLanding() {
+  const landing = document.getElementById('vistaLanding');
+  const login = document.getElementById('vistaLogin');
+  if (login) login.classList.add('hidden');
+  if (landing) landing.classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function abrirModalDemo() {
   const elContacto = document.getElementById('contacto');
   if (elContacto) elContacto.scrollIntoView({ behavior: 'smooth' });
+}
+
+function abrirModalRegistroDemo() {
+  mostrarVistaLanding();
+  setTimeout(abrirModalDemo, 100);
 }
 
 function procesarSolicitudDemo(event) {
