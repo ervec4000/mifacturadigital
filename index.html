@@ -10,13 +10,34 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   
   <style>
     @media print {
+      body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; }
       body * { visibility: hidden; }
       #seccionFisico, #seccionFisico *, #modalTicket, #modalTicket * { visibility: visible; }
       #seccionFisico { position: absolute; left: 0; top: 0; width: 100%; background: white; color: black; }
-      #modalTicket { position: absolute; left: 0; top: 0; width: 100%; background: white; color: black; }
+      #modalTicket {
+        position: static !important;
+        inset: auto !important;
+        background: white !important;
+        padding: 0 !important;
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+      }
+      #ticketContenedor {
+        box-shadow: none !important;
+        border: none !important;
+        max-height: none !important;
+        overflow: visible !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 12px !important;
+      }
       .no-print { display: none !important; }
     }
     .tech-pattern {
@@ -138,37 +159,103 @@
     <main class="p-6 flex-1 space-y-6">
       <!-- Sección POS -->
       <div id="seccionPos" class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+        <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tasa BCV Oficial (Bs. / $)</label>
-            <input type="number" step="0.0001" id="tasaBcv" value="888.1183" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white font-mono text-sm" oninput="recalcularTodo()">
+            <h3 id="tituloFormPos" class="text-sm font-bold text-emerald-400 uppercase">🛒 Facturación Fiscal Digital (POS)</h3>
+            <p class="text-xs text-slate-400">Emite, edita o anula documentos fiscales con cálculo automático de IVA, IGTF y registro en Kardex.</p>
+          </div>
+          <div class="bg-slate-950 border border-emerald-500/40 rounded-xl px-4 py-2 text-xs font-mono">
+            <span class="text-slate-400">Próximo Documento:</span>
+            <span id="posProximoDoc" class="text-emerald-400 font-bold ml-1">FAC-00000001</span>
+          </div>
+        </div>
+
+        <div id="bannerEditFactura" class="hidden bg-amber-950/60 border border-amber-500/50 text-amber-200 px-4 py-2.5 rounded-xl text-xs flex flex-wrap items-center justify-between gap-2">
+          <span id="textoBannerEditFactura" class="font-semibold">✏️ Editando factura...</span>
+          <button type="button" onclick="cancelarEdicionFactura()" class="bg-amber-900 hover:bg-amber-800 text-white px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer">Cancelar Edición</button>
+        </div>
+
+        <input type="hidden" id="editFacturaId">
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Fecha de Emisión *</label>
+            <input type="date" id="posFecha" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Cliente</label>
-            <select id="clienteSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" onchange="seleccionarClientePredefinido()"><option value="">-- Seleccionar --</option></select>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Moneda del Documento *</label>
+            <select id="posMoneda" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold text-sm font-mono">
+              <option value="USD" selected>USD ($ Dólares)</option>
+              <option value="VES">VES (Bs. Bolívares)</option>
+            </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Método de Pago</label>
-            <select id="metodoPagoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm" onchange="verificarAplicacionIgtf()">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tasa BCV Oficial (Bs. / $) *</label>
+            <div class="flex gap-2">
+              <input type="number" step="0.0001" id="tasaBcv" value="888.1183" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold font-mono text-sm" oninput="recalcularTodo()">
+              <button type="button" onclick="consultarTasaBcvApi()" title="Consultar Tasa Oficial BCV" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 px-3 rounded-xl text-xs font-semibold border border-slate-700 cursor-pointer">🔄</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Condición de Pago</label>
+            <select id="posCondicionPago" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+              <option value="CONTADO" selected>CONTADO</option>
+              <option value="CRÉDITO">CRÉDITO</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Sucursal Emisora</label>
+            <select id="posSucursalSelect" onchange="filtrarAlmacenesPosPorSucursal()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+              <option value="">-- Sede Principal --</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Almacén Despacho</label>
+            <select id="posAlmacenSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+              <option value="">-- Almacén General --</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Cliente Registrado</label>
+            <select id="clienteSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm" onchange="seleccionarClientePredefinido()"><option value="">-- Seleccionar --</option></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">RIF / Cédula Cliente *</label>
+            <input type="text" id="clienteRif" placeholder="V-12080468-1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono" onblur="validarRifInput(this)">
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nombre / Razón Social Cliente *</label>
+            <input type="text" id="clienteNombre" placeholder="Nombre completo o Razón Social" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Domicilio Fiscal del Cliente *</label>
+            <input type="text" id="clienteDireccion" placeholder="Dirección fiscal (obligatorio SENIAT Art. 13)" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Teléfono Cliente</label>
+            <input type="text" id="clienteTelefono" placeholder="0414-0000000" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">¿Aplica IGTF (3%)?</label>
+            <select id="aplicaIgtfSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-semibold text-sm" onchange="recalcularTodo()">
+              <option value="SI">SÍ (Pago en Divisas)</option>
+              <option value="NO" selected>NO</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Vía / Método de Pago</label>
+            <select id="metodoPagoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm" onchange="verificarAplicacionIgtf()">
               <option value="EFECTIVO DIVISAS">Efectivo Divisas ($)</option>
               <option value="ZELLE">Zelle</option>
               <option value="PAGO MOVIL">Pago Móvil (Bs.)</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">RIF / Cédula</label>
-            <input type="text" id="clienteRif" placeholder="V-12080468-1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono" onblur="validarRifInput(this)">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nombre / Razón Social</label>
-            <input type="text" id="clienteNombre" placeholder="EDISON VELIZ" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">¿Aplica IGTF (3%)?</label>
-            <select id="aplicaIgtfSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-emerald-400 font-semibold text-sm" onchange="recalcularTodo()">
-              <option value="SI">SÍ</option>
-              <option value="NO" selected>NO</option>
-            </select>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nro. Referencia (Opcional)</label>
+            <input type="text" id="posReferenciaPago" placeholder="Ej: REF 458912" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
           </div>
         </div>
 
@@ -177,12 +264,12 @@
           <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
             <div class="md:col-span-6"><select id="productoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"><option value="">Cargando catálogo...</option></select></div>
             <div class="md:col-span-2"><input type="number" id="cantidadItem" min="0.001" step="0.001" value="1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
-            <div class="md:col-span-4"><button onclick="agregarItem()" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-300 font-semibold py-3 px-4 rounded-xl text-sm border cursor-pointer">+ Añadir al Carrito</button></div>
+            <div class="md:col-span-4"><button type="button" onclick="agregarItem()" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-300 font-semibold py-3 px-4 rounded-xl text-sm border cursor-pointer">+ Añadir al Carrito</button></div>
           </div>
           <div class="overflow-x-auto mt-2">
             <table class="w-full text-left text-xs text-slate-300">
               <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
-                <tr><th class="p-3">SKU</th><th class="p-3">Descripción</th><th class="p-3">Cant</th><th class="p-3">Unidad</th><th class="p-3">Precio</th><th class="p-3">Tipo</th><th class="p-3">Subtotal</th><th class="p-3 text-center">Acción</th></tr>
+                <tr><th class="p-3">Código</th><th class="p-3">Descripción</th><th class="p-3">Cant</th><th class="p-3">Und</th><th class="p-3">P. Unit ($)</th><th class="p-3">Alíc. IVA</th><th class="p-3">Subtotal ($ / Bs.)</th><th class="p-3 text-center">Acción</th></tr>
               </thead>
               <tbody id="tablaItems" class="divide-y divide-slate-800/60"></tbody>
             </table>
@@ -191,11 +278,11 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 space-y-2.5 text-sm font-mono">
-            <div class="flex justify-between text-slate-300"><span>Base Gravada:</span><span id="baseGravadaBs">$ 0.00 | Bs. 0.00</span></div>
-            <div class="flex justify-between text-slate-300"><span>Monto Exento:</span><span id="montoExentoBs">$ 0.00 | Bs. 0.00</span></div>
-            <div class="flex justify-between text-slate-300"><span>IVA (16%):</span><span id="ivaBs">$ 0.00 | Bs. 0.00</span></div>
+            <div class="flex justify-between text-slate-300"><span>Base Imponible Gravada:</span><span id="baseGravadaBs">$ 0.00 | Bs. 0.00</span></div>
+            <div class="flex justify-between text-slate-300"><span>Monto Exento (E):</span><span id="montoExentoBs">$ 0.00 | Bs. 0.00</span></div>
+            <div class="flex justify-between text-slate-300"><span>IVA Calculado:</span><span id="ivaBs">$ 0.00 | Bs. 0.00</span></div>
             <div class="flex justify-between text-slate-300"><span>IGTF (3%):</span><span id="igtfBs">$ 0.00 | Bs. 0.00</span></div>
-            <div class="border-t border-slate-800 pt-3 flex justify-between font-bold text-emerald-400 text-base"><span>TOTAL:</span><span id="totalBs">$ 0.00 | Bs. 0.00</span></div>
+            <div class="border-t border-slate-800 pt-3 flex justify-between font-bold text-emerald-400 text-base"><span>TOTAL A PAGAR:</span><span id="totalBs">$ 0.00 | Bs. 0.00</span></div>
           </div>
           <div class="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 space-y-3 text-xs font-mono">
             <h4 class="font-bold text-emerald-400 uppercase">Calculadora de Vuelto</h4>
@@ -210,9 +297,38 @@
           </div>
         </div>
 
-        <button onclick="emitirFactura()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-2xl cursor-pointer text-sm shadow-lg">
-          Emitir Factura Fiscal Definitiva (SENIAT)
-        </button>
+        <div class="flex flex-col sm:flex-row gap-3">
+          <button id="btnEmitirFacturaPos" type="button" onclick="emitirFactura()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-2xl cursor-pointer text-sm shadow-lg">
+            💾 Emitir Factura Fiscal Digital y Registrar en Kardex
+          </button>
+          <button id="btnCancelarEditFactura" type="button" onclick="cancelarEdicionFactura()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-6 py-3.5 rounded-2xl cursor-pointer text-sm">
+            Cancelar Edición
+          </button>
+        </div>
+
+        <!-- Registro de Documentos de Venta (Igual que Compras) -->
+        <div class="space-y-3 pt-2">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-slate-300 uppercase">📄 Documentos de Venta Registrados</h4>
+            <button type="button" onclick="cargarDocumentosPos()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg cursor-pointer">🔄 Actualizar</button>
+          </div>
+          <div class="overflow-x-auto bg-slate-950/30 rounded-2xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr>
+                  <th class="p-3">Documento</th>
+                  <th class="p-3">Nro. Control</th>
+                  <th class="p-3">Fecha</th>
+                  <th class="p-3">Cliente / Moneda</th>
+                  <th class="p-3">Tasa BCV</th>
+                  <th class="p-3">Total ($ / Bs.)</th>
+                  <th class="p-3 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaDocumentosPos" class="divide-y divide-slate-800/60"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- Historial de Comprobantes -->
@@ -283,26 +399,153 @@
 
       <!-- Compras / Entradas -->
       <div id="seccionCompras" class="hidden space-y-6">
-        <h3 class="text-sm font-bold text-emerald-400 uppercase">📥 Registro de Compras y Entradas al Almacén</h3>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-bold text-emerald-400 uppercase">📥 Registro de Compras y Entradas al Almacén</h3>
+            <p class="text-xs text-slate-400">Registra facturas de compra multi-artículo enlazadas a Sucursal → Almacén → Material → Lote y Vencimiento.</p>
+          </div>
+          <div class="bg-slate-950 border border-emerald-500/40 rounded-xl px-4 py-2 text-xs font-mono">
+            <span class="text-slate-400">Próximo Documento:</span>
+            <span id="compraProximoDoc" class="text-emerald-400 font-bold ml-1">COMP-0001</span>
+          </div>
+        </div>
+
+        <!-- Cabecera del Documento de Compra -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Producto</label>
-            <select id="compraProductoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></select>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Fecha de Compra *</label>
+            <input type="date" id="compraFecha" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Proveedor</label>
-            <select id="compraProveedorSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></select>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Tasa BCV (Bs/$) *</label>
+            <div class="flex gap-2">
+              <input type="number" step="0.0001" id="compraTasaBcv" value="36.50" oninput="recalcularTotalesCompra()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold text-sm font-mono">
+              <button type="button" onclick="consultarTasaBcvCompra()" title="Actualizar tasa BCV" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 px-3 rounded-xl text-xs font-semibold border border-slate-700 cursor-pointer">🔄</button>
+            </div>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Cantidad</label>
-            <input type="number" step="0.001" id="compraCantidad" value="1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Nro. Factura Proveedor *</label>
+            <input type="text" id="compraNumeroFactura" placeholder="0001-00001234" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Costo Unitario ($ USD)</label>
-            <input type="number" step="0.01" id="compraCostoUsd" value="1.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Nro. Control Factura *</label>
+            <input type="text" id="compraNumeroControl" placeholder="00-00012345" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
           </div>
-          <div class="md:col-span-4">
-            <button onclick="registrarCompraInventario()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-3 rounded-xl text-sm cursor-pointer">Registrar Compra en Kardex</button>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Proveedor *</label>
+            <select id="compraProveedorSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Sucursal Destino *</label>
+            <select id="compraSucursalSelect" onchange="filtrarAlmacenesPorSucursalCompra()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+              <option value="">-- Seleccionar Sucursal --</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Almacén Destino *</label>
+            <select id="compraAlmacenSelect" onchange="cargarLotesSugeridosCompra()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+              <option value="">-- Seleccionar Almacén --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Agregar Múltiples Materiales / Productos -->
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-3 bg-slate-950/40 p-5 rounded-2xl border border-slate-800 items-end">
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Material / Producto *</label>
+            <select id="compraProductoSelect" onchange="onSeleccionarProductoCompra()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Cantidad *</label>
+            <input type="number" step="0.001" id="compraCantidad" value="1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Costo Unit. ($ USD) *</label>
+            <input type="number" step="0.01" id="compraCostoUsd" value="1.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Nro. de Lote *</label>
+            <input type="text" id="compraLote" list="datalistLotesCompra" placeholder="LOTE-001" oninput="autocompletarVencimientoLoteCompra()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+            <datalist id="datalistLotesCompra"></datalist>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Fecha Vencimiento</label>
+            <input type="date" id="compraFechaVencimiento" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Ubicación en Almacén (Opcional)</label>
+            <input type="text" id="compraUbicacion" placeholder="RACK / PASILLO" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+          </div>
+          <div class="md:col-span-4 flex justify-end">
+            <button type="button" onclick="agregarItemCompra()" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer">+ Agregar Material a la Compra</button>
+          </div>
+        </div>
+
+        <!-- Detalle de Renglones de la Compra -->
+        <div class="overflow-x-auto bg-slate-950/30 rounded-2xl border border-slate-800">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+              <tr>
+                <th class="p-3">Material</th>
+                <th class="p-3">Sucursal / Almacén</th>
+                <th class="p-3">Lote / Vencimiento</th>
+                <th class="p-3 text-center">Cant.</th>
+                <th class="p-3">Costo Unit. ($)</th>
+                <th class="p-3">IVA</th>
+                <th class="p-3">Subtotal</th>
+                <th class="p-3 text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tablaItemsCompra" class="divide-y divide-slate-800/60">
+              <tr><td colspan="8" class="p-4 text-center text-slate-500">Agrega uno o más materiales arriba para armar el documento de compra.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Resumen y Guardar Documento -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+          <div>
+            <p class="text-xs text-slate-400">Base Gravada:</p>
+            <p id="compraBaseGravada" class="font-mono font-bold text-white">$ 0.00 | Bs. 0.00</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400">Monto Exento:</p>
+            <p id="compraMontoExento" class="font-mono font-bold text-sky-300">$ 0.00 | Bs. 0.00</p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400">IVA Compras:</p>
+            <p id="compraIvaTotal" class="font-mono font-bold text-amber-300">$ 0.00 | Bs. 0.00</p>
+          </div>
+          <div class="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-2">
+            <div>
+              <p class="text-xs text-slate-400">TOTAL COMPRA:</p>
+              <p id="compraTotalFinal" class="font-mono font-bold text-lg text-emerald-400">$ 0.00 | Bs. 0.00</p>
+            </div>
+            <button id="btnGuardarCompraDoc" type="button" onclick="registrarCompraInventario()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-3 rounded-xl text-sm cursor-pointer shadow-lg">💾 Guardar Compra y Generar Documento</button>
+          </div>
+        </div>
+
+        <!-- Historial de Compras Guardadas -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-slate-300 uppercase">📄 Documentos de Compra Registrados</h4>
+            <button type="button" onclick="cargarHistorialCompras()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg cursor-pointer">🔄 Actualizar</button>
+          </div>
+          <div class="overflow-x-auto bg-slate-950/30 rounded-2xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr>
+                  <th class="p-3">Documento</th>
+                  <th class="p-3">Fecha</th>
+                  <th class="p-3">Factura / Control</th>
+                  <th class="p-3">Proveedor / Almacén</th>
+                  <th class="p-3 text-center">Items</th>
+                  <th class="p-3">Tasa BCV</th>
+                  <th class="p-3">Total Est. ($ / Bs.)</th>
+                </tr>
+              </thead>
+              <tbody id="tablaHistorialCompras" class="divide-y divide-slate-800/60"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -411,7 +654,7 @@
             <button id="btnCancelarLote" onclick="limpiarFormLote()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer">Cancelar</button>
           </div>
         </div>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Lote</th><th class="p-3">Producto</th><th class="p-3">Ubicación</th><th class="p-3 text-center">Stock</th><th class="p-3">Vencimiento</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaLotesGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Lote</th><th class="p-3">Material</th><th class="p-3">Sucursal / Almacén</th><th class="p-3">Ubicación</th><th class="p-3 text-center">Stock</th><th class="p-3">Vencimiento</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaLotesGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
       </div>
 
       <div id="seccionEtiquetas" class="hidden space-y-6"><div id="contenedorGridEtiquetas" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div></div>
@@ -579,50 +822,138 @@
     </main>
   </div>
 
-  <!-- MODAL TICKET / COMPROBANTE -->
-  <div id="modalTicket" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-    <div class="bg-white text-slate-900 w-full max-w-md rounded-2xl p-6 space-y-3 font-mono text-xs shadow-2xl">
-      <div class="text-center border-b border-slate-300 pb-3">
-        <h3 id="ticketComercioNombre" class="font-bold text-sm uppercase">Comercio</h3>
-        <p id="ticketComercioRif"></p>
-        <p id="ticketComercioDir" class="text-[11px] text-slate-600"></p>
-        <p id="ticketTipoDoc" class="font-bold mt-2 text-emerald-700">FACTURA FISCAL DIGITAL</p>
+  <!-- MODAL FACTURA DIGITAL / COMPROBANTE FISCAL SENIAT -->
+  <div id="modalTicket" class="hidden fixed inset-0 bg-black/85 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+    <div id="ticketContenedor" class="bg-white text-slate-900 w-full max-w-3xl rounded-2xl p-5 sm:p-7 space-y-4 text-xs shadow-2xl max-h-[94vh] overflow-y-auto border border-slate-300">
+      <!-- Barra de herramientas (no imprime) -->
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 no-print">
+        <div class="flex items-center gap-2">
+          <button type="button" id="btnFormatoDigital" onclick="cambiarFormatoComprobante('digital')" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">📄 Factura Digital (SENIAT)</button>
+          <button type="button" id="btnFormatoTicket" onclick="cambiarFormatoComprobante('ticket')" class="bg-slate-200 text-slate-800 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">🧾 Ticket 80mm</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" onclick="descargarComprobantePdf()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">📥 Descargar PDF</button>
+          <button type="button" onclick="imprimirComprobante()" class="bg-sky-700 hover:bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">🖨️ Imprimir</button>
+          <button type="button" onclick="cerrarTicket()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">✕ Cerrar</button>
+        </div>
       </div>
-      <div class="space-y-1 text-[11px] border-b border-slate-300 pb-2">
-        <p id="ticketNro"></p>
-        <p id="ticketControl"></p>
-        <p id="ticketFecha"></p>
-        <p>Tasa BCV: <span id="ticketTasa"></span></p>
-        <p id="ticketCliente"></p>
-        <p id="ticketClienteRif"></p>
-        <p id="ticketMetodoPago"></p>
+
+      <!-- Cabecera Emisor y Cuadro Fiscal SENIAT -->
+      <div id="ticketCabeceraGrid" class="grid grid-cols-1 md:grid-cols-12 gap-4 border-b-2 border-slate-800 pb-4">
+        <div class="md:col-span-7 space-y-1">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-700">CONTRIBUYENTE EMISOR</p>
+          <h3 id="ticketComercioNombre" class="font-extrabold text-base sm:text-lg uppercase text-slate-900 leading-tight">Comercio</h3>
+          <p id="ticketComercioRif" class="font-mono font-bold text-xs text-slate-800"></p>
+          <p id="ticketComercioDir" class="text-[11px] text-slate-700"></p>
+          <p id="ticketComercioTelEmail" class="text-[11px] text-slate-600"></p>
+          <p id="ticketSucursalEmisora" class="text-[11px] text-slate-700 font-semibold"></p>
+        </div>
+        <div class="md:col-span-5 bg-slate-50 border-2 border-slate-800 rounded-xl p-3 space-y-1 font-mono text-[11px]">
+          <div class="flex items-center justify-between border-b border-slate-300 pb-1">
+            <span id="ticketTipoDoc" class="font-extrabold text-sm text-emerald-800 uppercase">FACTURA</span>
+            <span class="text-[10px] bg-slate-900 text-white px-2 py-0.5 rounded font-bold">ORIGINAL</span>
+          </div>
+          <p id="ticketNro" class="font-bold text-slate-900 text-xs"></p>
+          <p id="ticketControl" class="font-bold text-rose-700 text-xs"></p>
+          <p id="ticketFecha" class="text-slate-700"></p>
+          <p id="ticketFechaAsignacionControl" class="text-[10px] text-slate-600"></p>
+          <p id="ticketMoneda" class="text-slate-900 font-bold"></p>
+          <p class="text-slate-800 font-semibold">Tasa BCV: <span id="ticketTasa"></span> Bs./$</p>
+          <p id="ticketCondicionPago" class="text-slate-700"></p>
+        </div>
       </div>
-      <div id="ticketItemsContainer" class="space-y-1 border-b border-slate-300 pb-2"></div>
-      <div class="space-y-1 text-[11px]">
-        <div class="flex justify-between"><span>Base Gravada:</span><span id="ticketBase"></span></div>
-        <div class="flex justify-between"><span>Exento:</span><span id="ticketExento"></span></div>
-        <div class="flex justify-between"><span>IVA (16%):</span><span id="ticketIva"></span></div>
-        <div class="flex justify-between"><span>IGTF (3%):</span><span id="ticketIgtf"></span></div>
-        <div class="flex justify-between font-bold text-sm border-t border-slate-300 pt-1"><span>TOTAL:</span><span id="ticketTotal"></span></div>
+
+      <!-- Datos del Adquirente (Cliente) Art. 13 Prov. 00071 -->
+      <div class="bg-slate-50 border border-slate-300 rounded-xl p-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
+        <div class="space-y-0.5">
+          <p class="text-[10px] font-bold uppercase text-slate-500">DATOS DEL ADQUIRENTE / CLIENTE</p>
+          <p id="ticketCliente" class="font-bold text-slate-900"></p>
+          <p id="ticketClienteRif" class="font-mono text-slate-800"></p>
+        </div>
+        <div class="space-y-0.5">
+          <p id="ticketClienteDir" class="text-slate-700"></p>
+          <p id="ticketClienteTel" class="text-slate-700 font-mono"></p>
+        </div>
+        <div id="ticketReferenciaNotaBox" class="hidden md:col-span-2 border-t border-slate-300 pt-1.5 mt-1 text-amber-900 bg-amber-50 p-2 rounded-lg font-mono text-[11px]"></div>
       </div>
-      <div class="flex gap-2 pt-2 no-print">
-        <button onclick="window.print()" class="flex-1 bg-emerald-600 text-white py-2 rounded-xl font-sans font-semibold cursor-pointer">🖨️ Imprimir</button>
-        <button onclick="cerrarTicket()" class="flex-1 bg-slate-200 text-slate-800 py-2 rounded-xl font-sans font-semibold cursor-pointer">Cerrar</button>
+
+      <!-- Detalle de Bienes / Servicios -->
+      <div class="overflow-x-auto border border-slate-300 rounded-xl">
+        <table class="w-full text-left text-[11px] border-collapse">
+          <thead class="bg-slate-900 text-white uppercase font-mono text-[10px]">
+            <tr>
+              <th class="p-2">Código</th>
+              <th class="p-2">Descripción</th>
+              <th class="p-2 text-center">Cant/Und</th>
+              <th class="p-2 text-right">P. Unit (Bs.)</th>
+              <th class="p-2 text-center">Alíc.</th>
+              <th class="p-2 text-right">Total (Bs.)</th>
+            </tr>
+          </thead>
+          <tbody id="ticketItemsContainer" class="divide-y divide-slate-200 font-mono"></tbody>
+        </table>
+      </div>
+
+      <!-- Desglose Impositivo SENIAT (Art. 13 & Art. 25 LIVA) + Código QR -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start pt-1">
+        <div class="md:col-span-5 flex flex-col items-center md:items-start gap-2 border border-slate-300 rounded-xl p-3 bg-slate-50">
+          <div class="flex items-center gap-3">
+            <div id="ticketQrCode" class="bg-white p-1.5 border border-slate-300 rounded-lg shrink-0"></div>
+            <div class="text-[10px] text-slate-700 space-y-0.5 leading-snug">
+              <p class="font-bold text-slate-900 uppercase">VERIFICACIÓN DIGITAL SENIAT</p>
+              <p id="ticketImprentaNombre" class="font-semibold"></p>
+              <p id="ticketImprentaRif" class="font-mono"></p>
+              <p id="ticketImprentaProv" class="font-mono"></p>
+              <p id="ticketImprentaRango" class="font-mono"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="md:col-span-7 border border-slate-300 rounded-xl p-3 space-y-1.5 font-mono text-[11px] bg-white">
+          <div class="flex justify-between text-slate-700"><span>Monto Total Exento / Exonerado (E):</span><span id="ticketExento"></span></div>
+          <div id="ticketDesgloseAlicuotas" class="space-y-1">
+            <div class="flex justify-between text-slate-700"><span>Base Imponible IVA (16%):</span><span id="ticketBase"></span></div>
+            <div class="flex justify-between text-slate-700"><span>IVA (16%):</span><span id="ticketIva"></span></div>
+          </div>
+          <div class="flex justify-between text-slate-800 border-t border-slate-200 pt-1"><span>Subtotal Factura:</span><span id="ticketSubtotalGeneral"></span></div>
+          <div id="ticketFilaBaseIgtf" class="hidden flex justify-between text-slate-700"><span>Base Imponible IGTF (3%):</span><span id="ticketBaseIgtf"></span></div>
+          <div class="flex justify-between text-slate-700"><span>IGTF (3%):</span><span id="ticketIgtf"></span></div>
+          <div class="flex justify-between font-extrabold text-sm border-t-2 border-slate-800 pt-1.5 text-slate-900"><span>TOTAL A PAGAR:</span><span id="ticketTotal"></span></div>
+        </div>
+      </div>
+
+      <!-- Leyenda Legal BCV / SENIAT -->
+      <div class="border-t border-slate-300 pt-2 text-[10px] text-slate-600 leading-relaxed space-y-0.5">
+        <p class="font-semibold text-slate-700">Artículo 25 Ley del IVA / Normativa BCV: Operación facturada en Bolívares y referenciada en divisas al tipo de cambio oficial del BCV vigente a la fecha de emisión.</p>
+        <p>Documento emitido digitalmente conforme a las Providencias Administrativas SNAT/2011/00071 y SNAT/2024/000102. Conserve este comprobante.</p>
       </div>
     </div>
   </div>
 
   <!-- MODAL PERFIL -->
-  <div id="modalPerfilUsuario" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-    <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-md rounded-2xl p-6 space-y-4">
-      <h3 class="text-base font-bold text-emerald-400">👤 Perfil y Datos Fiscales</h3>
-      <div><input type="email" id="perfilEmail" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-400"></div>
-      <div><input type="text" id="perfilRazonSocial" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" placeholder="Razón Social"></div>
-      <div><input type="text" id="perfilRif" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono" placeholder="RIF"></div>
-      <div><input type="text" id="perfilTelefono" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" placeholder="Teléfono"></div>
-      <div><input type="text" id="perfilDireccion" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" placeholder="Dirección"></div>
-      <button onclick="guardarCambiosPerfil()" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-semibold cursor-pointer">Guardar</button>
-      <button onclick="cerrarModalPerfil()" class="w-full bg-slate-800 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer">Cerrar</button>
+  <div id="modalPerfilUsuario" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-lg rounded-2xl p-6 space-y-3 my-4">
+      <h3 class="text-base font-bold text-emerald-400">👤 Perfil Fiscal e Imprenta Digital (SENIAT)</h3>
+      <div><label class="block text-[11px] text-slate-400 mb-1">Correo del Comercio</label><input type="email" id="perfilEmail" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-400 text-sm"></div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div><label class="block text-[11px] text-slate-400 mb-1">Razón Social *</label><input type="text" id="perfilRazonSocial" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm" placeholder="Razón Social"></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">RIF *</label><input type="text" id="perfilRif" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono text-sm" placeholder="J-12345678-0"></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">Teléfono</label><input type="text" id="perfilTelefono" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm" placeholder="Teléfono"></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">Domicilio Fiscal *</label><input type="text" id="perfilDireccion" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm" placeholder="Dirección Fiscal completa"></div>
+      </div>
+      <div class="border-t border-slate-800 pt-3 space-y-2">
+        <p class="text-xs font-bold text-sky-400 uppercase">Datos de Imprenta Digital Autorizada (SNAT/2024/000102)</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div><label class="block text-[11px] text-slate-400 mb-1">Razón Social Imprenta Digital</label><input type="text" id="perfilImprentaNombre" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white text-xs" placeholder="IMPRENTA DIGITAL AUTORIZADA C.A."></div>
+          <div><label class="block text-[11px] text-slate-400 mb-1">RIF Imprenta</label><input type="text" id="perfilImprentaRif" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono text-xs" placeholder="J-00000000-0"></div>
+          <div><label class="block text-[11px] text-slate-400 mb-1">N° Providencia SENIAT</label><input type="text" id="perfilImprentaProvidencia" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono text-xs" placeholder="SNAT/2024/000000"></div>
+          <div><label class="block text-[11px] text-slate-400 mb-1">Rango de Control Asignado</label><input type="text" id="perfilImprentaRango" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white font-mono text-xs" placeholder="00-00000001 al 00-00099999"></div>
+        </div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button onclick="guardarCambiosPerfil()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-sm">Guardar Cambios</button>
+        <button onclick="cerrarModalPerfil()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-sm">Cerrar</button>
+      </div>
     </div>
   </div>
 

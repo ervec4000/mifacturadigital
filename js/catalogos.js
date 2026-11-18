@@ -308,6 +308,12 @@ async function guardarProducto() {
   }
 
   const precioVenta = parseFloat(document.getElementById('prodPrecioVenta').value) || 0;
+  if (precioVenta <= 0) {
+    avisarUsuario('Ningún material puede guardarse sin Precio de Venta mayor a 0.', 'warning', 7000);
+    const inputPv = document.getElementById('prodPrecioVenta');
+    if (inputPv) inputPv.focus();
+    return;
+  }
 
   const payload = {
     tenant_id: tenantId,
@@ -846,7 +852,7 @@ async function cargarLotesGestion() {
 
   const { data, error } = await supabaseClient
     .from('inventario_lotes')
-    .select('*, productos(descripcion, codigo_sku)')
+    .select('*, productos(descripcion, codigo_sku, unidad_medida), almacenes(id, nombre, tipo, sucursales(nombre))')
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false });
 
@@ -854,7 +860,7 @@ async function cargarLotesGestion() {
   if (error) {
     const msg = explicarErrorSupabase('inventario_lotes', 'consultar', error);
     avisarUsuario(msg, 'error', 8000);
-    if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-400">${esc(msg)}</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-rose-400">${esc(msg)}</td></tr>`;
     return;
   }
   lotesGestionCache = data || [];
@@ -863,22 +869,41 @@ async function cargarLotesGestion() {
   tbody.innerHTML = '';
 
   if (lotesGestionCache.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">No hay lotes registrados.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">No hay lotes registrados.</td></tr>`;
     return;
   }
+
+  const hoyMs = new Date().setHours(0, 0, 0, 0);
 
   lotesGestionCache.forEach(l => {
     const prodNombre = l.productos?.descripcion || 'N/A';
     const prodSku = l.productos?.codigo_sku || 'S/N';
+    const prodUni = l.productos?.unidad_medida || '';
+    const sucNombre = l.almacenes?.sucursales?.nombre || 'General';
+    const almNombre = l.almacenes?.nombre || 'Sin Almacén';
     const st = l.stock ?? 0;
-    const fVenc = l.fecha_vencimiento || 'N/A';
+    const fVenc = l.fecha_vencimiento || '';
+
+    let badgeVenc = `<span class="text-slate-500">Sin venc.</span>`;
+    if (fVenc) {
+      const diffDias = Math.ceil((new Date(fVenc + 'T00:00:00').getTime() - hoyMs) / 86400000);
+      if (diffDias < 0) {
+        badgeVenc = `<span class="px-2 py-0.5 rounded text-[10px] bg-rose-950 text-rose-300 font-bold">${esc(fVenc)} (VENCIDO)</span>`;
+      } else if (diffDias <= 30) {
+        badgeVenc = `<span class="px-2 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300 font-bold">${esc(fVenc)} (${diffDias}d)</span>`;
+      } else {
+        badgeVenc = `<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950/70 text-emerald-300">${esc(fVenc)}</span>`;
+      }
+    }
+
     tbody.innerHTML += `
       <tr class="hover:bg-slate-900 border-b border-slate-800/60">
         <td class="p-3 font-mono text-emerald-400 font-bold">${esc(l.numero_lote)}</td>
         <td class="p-3 text-white font-medium">${esc(prodSku)} - ${esc(prodNombre)}</td>
+        <td class="p-3 text-slate-300"><span class="text-slate-400">${esc(sucNombre)}</span> → <span class="text-sky-300 font-semibold">${esc(almNombre)}</span></td>
         <td class="p-3 font-mono text-slate-300">${esc(l.ubicacion || 'N/A')}</td>
-        <td class="p-3 font-mono text-center font-bold text-amber-300">${st}</td>
-        <td class="p-3 font-mono text-slate-400">${esc(fVenc)}</td>
+        <td class="p-3 font-mono text-center font-bold text-amber-300">${st} ${esc(prodUni)}</td>
+        <td class="p-3 font-mono">${badgeVenc}</td>
         <td class="p-3 text-center space-x-2">
           <button onclick='editarLote("${esc(l.id)}")' class="text-sky-400 hover:underline font-semibold cursor-pointer">Editar</button>
           <button onclick='eliminarLote("${esc(l.id)}")' class="text-rose-400 hover:underline font-semibold cursor-pointer">Eliminar</button>
@@ -977,14 +1002,19 @@ async function eliminarLote(id) {
 async function exportarLotesExcel() {
   const tenantId = obtenerTenantIdActual();
   if (!tenantId) return;
-  const { data, error } = await supabaseClient.from('inventario_lotes').select('*, productos(descripcion, codigo_sku)').eq('tenant_id', tenantId);
+  const { data, error } = await supabaseClient
+    .from('inventario_lotes')
+    .select('*, productos(descripcion, codigo_sku), almacenes(nombre, sucursales(nombre))')
+    .eq('tenant_id', tenantId);
   if (error) { avisarUsuario(explicarErrorSupabase('inventario_lotes', 'exportar', error), 'error'); return; }
   if (!data || data.length === 0) { avisarUsuario('Sin lotes para exportar.', 'warning'); return; }
 
   const excelData = data.map(l => ({
     Lote: l.numero_lote,
     SKU: l.productos?.codigo_sku || 'N/A',
-    Producto: l.productos?.descripcion || 'N/A',
+    Material: l.productos?.descripcion || 'N/A',
+    Sucursal: l.almacenes?.sucursales?.nombre || 'General',
+    Almacén: l.almacenes?.nombre || 'Sin Almacén',
     Ubicación: l.ubicacion || '',
     Stock: l.stock ?? 0,
     'Fecha Vencimiento': l.fecha_vencimiento || 'N/A'
@@ -1842,19 +1872,7 @@ document.addEventListener('click', (e) => {
   }
 });
 
-async function cargarProveedoresSelectCompra() {
-  const tenantId = obtenerTenantIdActual();
-  if (!tenantId) return;
-  const { data } = await supabaseClient.from('proveedores').select('*').eq('tenant_id', tenantId);
-  const select = document.getElementById('compraProveedorSelect');
-  if (!select) return;
-  select.innerHTML = '<option value="">-- Seleccionar Proveedor --</option>';
-  if (data && data.length > 0) {
-    data.forEach(p => {
-      select.innerHTML += `<option value="${esc(p.id)}">${esc(p.razon_social)} (${esc(p.rif)})</option>`;
-    });
-  }
-}
+// Nota: cargarProveedoresSelectCompra() vive en /js/kardex.js junto a la caché del módulo de Compras.
 
 async function cargarSucursalesSelectAlmacen() {
   const tenantId = obtenerTenantIdActual();
@@ -1873,13 +1891,14 @@ async function cargarSucursalesSelectAlmacen() {
 async function cargarAlmacenesSelectLote() {
   const tenantId = obtenerTenantIdActual();
   if (!tenantId) return;
-  const { data } = await supabaseClient.from('almacenes').select('*').eq('tenant_id', tenantId);
+  const { data } = await supabaseClient.from('almacenes').select('*, sucursales(nombre)').eq('tenant_id', tenantId);
   const select = document.getElementById('loteAlmacenSelect');
   if (!select) return;
   select.innerHTML = '<option value="">-- Almacén Principal --</option>';
   if (data && data.length > 0) {
     data.forEach(a => {
-      select.innerHTML += `<option value="${esc(a.id)}">${esc(a.nombre)} (${esc(a.tipo || 'PRINCIPAL')})</option>`;
+      const sucNom = a.sucursales?.nombre ? `[${a.sucursales.nombre}] ` : '';
+      select.innerHTML += `<option value="${esc(a.id)}">${esc(sucNom)}${esc(a.nombre)} (${esc(a.tipo || 'PRINCIPAL')})</option>`;
     });
   }
 }

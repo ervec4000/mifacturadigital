@@ -137,7 +137,13 @@ function cambiarPestana(pestana) {
     if (dHasta) dHasta.value = hoy;
     generarReporteZ();
   }
-  if (pestana === 'compras') { cargarProductosSelectCompra(); cargarProveedoresSelectCompra(); }
+  if (pestana === 'compras') {
+    if (typeof inicializarModuloCompras === 'function') inicializarModuloCompras();
+    else {
+      if (typeof cargarProductosSelectCompra === 'function') cargarProductosSelectCompra();
+      if (typeof cargarProveedoresSelectCompra === 'function') cargarProveedoresSelectCompra();
+    }
+  }
   if (pestana === 'proveedores' && typeof cargarProveedoresGestion === 'function') cargarProveedoresGestion();
   if (pestana === 'retenciones') cargarRetenciones();
   if (pestana === 'kardex') cargarKardexMovimientos();
@@ -170,9 +176,14 @@ function cambiarPestana(pestana) {
   if (pestana === 'referidos' && typeof cargarDatosReferidos === 'function') cargarDatosReferidos();
   if (pestana === 'inquilinosMaster' && typeof cargarInquilinosMaster === 'function') cargarInquilinosMaster();
   if (pestana === 'pos') {
-    if (typeof cargarProductosSelect === 'function') cargarProductosSelect();
-    if (typeof cargarClientesSelect === 'function') cargarClientesSelect();
-    if (typeof cargarViasPagoSelectPos === 'function') cargarViasPagoSelectPos();
+    if (typeof inicializarModuloPos === 'function') {
+      inicializarModuloPos();
+    } else {
+      if (typeof cargarProductosSelect === 'function') cargarProductosSelect();
+      if (typeof cargarClientesSelect === 'function') cargarClientesSelect();
+      if (typeof cargarViasPagoSelectPos === 'function') cargarViasPagoSelectPos();
+      if (typeof cargarSucursalesYAlmacenesPos === 'function') cargarSucursalesYAlmacenesPos();
+    }
   }
 }
 
@@ -183,6 +194,21 @@ function abrirModalPerfil() {
   document.getElementById('perfilRif').value = tenantActual.rif || '';
   document.getElementById('perfilTelefono').value = tenantActual.telefono || '';
   document.getElementById('perfilDireccion').value = tenantActual.direccion || '';
+
+  let imprenta = {};
+  try {
+    imprenta = JSON.parse(localStorage.getItem(`imprenta_seniat_${tenantActual.id}`) || '{}');
+  } catch (e) {}
+
+  const elImpNom = document.getElementById('perfilImprentaNombre');
+  const elImpRif = document.getElementById('perfilImprentaRif');
+  const elImpProv = document.getElementById('perfilImprentaProvidencia');
+  const elImpRan = document.getElementById('perfilImprentaRango');
+  if (elImpNom) elImpNom.value = imprenta.nombre || '';
+  if (elImpRif) elImpRif.value = imprenta.rif || '';
+  if (elImpProv) elImpProv.value = imprenta.providencia || '';
+  if (elImpRan) elImpRan.value = imprenta.rango || '';
+
   document.getElementById('modalPerfilUsuario').classList.remove('hidden');
 }
 
@@ -199,9 +225,23 @@ async function guardarCambiosPerfil() {
   };
   const { error } = await supabaseClient.from('tenants').update(payload).eq('id', tenantActual.id);
   if (error) { avisarAuth('Error al actualizar perfil: ' + error.message, 'error'); return; }
+
+  const impNombre = (document.getElementById('perfilImprentaNombre')?.value || '').trim();
+  const impRif = (document.getElementById('perfilImprentaRif')?.value || '').trim();
+  const impProv = (document.getElementById('perfilImprentaProvidencia')?.value || '').trim();
+  const impRango = (document.getElementById('perfilImprentaRango')?.value || '').trim();
+  if (impNombre || impRif || impProv || impRango) {
+    localStorage.setItem(`imprenta_seniat_${tenantActual.id}`, JSON.stringify({
+      nombre: impNombre || 'IMPRENTA DIGITAL AUTORIZADA',
+      rif: impRif || 'J-00000000-0',
+      providencia: impProv || 'SNAT/2024/000102',
+      rango: impRango || '00-00000001 al 00-00099999'
+    }));
+  }
+
   tenantActual = {...tenantActual, ...payload};
   localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
-  avisarAuth('¡Perfil actualizado con éxito!', 'success');
+  avisarAuth('¡Perfil fiscal e Imprenta Digital actualizados con éxito!', 'success');
   cerrarModalPerfil();
   activarVistaPrincipal();
 }
