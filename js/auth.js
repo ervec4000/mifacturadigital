@@ -112,20 +112,102 @@ function cerrarSesion() {
   if (chatW) chatW.classList.remove('hidden');
 }
 
+let sidebarColapsado = false;
+
+function toggleSidebarColapso() {
+  sidebarColapsado = !sidebarColapsado;
+  const sidebar = document.getElementById('sidebarErp');
+  if (!sidebar) return;
+
+  if (sidebarColapsado) {
+    sidebar.classList.remove('lg:w-64');
+    sidebar.classList.add('lg:w-16');
+  } else {
+    sidebar.classList.remove('lg:w-16');
+    sidebar.classList.add('lg:w-64');
+  }
+
+  document.querySelectorAll('.sidebar-label').forEach(el => {
+    if (sidebarColapsado) el.classList.add('lg:hidden'); else el.classList.remove('lg:hidden');
+  });
+  document.querySelectorAll('.sidebar-section-title').forEach(el => {
+    if (sidebarColapsado) el.classList.add('lg:hidden'); else el.classList.remove('lg:hidden');
+  });
+}
+
+function toggleSidebarMovil(forzarCerrar = false) {
+  const sidebar = document.getElementById('sidebarErp');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  if (!sidebar) return;
+
+  const estaAbierto = !sidebar.classList.contains('-translate-x-full');
+  const abrir = forzarCerrar ? false : !estaAbierto;
+
+  if (abrir) {
+    sidebar.classList.remove('-translate-x-full');
+    if (backdrop) backdrop.classList.remove('hidden');
+  } else {
+    sidebar.classList.add('-translate-x-full');
+    if (backdrop) backdrop.classList.add('hidden');
+  }
+}
+
+const TITULOS_MODULOS_ERP = {
+  pos: 'POS y Facturación / Ventas POS (POS-001 · POS-009)',
+  historial: 'Historial y Cierres / Comprobantes SENIAT (SEN-001 · SEN-006)',
+  notasFiscales: 'Historial y Cierres / Notas de Crédito y Débito (SEN-004 · SEN-005)',
+  cierrez: 'Historial y Cierres / Reporte Z y Libros Oficiales (CIE-001 · CIE-003)',
+  cuentas: 'Historial y Cierres / Cuentas por Cobrar y Alertas (CIE-005 · CAT-007)',
+  kardex: 'Inventario y Kardex / Trazabilidad Kardex PPM (INV-001)',
+  fisico: 'Inventario y Kardex / Conteo Físico y Conciliación (INV-002 · INV-008)',
+  transferencias: 'Inventario y Kardex / Transferencias entre Depósitos (INV-009)',
+  lotes: 'Inventario y Kardex / Lotes y Vencimientos',
+  etiquetas: 'Inventario y Kardex / Etiquetas QR Tamaño Carta (CAT-004)',
+  compras: 'Compras y Tributos / Registro de Compras y PPM (COM-001 · COM-003)',
+  retenciones: 'Compras y Tributos / Retenciones IVA SENIAT (IMP-001 · IMP-002)',
+  productos: 'Catálogos y Maestros / Gestión de Artículos (CAT-001 · CAT-003)',
+  clientes: 'Catálogos y Maestros / Maestro de Clientes (CAT-006)',
+  proveedores: 'Catálogos y Maestros / Maestro de Proveedores',
+  sucursales: 'Catálogos y Maestros / Sucursales',
+  almacenes: 'Catálogos y Maestros / Almacenes y Depósitos',
+  unidades: 'Catálogos y Maestros / Unidades de Medida (CAT-005)',
+  tiposIva: 'Catálogos y Maestros / Alícuotas e IVA',
+  viasPago: 'Catálogos y Maestros / Vías y Métodos de Pago',
+  referidos: 'Catálogos y Maestros / Programa de Afiliados',
+  inquilinosMaster: 'Catálogos y Maestros / Panel Master Multitenant SaaS (MAS-001)'
+};
+
 function cambiarPestana(pestana) {
-  const tabs = ['pos', 'historial', 'notasFiscales', 'cierrez', 'compras', 'proveedores', 'retenciones', 'kardex', 'fisico', 'sucursales', 'almacenes', 'lotes', 'etiquetas', 'cuentas', 'unidades', 'tiposIva', 'viasPago', 'productos', 'clientes', 'referidos', 'inquilinosMaster'];
+  const tabs = [
+    'pos', 'historial', 'notasFiscales', 'cierrez', 'cuentas',
+    'kardex', 'fisico', 'transferencias', 'lotes', 'etiquetas',
+    'compras', 'retenciones',
+    'productos', 'clientes', 'proveedores', 'sucursales', 'almacenes',
+    'unidades', 'tiposIva', 'viasPago', 'referidos', 'inquilinosMaster'
+  ];
+
   tabs.forEach(t => {
     const btn = document.getElementById('btnTab' + t.charAt(0).toUpperCase() + t.slice(1));
     const sec = document.getElementById('seccion' + t.charAt(0).toUpperCase() + t.slice(1));
-    if (!btn || !sec) return;
-    if (t === pestana) {
-      btn.className = "bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer shadow-md flex items-center gap-1.5";
-      sec.classList.remove('hidden');
-    } else {
-      btn.className = "bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs transition cursor-pointer flex items-center gap-1.5";
-      sec.classList.add('hidden');
+    if (sec) {
+      if (t === pestana) sec.classList.remove('hidden');
+      else sec.classList.add('hidden');
+    }
+    if (btn) {
+      if (t === pestana) {
+        btn.classList.add('bg-emerald-500/10', 'text-emerald-400', 'border-emerald-500/30');
+        btn.classList.remove('text-slate-400', 'border-transparent', 'hover:bg-slate-900', 'hover:text-slate-200');
+      } else {
+        btn.classList.remove('bg-emerald-500/10', 'text-emerald-400', 'border-emerald-500/30');
+        btn.classList.add('text-slate-400', 'border-transparent', 'hover:bg-slate-900', 'hover:text-slate-200');
+      }
     }
   });
+
+  const elTitulo = document.getElementById('headerSeccionActual');
+  if (elTitulo) elTitulo.textContent = TITULOS_MODULOS_ERP[pestana] || 'Panel ERP';
+
+  toggleSidebarMovil(true);
 
   if (pestana === 'historial') cargarHistorial();
   if (pestana === 'notasFiscales') cargarFacturasAfectadasSelect();
@@ -151,6 +233,9 @@ function cambiarPestana(pestana) {
     const fFisico = document.getElementById('fisicoFecha');
     if (fFisico) fFisico.value = new Date().toISOString().slice(0,10);
     cargarInventarioFisico();
+  }
+  if (pestana === 'transferencias' && typeof inicializarTransferenciasDeposito === 'function') {
+    inicializarTransferenciasDeposito();
   }
   if (pestana === 'sucursales' && typeof cargarSucursalesGestion === 'function') cargarSucursalesGestion();
   if (pestana === 'almacenes') {

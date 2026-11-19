@@ -722,3 +722,240 @@ async function cargarKardexMovimientos() {
     `;
   });
 }
+
+// ==========================================
+// INV-009: TRANSFERENCIAS ENTRE DEPÓSITOS
+// ==========================================
+
+async function inicializarTransferenciasDeposito() {
+  const tenantId = obtenerTenantKardex();
+  if (!tenantId) return;
+
+  const [resProd, resAlm, resLotes] = await Promise.all([
+    supabaseClient.from('productos').select('*').eq('tenant_id', tenantId).order('descripcion', { ascending: true }),
+    supabaseClient.from('almacenes').select('*, sucursales(nombre)').eq('tenant_id', tenantId).order('nombre', { ascending: true }),
+    supabaseClient.from('inventario_lotes').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false })
+  ]);
+
+  compraProductosCache = resProd.data || [];
+  compraAlmacenesCache = resAlm.data || [];
+  compraLotesCache = resLotes.data || [];
+
+  const selProd = document.getElementById('transfProductoSelect');
+  if (selProd) {
+    selProd.innerHTML = '<option value="">-- Seleccionar Artículo --</option>';
+    compraProductosCache.forEach(p => {
+      selProd.innerHTML += `<option value="${esc(p.id)}">[${esc(p.codigo_sku || 'S/N')}] ${esc(p.descripcion)} (Stock Global: ${p.stock ?? 0})</option>`;
+    });
+  }
+
+  const llenarSelectAlm = (selId) => {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    sel.innerHTML = '<option value="">-- Seleccionar Depósito / Almacén --</option>';
+    compraAlmacenesCache.forEach(a => {
+      const suc = a.sucursales?.nombre ? `${a.sucursales.nombre} → ` : '';
+      sel.innerHTML += `<option value="${esc(a.id)}">${esc(suc)}${esc(a.nombre)} (${esc(a.tipo || 'PRINCIPAL')})</option>`;
+    });
+  };
+  llenarSelectAlm('transfOrigenAlmacenSelect');
+  llenarSelectAlm('transfDestinoAlmacenSelect');
+
+  cargarLotesOrigenTransferencia();
+  await cargarHistorialTransferencias();
+}
+
+function cargarLotesOrigenTransferencia() {
+  const prodId = document.getElementById('transfProductoSelect')?.value || '';
+  const origenId = document.getElementById('transfOrigenAlmacenSelect')?.value || '';
+  const selLote = document.getElementById('transfLoteSelect');
+  if (!selLote) return;
+
+  const disponibles = compraLotesCache.filter(l => {
+    const matchProd = !prodId || String(l.producto_id) === String(prodId);
+    const matchAlm = !origenId || String(l.almacen_id || '') === String(origenId);
+    return matchProd && matchAlm && Number(l.stock || 0) > 0;
+  });
+
+  selLote.innerHTML = '<option value="">-- Lote Disponible (Opcional / General) --</option>';
+  disponibles.forEach(l => {
+    const alm = compraAlmacenesCache.find(a => String(a.id) === String(l.almacen_id));
+    const almTxt = alm ? `${alm.nombre} | ` : '';
+    selLote.innerHTML += `<option value="${esc(l.id)}">${esc(almTxt)}Lote: ${esc(l.numero_lote)} (Disp: ${l.stock ?? 0})</option>`;
+  });
+}
+
+async function registrarTransferenciaDeposito() {
+  const tenantId = obtenerTenantKardex();
+  if (!tenantId) return;
+
+  const prodId = document.getElementById('transfProductoSelect')?.value || '';
+  const origenId = document.getElementById('transfOrigenAlmacenSelect')?.value || '';
+  const destinoId = document.getElementById('transfDestinoAlmacenSelect')?.value || '';
+  const loteId = document.getElementById('transfLoteSelect')?.value || '';
+  const cantidad = parseFloat(document.getElementById('transfCantidad')?.value) || 0;
+  const nota = (document.getElementById('transfNota')?.value || '').trim();
+
+  if (!prodId) { avisarKardex('Selecciona el artículo a transferir.', 'warning'); return; }
+  if (!origenId || !destinoId) { avisarKardex('Selecciona el depósito de origen y el de destino.', 'warning'); return; }
+  if (String(origenId) === String(destinoId)) { avisarKardex('El depósito de origen y destino deben ser diferentes.', 'warning'); return; }
+  if (cantidad <= 0) { avisarKardex('La cantidad a transferir debe ser mayor a 0.', 'warning'); return; }
+
+  const prod = compraProductosCache.find(p => String(p.id) === String(prodId));
+  const almOrig = compraAlmacenesCache.find(a => String(a.id) === String(origenId));
+  const almDest = compraAlmacenesCache.find(a => String(a.id) === String(destinoId));
+  const loteOrig = loteId ? compraLotesCache.find(l => String(l.id) === String(loteId)) : null;
+
+  if (loteOrig && Number(loteOrig.stock || 0) < cantidad) {
+    avisarKardex(`Stock insuficiente en el lote "${loteOrig.numero_lote}" (Disponible: ${loteOrig.stock}).`, 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btnEjecutarTransferencia');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Procesando...';
+  }
+
+  try {
+    const nroTransf = 'TRANSF-' + String(Math.floor(1000 + Math.random() * 9000));
+    const nroLoteTxt = loteOrig?.numero_lote || prod?.lote || 'GENERAL';
+    const origNombre = almOrig ? `${almOrig.sucursales?.nombre ? almOrig.sucursales.nombre + '/' : ''}${almOrig.nombre}` : 'ORIGEN';
+    const destNombre = almDest ? `${almDest.sucursales?.nombre ? almDest.sucursales.nombre + '/' : ''}${almDest.nombre}` : 'DESTINO';
+
+    // 1. Mover lote si existe o crear lote en destino
+    if (loteOrig) {
+      await supabaseClient
+        .from('inventario_lotes')
+        .update({ stock: Math.max(0, Number(loteOrig.stock || 0) - cantidad), updated_at: new Date().toISOString() })
+        .eq('id', loteOrig.id)
+        .eq('tenant_id', tenantId);
+    }
+
+    const { data: loteDestMatch } = await supabaseClient
+      .from('inventario_lotes')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('producto_id', prodId)
+      .eq('almacen_id', destinoId)
+      .eq('numero_lote', nroLoteTxt);
+
+    if (loteDestMatch && loteDestMatch.length > 0) {
+      const ld = loteDestMatch[0];
+      await supabaseClient
+        .from('inventario_lotes')
+        .update({ stock: Number(ld.stock || 0) + cantidad, updated_at: new Date().toISOString() })
+        .eq('id', ld.id)
+        .eq('tenant_id', tenantId);
+    } else {
+      await supabaseClient
+        .from('inventario_lotes')
+        .insert([{
+          tenant_id: tenantId,
+          producto_id: prodId,
+          almacen_id: destinoId,
+          numero_lote: nroLoteTxt,
+          stock: cantidad,
+          ubicacion: loteOrig?.ubicacion || prod?.ubicacion || '',
+          fecha_vencimiento: loteOrig?.fecha_vencimiento || null,
+          updated_at: new Date().toISOString()
+        }]);
+    }
+
+    // 2. Registrar trazabilidad en kardex_movimientos (Saldo global no cambia, queda registrado origen -> destino)
+    const stockGlobal = Number(prod?.stock || 0);
+    const costo = Number(prod?.costo_unitario_usd || 0);
+    const tasa = parseFloat(document.getElementById('tasaBcv')?.value) || 1;
+    const fechaHoy = new Date().toISOString().slice(0, 10);
+    const refStr = `${nroTransf} | ${origNombre} -> ${destNombre} | LOTE:${nroLoteTxt}${nota ? ' | ' + nota : ''}`;
+
+    const { error: errK } = await supabaseClient.from('kardex_movimientos').insert([
+      {
+        tenant_id: tenantId,
+        producto_id: prodId,
+        tipo_movimiento: 'SALIDA',
+        documento_ref: refStr,
+        cantidad_in: 0,
+        cantidad_out: cantidad,
+        saldo_cantidad: Math.max(0, stockGlobal - cantidad),
+        costo_promedio_usd: costo,
+        tasa_bcv: tasa,
+        fecha: fechaHoy
+      },
+      {
+        tenant_id: tenantId,
+        producto_id: prodId,
+        tipo_movimiento: 'ENTRADA',
+        documento_ref: refStr,
+        cantidad_in: cantidad,
+        cantidad_out: 0,
+        saldo_cantidad: stockGlobal,
+        costo_promedio_usd: costo,
+        tasa_bcv: tasa,
+        fecha: fechaHoy
+      }
+    ]);
+
+    if (errK) {
+      avisarKardex(`Transferencia de lotes aplicada, pero Kardex reportó: ${errK.message}`, 'warning', 8000);
+    } else {
+      avisarKardex(`Transferencia ${nroTransf} ejecutada (${cantidad} uds de ${origNombre} a ${destNombre}).`, 'success', 6500);
+    }
+
+    const elNota = document.getElementById('transfNota');
+    if (elNota) elNota.value = '';
+    await inicializarTransferenciasDeposito();
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Registrar Transferencia';
+    }
+  }
+}
+
+async function cargarHistorialTransferencias() {
+  const tenantId = obtenerTenantKardex();
+  if (!tenantId) return;
+  const tbody = document.getElementById('tablaTransferencias');
+  if (!tbody) return;
+
+  const { data, error } = await supabaseClient
+    .from('kardex_movimientos')
+    .select('*')
+    .eq('tenant_id', tenantId)
+    .ilike('documento_ref', 'TRANSF-%')
+    .order('created_at', { ascending: false })
+    .limit(40);
+
+  tbody.innerHTML = '';
+  if (error) {
+    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-rose-400">${esc(error.message)}</td></tr>`;
+    return;
+  }
+
+  const soloSalidas = (data || []).filter(m => m.tipo_movimiento === 'SALIDA');
+  if (soloSalidas.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Sin transferencias entre depósitos registradas.</td></tr>`;
+    return;
+  }
+
+  soloSalidas.forEach(m => {
+    const prod = compraProductosCache.find(p => String(p.id) === String(m.producto_id));
+    const nom = prod ? `[${prod.codigo_sku || 'S/N'}] ${prod.descripcion}` : 'Artículo';
+    const partes = String(m.documento_ref || '').split('|').map(s => s.trim());
+    const docNro = partes[0] || 'TRANSF';
+    const ruta = partes[1] || 'Origen -> Destino';
+    const detalle = partes.slice(2).join(' · ') || '-';
+
+    tbody.innerHTML += `
+      <tr class="hover:bg-slate-900 border-b border-slate-800/40">
+        <td class="p-3 font-mono font-bold text-emerald-400 tabular-nums">${esc(docNro)}</td>
+        <td class="p-3 font-mono text-slate-400 tabular-nums">${esc(m.fecha || formatearFecha8Digitos(m.created_at))}</td>
+        <td class="p-3 text-white font-medium">${esc(nom)}</td>
+        <td class="p-3 text-slate-300">${esc(ruta)} <span class="text-slate-500 text-[11px]">${esc(detalle)}</span></td>
+        <td class="p-3 text-center font-mono font-bold text-emerald-400 tabular-nums">${m.cantidad_out || 0}</td>
+      </tr>
+    `;
+  });
+}
+

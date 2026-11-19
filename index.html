@@ -4,20 +4,40 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MiFacturaDigital.com.ve - Sistema Fiscal Integrado SENIAT Enterprise 2026</title>
-  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <!-- Librerías Externas -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  
+
   <style>
     @media print {
+      @page { size: letter portrait; margin: 10mm; }
       body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; }
       body * { visibility: hidden; }
-      #seccionFisico, #seccionFisico *, #modalTicket, #modalTicket * { visibility: visible; }
-      #seccionFisico { position: absolute; left: 0; top: 0; width: 100%; background: white; color: black; }
+      #seccionFisico, #seccionFisico *,
+      #seccionEtiquetas, #seccionEtiquetas *,
+      #modalTicket, #modalTicket * { visibility: visible; }
+      #seccionFisico, #seccionEtiquetas {
+        position: absolute; left: 0; top: 0; width: 100%; background: white !important; color: black !important;
+      }
       #modalTicket {
         position: static !important;
         inset: auto !important;
@@ -41,39 +61,37 @@
       .no-print { display: none !important; }
     }
     .tech-pattern {
-      background-image: radial-gradient(rgba(16, 185, 129, 0.12) 1px, transparent 1px);
+      background-image: radial-gradient(rgba(16, 185, 129, 0.08) 1px, transparent 1px);
       background-size: 28px 28px;
     }
-    @keyframes pulse-slow {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.06); }
-    }
-    .whatsapp-pulse { animation: pulse-slow 3s infinite; }
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(15px); }
+      from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .animate-fade-in { animation: fadeIn 0.6s ease-out forwards; }
+    .animate-fade-in { animation: fadeIn 0.45s ease-out forwards; }
+    .custom-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 9999px; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col justify-between font-sans tech-pattern relative">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
 
   <!-- VISTA LANDING -->
-  <div id="vistaLanding" class="w-full"></div>
+  <div id="vistaLanding" class="w-full tech-pattern"></div>
 
   <!-- VISTA LOGIN -->
-  <div id="vistaLogin" class="hidden w-full max-w-7xl mx-auto px-4 py-12 flex flex-col justify-center space-y-16 animate-fade-in">
+  <div id="vistaLogin" class="hidden w-full max-w-7xl mx-auto px-4 py-12 flex flex-col justify-center space-y-16 animate-fade-in tech-pattern min-h-screen">
     <header class="flex justify-between items-center border-b border-slate-900 pb-6">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400 font-mono font-bold text-base">⚡</div>
+        <div class="w-10 h-10 rounded-xl bg-emerald-600/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-mono font-bold text-base">MF</div>
         <div>
-          <span class="font-extrabold tracking-wider text-white text-base">MiFacturaDigital<span class="text-emerald-400">.com.ve</span></span>
-          <p class="text-[10px] text-slate-400 font-mono uppercase tracking-widest">Enterprise Cloud 2026</p>
+          <span class="font-extrabold tracking-tight text-white text-base">MiFacturaDigital<span class="text-emerald-400">.com.ve</span></span>
+          <p class="text-[11px] text-slate-400 font-mono uppercase tracking-wider">Enterprise Cloud 2026</p>
         </div>
       </div>
       <div class="flex items-center gap-2">
-        <button onclick="mostrarVistaLanding()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-4 py-2 rounded-xl font-semibold transition cursor-pointer">← Inicio</button>
-        <button onclick="abrirModalRegistroDemo()" class="bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 text-xs px-4 py-2 rounded-xl font-semibold transition cursor-pointer">✨ Solicitar Demo</button>
+        <button onclick="mostrarVistaLanding()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-4 py-2 rounded-xl font-semibold transition cursor-pointer whitespace-nowrap">← Inicio</button>
+        <button onclick="abrirModalRegistroDemo()" class="bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 border border-emerald-500/30 text-xs px-4 py-2 rounded-xl font-semibold transition cursor-pointer whitespace-nowrap">Solicitar Demo</button>
       </div>
     </header>
 
@@ -83,22 +101,22 @@
           Facturación Digital Rápida y <span class="text-emerald-400 underline">Estructurada</span>
         </h1>
         <p class="text-slate-400 text-sm lg:text-base max-w-xl mx-auto lg:mx-0 leading-relaxed">
-          Plataforma en la nube para comercios y supermercados en Venezuela con control fiscal SENIAT, POS, Kardex PPM e inventario QR.
+          Plataforma en la nube para comercios y empresas en Venezuela con control fiscal SENIAT, POS, Kardex PPM e inventario QR.
         </p>
       </div>
 
-      <div class="lg:col-span-5 bg-slate-900/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border border-slate-800 space-y-6">
-        <h2 class="text-xl font-bold text-white tracking-wide">Acceso al Sistema</h2>
+      <div class="lg:col-span-5 bg-slate-900 rounded-2xl shadow-2xl p-8 border border-slate-800 space-y-6">
+        <h2 class="text-xl font-bold text-white tracking-tight">Acceso al Sistema</h2>
         <div class="space-y-4">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico (Tenant)</label>
-            <input type="email" id="loginEmail" placeholder="prueba@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono focus:border-emerald-500">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Correo Electrónico (Tenant)</label>
+            <input type="email" id="loginEmail" placeholder="prueba@gmail.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono focus:border-emerald-500 focus:outline-none">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Contraseña</label>
-            <input type="password" id="loginPassword" placeholder="••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono focus:border-emerald-500">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Contraseña</label>
+            <input type="password" id="loginPassword" placeholder="••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono focus:border-emerald-500 focus:outline-none">
           </div>
-          <button onclick="iniciarSesionTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-xl transition cursor-pointer text-sm shadow-xl">
+          <button onclick="iniciarSesionTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-xl transition cursor-pointer text-sm">
             Iniciar Sesión en MiFacturaDigital
           </button>
         </div>
@@ -106,85 +124,215 @@
     </div>
   </div>
 
-  <!-- CHAT FLOTANTE WHATSAPP -->
+  <!-- CHAT FLOTANTE WHATSAPP (SOLO LANDING / LOGIN) -->
   <div id="chatFlotanteWhatsapp" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 no-print">
-    <a href="https://api.whatsapp.com/send?text=Hola,%20necesito%20soporte." target="_blank" class="whatsapp-pulse bg-emerald-600 hover:bg-emerald-500 text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center text-2xl border-2 border-emerald-400">💬</a>
+    <a href="https://api.whatsapp.com/send?text=Hola,%20necesito%20soporte." target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white w-12 h-12 rounded-full shadow-2xl flex items-center justify-center text-xl border border-emerald-400/50 transition">💬</a>
   </div>
 
-  <!-- VISTA PRINCIPAL (POST-LOGIN) -->
-  <div id="vistaPrincipal" class="hidden w-full max-w-7xl mx-auto bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 my-6 flex flex-col min-h-[90vh]">
-    <header class="bg-slate-950 border-b border-slate-800 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 rounded-t-2xl">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500 flex items-center justify-center text-emerald-400 font-mono font-bold text-sm">⚡</div>
-        <div>
-          <h1 class="text-base font-bold text-white flex items-center gap-2">
-            <span id="headerTenantNombre">Comercio Activo</span>
-            <span id="headerTenantPlan" class="text-[10px] bg-emerald-900/50 border border-emerald-700 text-emerald-300 px-2 py-0.5 rounded font-mono uppercase">Freemium</span>
-          </h1>
-          <p class="text-xs text-slate-400 font-mono">RIF: <span id="headerTenantRif">J-00000000-0</span> | Rol: <span id="headerTenantRol" class="text-amber-400 font-bold uppercase">--</span></p>
+  <!-- ========================================================= -->
+  <!-- VISTA PRINCIPAL ERP (POST-LOGIN): SIDEBAR + HEADER LIMPIO -->
+  <!-- ========================================================= -->
+  <div id="vistaPrincipal" class="hidden min-h-screen flex bg-slate-950 text-slate-100">
+    <!-- Backdrop Móvil -->
+    <div id="sidebarBackdrop" onclick="toggleSidebarMovil(true)" class="hidden fixed inset-0 bg-black/70 z-30 lg:hidden no-print"></div>
+
+    <!-- SIDEBAR COLAPSABLE -->
+    <aside id="sidebarErp" class="fixed lg:sticky top-0 left-0 z-40 h-screen w-64 lg:w-64 shrink-0 bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-200 -translate-x-full lg:translate-x-0 no-print">
+      <!-- Brand / Collapse -->
+      <div class="h-16 px-4 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-mono font-bold text-xs shrink-0">MF</div>
+          <div class="sidebar-label min-w-0">
+            <span class="block text-sm font-bold text-white tracking-tight truncate">MiFactura<span class="text-emerald-400">Digital</span></span>
+            <span class="block text-[10px] font-mono text-slate-400 uppercase tracking-wider truncate">ERP Fiscal SENIAT</span>
+          </div>
         </div>
+        <button type="button" onclick="toggleSidebarColapso()" title="Colapsar / Expandir menú" class="hidden lg:inline-flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer shrink-0">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h10"/></svg>
+        </button>
       </div>
-      <div class="flex items-center gap-3">
-        <button onclick="abrirModalPerfil()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg">⚙️ Perfil</button>
-        <button onclick="cerrarSesion()" class="bg-rose-950/50 hover:bg-rose-900 text-rose-300 text-xs px-3 py-1.5 rounded-lg">🚪 Salir</button>
-      </div>
-    </header>
 
-    <!-- NAVEGACIÓN POR PESTAÑAS -->
-    <nav class="bg-slate-950/60 border-b border-slate-800 px-6 py-2.5 flex flex-wrap gap-2">
-      <button onclick="cambiarPestana('pos')" id="btnTabPos" class="bg-emerald-600 text-white px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🛒 Ventas POS</button>
-      <button onclick="cambiarPestana('historial')" id="btnTabHistorial" class="bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📋 Comprobantes</button>
-      <button onclick="cambiarPestana('notasFiscales')" id="btnTabNotasFiscales" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📑 Notas Déb/Créd</button>
-      <button onclick="cambiarPestana('cierrez')" id="btnTabCierrez" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📊 Reporte Z & Libros</button>
-      <button onclick="cambiarPestana('compras')" id="btnTabCompras" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📥 Compras</button>
-      <button onclick="cambiarPestana('proveedores')" id="btnTabProveedores" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🏭 Proveedores</button>
-      <button onclick="cambiarPestana('retenciones')" id="btnTabRetenciones" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🧾 Retenciones IVA</button>
-      <button onclick="cambiarPestana('kardex')" id="btnTabKardex" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📦 Kardex PPM</button>
-      <button onclick="cambiarPestana('fisico')" id="btnTabFisico" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🔍 Inv. Físico</button>
-      <button onclick="cambiarPestana('sucursales')" id="btnTabSucursales" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🏛️ Sucursales</button>
-      <button onclick="cambiarPestana('almacenes')" id="btnTabAlmacenes" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🏬 Almacenes</button>
-      <button onclick="cambiarPestana('lotes')" id="btnTabLotes" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🏷️ Lotes</button>
-      <button onclick="cambiarPestana('etiquetas')" id="btnTabEtiquetas" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📷 Etiquetas QR</button>
-      <button onclick="cambiarPestana('cuentas')" id="btnTabCuentas" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📑 CxC</button>
-      <button onclick="cambiarPestana('unidades')" id="btnTabUnidades" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📐 Unidades</button>
-      <button onclick="cambiarPestana('tiposIva')" id="btnTabTiposIva" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">💰 Tipos IVA</button>
-      <button onclick="cambiarPestana('viasPago')" id="btnTabViasPago" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">💳 Vías de Pago</button>
-      <button onclick="cambiarPestana('productos')" id="btnTabProductos" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">📦 Artículos</button>
-      <button onclick="cambiarPestana('clientes')" id="btnTabClientes" class="tab-admin bg-slate-800 text-slate-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">👥 Clientes</button>
-      <button onclick="cambiarPestana('referidos')" id="btnTabReferidos" class="bg-amber-600/20 text-amber-400 border border-amber-700/50 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🤝 Afiliados</button>
-      <button onclick="cambiarPestana('inquilinosMaster')" id="btnTabInquilinosMaster" class="tab-master hidden bg-emerald-950 border border-emerald-700 text-emerald-300 px-3 py-2 rounded-xl font-semibold text-xs cursor-pointer">🏢 Master</button>
-    </nav>
+      <!-- Navegación Agrupada -->
+      <nav class="flex-1 overflow-y-auto custom-scroll p-3 space-y-5">
+        <!-- 1. POS y Facturación -->
+        <div class="space-y-1">
+          <p class="sidebar-section-title px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">POS y Facturación</p>
+          <button type="button" onclick="cambiarPestana('pos')" id="btnTabPos" title="Facturación POS" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m-2 4h2M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
+            <span class="sidebar-label truncate">Facturación POS</span>
+          </button>
+        </div>
 
-    <!-- CONTENEDOR DE SECCIONES -->
-    <main class="p-6 flex-1 space-y-6">
+        <!-- 2. Historial y Cierres -->
+        <div class="space-y-1">
+          <p class="sidebar-section-title px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Historial y Cierres</p>
+          <button type="button" onclick="cambiarPestana('historial')" id="btnTabHistorial" title="Historial de Comprobantes" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <span class="sidebar-label truncate">Historial Comprobantes</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('notasFiscales')" id="btnTabNotasFiscales" title="Notas SENIAT" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            <span class="sidebar-label truncate">Notas SENIAT</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('cierrez')" id="btnTabCierrez" title="Cierres y Libros" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            <span class="sidebar-label truncate">Cierres Z y Libros</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('cuentas')" id="btnTabCuentas" title="Cuentas por Cobrar" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="sidebar-label truncate">Cuentas por Cobrar</span>
+          </button>
+        </div>
+
+        <!-- 3. Inventario y Kardex -->
+        <div class="space-y-1">
+          <p class="sidebar-section-title px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Inventario y Kardex</p>
+          <button type="button" onclick="cambiarPestana('kardex')" id="btnTabKardex" title="Trazabilidad SKU (Kardex)" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+            <span class="sidebar-label truncate">Trazabilidad Kardex</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('fisico')" id="btnTabFisico" title="Conteo Físico e Inventario" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            <span class="sidebar-label truncate">Conteo Físico</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('transferencias')" id="btnTabTransferencias" title="Sucursales y Depósitos (Transferencias)" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+            <span class="sidebar-label truncate">Transferencias Depósito</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('lotes')" id="btnTabLotes" title="Lotes y Vencimientos" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+            <span class="sidebar-label truncate">Lotes y Vencimientos</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('etiquetas')" id="btnTabEtiquetas" title="Etiquetas QR Tamaño Carta" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+            <span class="sidebar-label truncate">Etiquetas QR (Carta)</span>
+          </button>
+        </div>
+
+        <!-- 4. Compras y Tributos -->
+        <div class="space-y-1">
+          <p class="sidebar-section-title px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Compras y Tributos</p>
+          <button type="button" onclick="cambiarPestana('compras')" id="btnTabCompras" title="Registro de Compras" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            <span class="sidebar-label truncate">Registro de Compras</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('retenciones')" id="btnTabRetenciones" title="Retenciones IVA" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
+            <span class="sidebar-label truncate">Retenciones IVA</span>
+          </button>
+        </div>
+
+        <!-- 5. Catálogos y Maestros -->
+        <div class="space-y-1">
+          <p class="sidebar-section-title px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Catálogos y Maestros</p>
+          <button type="button" onclick="cambiarPestana('productos')" id="btnTabProductos" title="Gestión de Artículos" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+            <span class="sidebar-label truncate">Gestión de Artículos</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('clientes')" id="btnTabClientes" title="Maestro de Clientes" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span class="sidebar-label truncate">Maestro de Clientes</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('proveedores')" id="btnTabProveedores" title="Proveedores" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            <span class="sidebar-label truncate">Proveedores</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('sucursales')" id="btnTabSucursales" title="Sucursales" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            <span class="sidebar-label truncate">Sucursales</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('almacenes')" id="btnTabAlmacenes" title="Almacenes y Depósitos" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z"/></svg>
+            <span class="sidebar-label truncate">Almacenes</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('unidades')" id="btnTabUnidades" title="Unidades de Medida" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+            <span class="sidebar-label truncate">Unidades de Medida</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('tiposIva')" id="btnTabTiposIva" title="Tipos de IVA" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16"/></svg>
+            <span class="sidebar-label truncate">Tipos de IVA</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('viasPago')" id="btnTabViasPago" title="Vías de Pago" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+            <span class="sidebar-label truncate">Vías de Pago</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('referidos')" id="btnTabReferidos" title="Programa de Afiliados" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+            <span class="sidebar-label truncate">Afiliados</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('inquilinosMaster')" id="btnTabInquilinosMaster" title="Panel Master SaaS" class="tab-master hidden w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>
+            <span class="sidebar-label truncate">Panel Master SaaS</span>
+          </button>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL -->
+    <div class="flex-1 min-w-0 flex flex-col">
+      <!-- ENCABEZADO MINIMALISTA Y LIMPIO -->
+      <header class="sticky top-0 z-20 h-16 bg-slate-900/95 backdrop-blur border-b border-slate-800 px-4 lg:px-6 flex items-center justify-between gap-4 no-print">
+        <div class="flex items-center gap-3 min-w-0">
+          <button type="button" onclick="toggleSidebarMovil()" class="lg:hidden inline-flex items-center justify-center w-9 h-9 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 cursor-pointer shrink-0">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
+          <div class="min-w-0">
+            <p id="headerSeccionActual" class="text-xs sm:text-sm font-semibold text-white truncate">POS y Facturación / Ventas POS</p>
+            <p class="text-[11px] font-mono text-slate-400 truncate">
+              <span id="headerTenantNombre" class="text-slate-200 font-medium">Comercio</span>
+              <span class="mx-1.5 text-slate-700">·</span>
+              <span class="text-emerald-400 font-semibold">Activo</span>
+              <span class="mx-1.5 text-slate-700">·</span>
+              RIF <span id="headerTenantRif">J-00000000-0</span>
+              <span class="mx-1.5 text-slate-700 hidden sm:inline">·</span>
+              <span class="hidden sm:inline">Plan <span id="headerTenantPlan" class="text-slate-200">FREEMIUM</span> (<span id="headerTenantRol">--</span>)</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button type="button" onclick="abrirModalPerfil()" class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium px-3 py-2 rounded-lg transition cursor-pointer whitespace-nowrap shrink-0">
+            <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            <span>Perfil Fiscal</span>
+          </button>
+          <button type="button" onclick="cerrarSesion()" class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-rose-950/70 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-800 text-xs font-medium px-3 py-2 rounded-lg transition cursor-pointer whitespace-nowrap shrink-0">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            <span>Salir</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- CONTENEDOR DE SECCIONES -->
+      <main class="p-4 sm:p-6 flex-1 space-y-6 max-w-7xl w-full mx-auto">
       <!-- Sección POS -->
       <div id="seccionPos" class="space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 id="tituloFormPos" class="text-sm font-bold text-emerald-400 uppercase">🛒 Facturación Fiscal Digital (POS)</h3>
-            <p class="text-xs text-slate-400">Emite, edita o anula documentos fiscales con cálculo automático de IVA, IGTF y registro en Kardex.</p>
+            <h3 id="tituloFormPos" class="text-base font-bold text-white tracking-tight">Facturación Fiscal Digital (POS)</h3>
+            <p class="text-xs text-slate-400">Emite, edita o anula documentos fiscales con cálculo automático de IVA, IGTF 3% y registro en Kardex.</p>
           </div>
-          <div class="bg-slate-950 border border-emerald-500/40 rounded-xl px-4 py-2 text-xs font-mono">
+          <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs font-mono">
             <span class="text-slate-400">Próximo Documento:</span>
-            <span id="posProximoDoc" class="text-emerald-400 font-bold ml-1">FAC-00000001</span>
+            <span id="posProximoDoc" class="text-emerald-400 font-bold ml-1 tabular-nums">FAC-00000001</span>
           </div>
         </div>
 
         <div id="bannerEditFactura" class="hidden bg-amber-950/60 border border-amber-500/50 text-amber-200 px-4 py-2.5 rounded-xl text-xs flex flex-wrap items-center justify-between gap-2">
-          <span id="textoBannerEditFactura" class="font-semibold">✏️ Editando factura...</span>
-          <button type="button" onclick="cancelarEdicionFactura()" class="bg-amber-900 hover:bg-amber-800 text-white px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer">Cancelar Edición</button>
+          <span id="textoBannerEditFactura" class="font-semibold">Editando factura...</span>
+          <button type="button" onclick="cancelarEdicionFactura()" class="bg-amber-900 hover:bg-amber-800 text-white px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap">Cancelar Edición</button>
         </div>
 
         <input type="hidden" id="editFacturaId">
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Fecha de Emisión *</label>
-            <input type="date" id="posFecha" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+            <input type="date" id="posFecha" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Moneda del Documento *</label>
-            <select id="posMoneda" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold text-sm font-mono">
+            <select id="posMoneda" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold text-sm font-mono">
               <option value="USD" selected>USD ($ Dólares)</option>
               <option value="VES">VES (Bs. Bolívares)</option>
             </select>
@@ -192,13 +340,13 @@
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tasa BCV Oficial (Bs. / $) *</label>
             <div class="flex gap-2">
-              <input type="number" step="0.0001" id="tasaBcv" value="888.1183" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold font-mono text-sm" oninput="recalcularTodo()">
-              <button type="button" onclick="consultarTasaBcvApi()" title="Consultar Tasa Oficial BCV" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 px-3 rounded-xl text-xs font-semibold border border-slate-700 cursor-pointer">🔄</button>
+              <input type="number" step="0.0001" id="tasaBcv" value="888.1183" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold font-mono text-sm tabular-nums" oninput="recalcularTodo()">
+              <button type="button" onclick="consultarTasaBcvApi()" title="Consultar Tasa Oficial BCV" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 rounded-xl text-xs font-semibold border border-slate-700 cursor-pointer shrink-0">BCV</button>
             </div>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Condición de Pago</label>
-            <select id="posCondicionPago" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+            <select id="posCondicionPago" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
               <option value="CONTADO" selected>CONTADO</option>
               <option value="CRÉDITO">CRÉDITO</option>
             </select>
@@ -206,48 +354,48 @@
 
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Sucursal Emisora</label>
-            <select id="posSucursalSelect" onchange="filtrarAlmacenesPosPorSucursal()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+            <select id="posSucursalSelect" onchange="filtrarAlmacenesPosPorSucursal()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
               <option value="">-- Sede Principal --</option>
             </select>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Almacén Despacho</label>
-            <select id="posAlmacenSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+            <select id="posAlmacenSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
               <option value="">-- Almacén General --</option>
             </select>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Cliente Registrado</label>
-            <select id="clienteSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm" onchange="seleccionarClientePredefinido()"><option value="">-- Seleccionar --</option></select>
+            <select id="clienteSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm" onchange="seleccionarClientePredefinido()"><option value="">-- Seleccionar --</option></select>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">RIF / Cédula Cliente *</label>
-            <input type="text" id="clienteRif" placeholder="V-12080468-1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono" onblur="validarRifInput(this)">
+            <input type="text" id="clienteRif" placeholder="V-12080468-1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono" onblur="validarRifInput(this)">
           </div>
 
           <div class="md:col-span-2">
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nombre / Razón Social Cliente *</label>
-            <input type="text" id="clienteNombre" placeholder="Nombre completo o Razón Social" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+            <input type="text" id="clienteNombre" placeholder="Nombre completo o Razón Social" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
           </div>
           <div class="md:col-span-2">
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Domicilio Fiscal del Cliente *</label>
-            <input type="text" id="clienteDireccion" placeholder="Dirección fiscal (obligatorio SENIAT Art. 13)" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+            <input type="text" id="clienteDireccion" placeholder="Dirección fiscal (obligatorio SENIAT Art. 13)" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Teléfono Cliente</label>
-            <input type="text" id="clienteTelefono" placeholder="0414-0000000" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+            <input type="text" id="clienteTelefono" placeholder="0414-0000000" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">¿Aplica IGTF (3%)?</label>
-            <select id="aplicaIgtfSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-semibold text-sm" onchange="recalcularTodo()">
+            <select id="aplicaIgtfSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-slate-200 font-semibold text-sm" onchange="recalcularTodo()">
               <option value="SI">SÍ (Pago en Divisas)</option>
               <option value="NO" selected>NO</option>
             </select>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Vía / Método de Pago</label>
-            <select id="metodoPagoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm" onchange="verificarAplicacionIgtf()">
+            <select id="metodoPagoSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm" onchange="verificarAplicacionIgtf()">
               <option value="EFECTIVO DIVISAS">Efectivo Divisas ($)</option>
               <option value="ZELLE">Zelle</option>
               <option value="PAGO MOVIL">Pago Móvil (Bs.)</option>
@@ -255,64 +403,64 @@
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nro. Referencia (Opcional)</label>
-            <input type="text" id="posReferenciaPago" placeholder="Ej: REF 458912" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+            <input type="text" id="posReferenciaPago" placeholder="Ej: REF 458912" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
           </div>
         </div>
 
-        <div class="bg-slate-950/40 p-5 rounded-2xl border border-slate-800 space-y-4">
-          <h3 class="text-sm font-bold text-emerald-400 uppercase">🛒 Detalle de Artículos (POS Caja)</h3>
+        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Detalle de Artículos (Carrito POS)</h3>
           <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-            <div class="md:col-span-6"><select id="productoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"><option value="">Cargando catálogo...</option></select></div>
-            <div class="md:col-span-2"><input type="number" id="cantidadItem" min="0.001" step="0.001" value="1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono"></div>
-            <div class="md:col-span-4"><button type="button" onclick="agregarItem()" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-300 font-semibold py-3 px-4 rounded-xl text-sm border cursor-pointer">+ Añadir al Carrito</button></div>
+            <div class="md:col-span-6"><select id="productoSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm"><option value="">Cargando catálogo...</option></select></div>
+            <div class="md:col-span-2"><input type="number" id="cantidadItem" min="0.001" step="0.001" value="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono tabular-nums"></div>
+            <div class="md:col-span-4"><button type="button" onclick="agregarItem()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold py-3 px-4 rounded-xl text-sm border border-slate-700 cursor-pointer whitespace-nowrap">+ Añadir al Carrito</button></div>
           </div>
           <div class="overflow-x-auto mt-2">
             <table class="w-full text-left text-xs text-slate-300">
               <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                 <tr><th class="p-3">Código</th><th class="p-3">Descripción</th><th class="p-3">Cant</th><th class="p-3">Und</th><th class="p-3">P. Unit ($)</th><th class="p-3">Alíc. IVA</th><th class="p-3">Subtotal ($ / Bs.)</th><th class="p-3 text-center">Acción</th></tr>
               </thead>
-              <tbody id="tablaItems" class="divide-y divide-slate-800/60"></tbody>
+              <tbody id="tablaItems" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
             </table>
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 space-y-2.5 text-sm font-mono">
+          <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-2.5 text-sm font-mono tabular-nums">
             <div class="flex justify-between text-slate-300"><span>Base Imponible Gravada:</span><span id="baseGravadaBs">$ 0.00 | Bs. 0.00</span></div>
             <div class="flex justify-between text-slate-300"><span>Monto Exento (E):</span><span id="montoExentoBs">$ 0.00 | Bs. 0.00</span></div>
             <div class="flex justify-between text-slate-300"><span>IVA Calculado:</span><span id="ivaBs">$ 0.00 | Bs. 0.00</span></div>
             <div class="flex justify-between text-slate-300"><span>IGTF (3%):</span><span id="igtfBs">$ 0.00 | Bs. 0.00</span></div>
             <div class="border-t border-slate-800 pt-3 flex justify-between font-bold text-emerald-400 text-base"><span>TOTAL A PAGAR:</span><span id="totalBs">$ 0.00 | Bs. 0.00</span></div>
           </div>
-          <div class="bg-slate-950/60 p-5 rounded-2xl border border-slate-800 space-y-3 text-xs font-mono">
-            <h4 class="font-bold text-emerald-400 uppercase">Calculadora de Vuelto</h4>
+          <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3 text-xs font-mono tabular-nums">
+            <h4 class="font-bold text-slate-300 uppercase tracking-wider">Calculadora de Vuelto Multidivisa</h4>
             <div class="grid grid-cols-2 gap-3">
-              <div><label class="block text-slate-400 mb-1">Divisas ($)</label><input type="number" id="pagoRecibidoUsd" step="0.01" value="0" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white" oninput="calcularVuelto()"></div>
-              <div><label class="block text-slate-400 mb-1">Bolívares (Bs.)</label><input type="number" id="pagoRecibidoBs" step="0.01" value="0" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white" oninput="calcularVuelto()"></div>
+              <div><label class="block text-slate-400 mb-1">Divisas ($)</label><input type="number" id="pagoRecibidoUsd" step="0.01" value="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" oninput="calcularVuelto()"></div>
+              <div><label class="block text-slate-400 mb-1">Bolívares (Bs.)</label><input type="number" id="pagoRecibidoBs" step="0.01" value="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" oninput="calcularVuelto()"></div>
             </div>
-            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 space-y-1">
-              <div class="flex justify-between"><span>Vuelto Bs:</span><span id="vueltoBs" class="text-amber-400">Bs. 0.00</span></div>
-              <div class="flex justify-between"><span>Vuelto USD:</span><span id="vueltoUsd" class="text-emerald-400">$ 0.00</span></div>
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+              <div class="flex justify-between"><span>Vuelto Bs:</span><span id="vueltoBs" class="text-slate-200 font-semibold">Bs. 0.00</span></div>
+              <div class="flex justify-between"><span>Vuelto USD:</span><span id="vueltoUsd" class="text-emerald-400 font-bold">$ 0.00</span></div>
             </div>
           </div>
         </div>
 
         <div class="flex flex-col sm:flex-row gap-3">
-          <button id="btnEmitirFacturaPos" type="button" onclick="emitirFactura()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-2xl cursor-pointer text-sm shadow-lg">
-            💾 Emitir Factura Fiscal Digital y Registrar en Kardex
+          <button id="btnEmitirFacturaPos" type="button" onclick="emitirFactura()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-xl cursor-pointer text-sm shadow-lg whitespace-nowrap">
+            Emitir Factura Fiscal Digital y Registrar en Kardex
           </button>
-          <button id="btnCancelarEditFactura" type="button" onclick="cancelarEdicionFactura()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-6 py-3.5 rounded-2xl cursor-pointer text-sm">
+          <button id="btnCancelarEditFactura" type="button" onclick="cancelarEdicionFactura()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-6 py-3.5 rounded-xl cursor-pointer text-sm whitespace-nowrap">
             Cancelar Edición
           </button>
         </div>
 
-        <!-- Registro de Documentos de Venta (Igual que Compras) -->
+        <!-- Registro de Documentos de Venta -->
         <div class="space-y-3 pt-2">
           <div class="flex items-center justify-between">
-            <h4 class="text-xs font-bold text-slate-300 uppercase">📄 Documentos de Venta Registrados</h4>
-            <button type="button" onclick="cargarDocumentosPos()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg cursor-pointer">🔄 Actualizar</button>
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Documentos de Venta Registrados</h4>
+            <button type="button" onclick="cargarDocumentosPos()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 cursor-pointer whitespace-nowrap">Actualizar</button>
           </div>
-          <div class="overflow-x-auto bg-slate-950/30 rounded-2xl border border-slate-800">
+          <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
             <table class="w-full text-left text-xs text-slate-300">
               <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                 <tr>
@@ -325,7 +473,7 @@
                   <th class="p-3 text-center">Acciones</th>
                 </tr>
               </thead>
-              <tbody id="tablaDocumentosPos" class="divide-y divide-slate-800/60"></tbody>
+              <tbody id="tablaDocumentosPos" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
             </table>
           </div>
         </div>
@@ -334,66 +482,119 @@
       <!-- Historial de Comprobantes -->
       <div id="seccionHistorial" class="hidden space-y-6">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <h3 class="text-sm font-bold text-emerald-400 uppercase">📋 Historial de Comprobantes</h3>
+          <h3 class="text-base font-bold text-white tracking-tight">Historial de Comprobantes SENIAT</h3>
           <div class="flex flex-wrap gap-2">
-            <input type="text" id="filtroTexto" placeholder="Buscar factura, cliente o método..." oninput="filtrarHistorial()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
-            <select id="filtroTipo" onchange="filtrarHistorial()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+            <input type="text" id="filtroTexto" placeholder="Buscar factura, cliente o método..." oninput="filtrarHistorial()" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+            <select id="filtroTipo" onchange="filtrarHistorial()" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
               <option value="TODOS">Todos</option>
               <option value="FACTURA">Facturas</option>
               <option value="NOTA CREDITO">Notas Crédito</option>
               <option value="NOTA DEBITO">Notas Débito</option>
             </select>
+            <button type="button" onclick="exportarHistorialExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer whitespace-nowrap">Exportar Excel</button>
           </div>
         </div>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Doc</th><th class="p-3">Control</th><th class="p-3">Cliente</th><th class="p-3">Método</th><th class="p-3">Fecha</th><th class="p-3">Total</th><th class="p-3 text-center">Acción</th></tr></thead><tbody id="tablaHistorial" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Doc</th><th class="p-3">Control</th><th class="p-3">Cliente</th><th class="p-3">Método</th><th class="p-3">Fecha</th><th class="p-3">Total</th><th class="p-3 text-center">Acción</th></tr></thead><tbody id="tablaHistorial" class="divide-y divide-slate-800/60 tabular-nums"></tbody></table></div>
       </div>
 
       <!-- Notas Fiscales -->
       <div id="seccionNotasFiscales" class="hidden space-y-6">
-        <h3 class="text-sm font-bold text-emerald-400 uppercase">📑 Emisión de Notas de Débito / Crédito Fiscal</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+        <h3 class="text-base font-bold text-white tracking-tight">Emisión de Notas de Débito / Crédito Fiscal</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Tipo de Nota</label>
-            <select id="tipoNotaSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tipo de Nota</label>
+            <select id="tipoNotaSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm">
               <option value="NOTA CREDITO">Nota de Crédito (NC)</option>
               <option value="NOTA DEBITO">Nota de Débito (ND)</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Factura Afectada</label>
-            <select id="facturaAfectadaSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm"></select>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Factura Afectada</label>
+            <select id="facturaAfectadaSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm"></select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Monto Base ($ USD)</label>
-            <input type="number" step="0.01" id="montoNotaUsd" placeholder="0.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Monto Base ($ USD)</label>
+            <input type="number" step="0.01" id="montoNotaUsd" placeholder="0.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono tabular-nums">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Motivo / Descripción</label>
-            <input type="text" id="motivoNota" placeholder="Devolución o ajuste fiscal" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-white text-sm">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Motivo / Descripción</label>
+            <input type="text" id="motivoNota" placeholder="Devolución o ajuste fiscal" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm">
           </div>
           <div class="md:col-span-2">
-            <button onclick="emitirNotaFiscal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-3 rounded-xl text-sm cursor-pointer">Emitir Nota Fiscal</button>
+            <button onclick="emitirNotaFiscal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-3 rounded-xl text-sm cursor-pointer whitespace-nowrap">Emitir Nota Fiscal</button>
           </div>
         </div>
       </div>
 
       <!-- Reporte Z & Libros -->
       <div id="seccionCierrez" class="hidden space-y-6">
-        <h3 class="text-sm font-bold text-emerald-400 uppercase">📊 Reporte Z y Libros Oficiales SENIAT</h3>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <h3 class="text-base font-bold text-white tracking-tight">Reporte Z y Libros Oficiales SENIAT</h3>
+          <div class="flex flex-wrap items-center gap-2">
+            <input type="date" id="filtroFechaDesde" class="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200">
+            <input type="date" id="filtroFechaHasta" class="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-slate-200">
+          </div>
+        </div>
         <div class="flex flex-wrap gap-3">
-          <button onclick="generarReporteZ()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-xl text-white font-semibold text-xs cursor-pointer">Emitir Cierre Z</button>
-          <button onclick="descargarLibroVentasOficialExcel()" class="bg-sky-700 hover:bg-sky-600 px-4 py-2 rounded-xl text-white font-semibold text-xs cursor-pointer">📥 Descargar Libro de Ventas (.xlsx)</button>
-          <button onclick="descargarLibroComprasOficialExcel()" class="bg-amber-700 hover:bg-amber-600 px-4 py-2 rounded-xl text-white font-semibold text-xs cursor-pointer">📥 Descargar Libro de Compras (.xlsx)</button>
+          <button onclick="generarReporteZ()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 rounded-xl text-white font-semibold text-xs cursor-pointer whitespace-nowrap">Generar Reporte Z</button>
+          <button onclick="descargarLibroVentasOficialExcel()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2.5 rounded-xl text-slate-200 font-semibold text-xs cursor-pointer whitespace-nowrap">Descargar Libro de Ventas (.xlsx)</button>
+          <button onclick="descargarLibroComprasOficialExcel()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2.5 rounded-xl text-slate-200 font-semibold text-xs cursor-pointer whitespace-nowrap">Descargar Libro de Compras (.xlsx)</button>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="bg-slate-950/40 p-4 rounded-2xl border border-slate-800">
-            <p class="text-slate-400 text-xs">Total Documentos en Período:</p>
-            <p id="zTotalFacturas" class="text-emerald-400 font-bold text-xl font-mono mt-1">0</p>
+          <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+            <p class="text-slate-400 text-xs">Total Documentos en Período</p>
+            <p id="zTotalFacturas" class="text-white font-bold text-2xl font-mono tabular-nums mt-1">0</p>
           </div>
-          <div class="bg-slate-950/40 p-4 rounded-2xl border border-slate-800">
-            <p class="text-slate-400 text-xs">Total Gaveta Efectivo:</p>
-            <p id="totalGavetaEfectivo" class="text-emerald-400 font-bold text-xl font-mono mt-1">Bs. 0.00</p>
+          <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+            <p class="text-slate-400 text-xs">Total Gaveta / Facturación Neta</p>
+            <p id="totalGavetaEfectivo" class="text-emerald-400 font-bold text-2xl font-mono tabular-nums mt-1">Bs. 0.00</p>
           </div>
+        </div>
+      </div>
+
+      <!-- Cuentas por Cobrar (CIE-005 / CAT-007) -->
+      <div id="seccionCuentas" class="hidden space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Cuentas por Cobrar y Alertas Financieras</h3>
+            <p class="text-xs text-slate-400">Monitoreo de facturas emitidas a CRÉDITO, vencimientos (&gt; 15 días) y registro de abonos.</p>
+          </div>
+          <div class="flex gap-2">
+            <button type="button" onclick="cargarCuentasPorCobrar()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Actualizar</button>
+            <button type="button" onclick="exportarCuentasPorCobrarExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+            <p class="text-xs text-slate-400">Cartera Total a Crédito</p>
+            <p id="cxcTotalCartera" class="text-xl font-bold font-mono tabular-nums text-white mt-1">$ 0.00</p>
+          </div>
+          <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+            <p class="text-xs text-slate-400">Saldo Pendiente por Cobrar</p>
+            <p id="cxcPendienteCobro" class="text-xl font-bold font-mono tabular-nums text-emerald-400 mt-1">$ 0.00</p>
+          </div>
+          <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
+            <p class="text-xs text-slate-400">Alertas de Mora / Vencidas</p>
+            <p id="cxcVencidasAlerta" class="text-xl font-bold font-mono tabular-nums text-amber-300 mt-1">0 factura(s)</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+              <tr>
+                <th class="p-3">Factura</th>
+                <th class="p-3">Cliente</th>
+                <th class="p-3">Total ($)</th>
+                <th class="p-3">Abonado ($)</th>
+                <th class="p-3">Saldo ($)</th>
+                <th class="p-3">Estatus</th>
+                <th class="p-3 text-center">Abono Rápido ($)</th>
+              </tr>
+            </thead>
+            <tbody id="tablaCuentasPorCobrar" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+          </table>
         </div>
       </div>
 
@@ -401,88 +602,91 @@
       <div id="seccionCompras" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 class="text-sm font-bold text-emerald-400 uppercase">📥 Registro de Compras y Entradas al Almacén</h3>
-            <p class="text-xs text-slate-400">Registra facturas de compra multi-artículo enlazadas a Sucursal → Almacén → Material → Lote y Vencimiento.</p>
+            <h3 class="text-base font-bold text-white tracking-tight">Registro de Compras y Entradas al Almacén</h3>
+            <p class="text-xs text-slate-400">Facturas de compra multi-artículo enlazadas a Sucursal → Almacén → Material → Lote y Vencimiento.</p>
           </div>
-          <div class="bg-slate-950 border border-emerald-500/40 rounded-xl px-4 py-2 text-xs font-mono">
-            <span class="text-slate-400">Próximo Documento:</span>
-            <span id="compraProximoDoc" class="text-emerald-400 font-bold ml-1">COMP-0001</span>
+          <div class="flex items-center gap-2">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs font-mono">
+              <span class="text-slate-400">Próximo Documento:</span>
+              <span id="compraProximoDoc" class="text-emerald-400 font-bold ml-1">COMP-0001</span>
+            </div>
+            <button type="button" onclick="exportarComprasExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Exportar Excel</button>
           </div>
         </div>
 
         <!-- Cabecera del Documento de Compra -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Fecha de Compra *</label>
-            <input type="date" id="compraFecha" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Fecha de Compra *</label>
+            <input type="date" id="compraFecha" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Tasa BCV (Bs/$) *</label>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tasa BCV (Bs/$) *</label>
             <div class="flex gap-2">
-              <input type="number" step="0.0001" id="compraTasaBcv" value="36.50" oninput="recalcularTotalesCompra()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold text-sm font-mono">
-              <button type="button" onclick="consultarTasaBcvCompra()" title="Actualizar tasa BCV" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 px-3 rounded-xl text-xs font-semibold border border-slate-700 cursor-pointer">🔄</button>
+              <input type="number" step="0.0001" id="compraTasaBcv" value="36.50" oninput="recalcularTotalesCompra()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold text-sm font-mono tabular-nums">
+              <button type="button" onclick="consultarTasaBcvCompra()" title="Actualizar tasa BCV" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 rounded-xl text-xs font-semibold border border-slate-700 cursor-pointer shrink-0">BCV</button>
             </div>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Nro. Factura Proveedor *</label>
-            <input type="text" id="compraNumeroFactura" placeholder="0001-00001234" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nro. Factura Proveedor *</label>
+            <input type="text" id="compraNumeroFactura" placeholder="0001-00001234" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Nro. Control Factura *</label>
-            <input type="text" id="compraNumeroControl" placeholder="00-00012345" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nro. Control Factura *</label>
+            <input type="text" id="compraNumeroControl" placeholder="00-00012345" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
           </div>
           <div class="md:col-span-2">
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Proveedor *</label>
-            <select id="compraProveedorSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Proveedor *</label>
+            <select id="compraProveedorSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Sucursal Destino *</label>
-            <select id="compraSucursalSelect" onchange="filtrarAlmacenesPorSucursalCompra()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Sucursal Destino *</label>
+            <select id="compraSucursalSelect" onchange="filtrarAlmacenesPorSucursalCompra()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
               <option value="">-- Seleccionar Sucursal --</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Almacén Destino *</label>
-            <select id="compraAlmacenSelect" onchange="cargarLotesSugeridosCompra()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Almacén Destino *</label>
+            <select id="compraAlmacenSelect" onchange="cargarLotesSugeridosCompra()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
               <option value="">-- Seleccionar Almacén --</option>
             </select>
           </div>
         </div>
 
         <!-- Agregar Múltiples Materiales / Productos -->
-        <div class="grid grid-cols-1 md:grid-cols-6 gap-3 bg-slate-950/40 p-5 rounded-2xl border border-slate-800 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-3 bg-slate-900 p-5 rounded-2xl border border-slate-800 items-end">
           <div class="md:col-span-2">
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Material / Producto *</label>
-            <select id="compraProductoSelect" onchange="onSeleccionarProductoCompra()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Material / Producto *</label>
+            <select id="compraProductoSelect" onchange="onSeleccionarProductoCompra()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Cantidad *</label>
-            <input type="number" step="0.001" id="compraCantidad" value="1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Cantidad *</label>
+            <input type="number" step="0.001" id="compraCantidad" value="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Costo Unit. ($ USD) *</label>
-            <input type="number" step="0.01" id="compraCostoUsd" value="1.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Costo Unit. ($ USD) *</label>
+            <input type="number" step="0.01" id="compraCostoUsd" value="1.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums">
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Nro. de Lote *</label>
-            <input type="text" id="compraLote" list="datalistLotesCompra" placeholder="LOTE-001" oninput="autocompletarVencimientoLoteCompra()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nro. de Lote *</label>
+            <input type="text" id="compraLote" list="datalistLotesCompra" placeholder="LOTE-001" oninput="autocompletarVencimientoLoteCompra()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
             <datalist id="datalistLotesCompra"></datalist>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Fecha Vencimiento</label>
-            <input type="date" id="compraFechaVencimiento" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Fecha Vencimiento</label>
+            <input type="date" id="compraFechaVencimiento" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
           </div>
           <div class="md:col-span-2">
-            <label class="block text-xs font-semibold text-slate-300 mb-1">Ubicación en Almacén (Opcional)</label>
-            <input type="text" id="compraUbicacion" placeholder="RACK / PASILLO" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Ubicación en Almacén (Opcional)</label>
+            <input type="text" id="compraUbicacion" placeholder="RACK / PASILLO" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
           </div>
           <div class="md:col-span-4 flex justify-end">
-            <button type="button" onclick="agregarItemCompra()" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer">+ Agregar Material a la Compra</button>
+            <button type="button" onclick="agregarItemCompra()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">+ Agregar Material a la Compra</button>
           </div>
         </div>
 
         <!-- Detalle de Renglones de la Compra -->
-        <div class="overflow-x-auto bg-slate-950/30 rounded-2xl border border-slate-800">
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
           <table class="w-full text-left text-xs text-slate-300">
             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
               <tr>
@@ -496,42 +700,42 @@
                 <th class="p-3 text-center">Acción</th>
               </tr>
             </thead>
-            <tbody id="tablaItemsCompra" class="divide-y divide-slate-800/60">
+            <tbody id="tablaItemsCompra" class="divide-y divide-slate-800/60 tabular-nums">
               <tr><td colspan="8" class="p-4 text-center text-slate-500">Agrega uno o más materiales arriba para armar el documento de compra.</td></tr>
             </tbody>
           </table>
         </div>
 
         <!-- Resumen y Guardar Documento -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <div>
             <p class="text-xs text-slate-400">Base Gravada:</p>
-            <p id="compraBaseGravada" class="font-mono font-bold text-white">$ 0.00 | Bs. 0.00</p>
+            <p id="compraBaseGravada" class="font-mono font-bold text-white tabular-nums">$ 0.00 | Bs. 0.00</p>
           </div>
           <div>
             <p class="text-xs text-slate-400">Monto Exento:</p>
-            <p id="compraMontoExento" class="font-mono font-bold text-sky-300">$ 0.00 | Bs. 0.00</p>
+            <p id="compraMontoExento" class="font-mono font-bold text-slate-200 tabular-nums">$ 0.00 | Bs. 0.00</p>
           </div>
           <div>
             <p class="text-xs text-slate-400">IVA Compras:</p>
-            <p id="compraIvaTotal" class="font-mono font-bold text-amber-300">$ 0.00 | Bs. 0.00</p>
+            <p id="compraIvaTotal" class="font-mono font-bold text-slate-200 tabular-nums">$ 0.00 | Bs. 0.00</p>
           </div>
           <div class="flex flex-col sm:flex-row md:flex-col items-start md:items-end justify-between gap-2">
             <div>
               <p class="text-xs text-slate-400">TOTAL COMPRA:</p>
-              <p id="compraTotalFinal" class="font-mono font-bold text-lg text-emerald-400">$ 0.00 | Bs. 0.00</p>
+              <p id="compraTotalFinal" class="font-mono font-bold text-lg text-emerald-400 tabular-nums">$ 0.00 | Bs. 0.00</p>
             </div>
-            <button id="btnGuardarCompraDoc" type="button" onclick="registrarCompraInventario()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-3 rounded-xl text-sm cursor-pointer shadow-lg">💾 Guardar Compra y Generar Documento</button>
+            <button id="btnGuardarCompraDoc" type="button" onclick="registrarCompraInventario()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-3 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Compra y Generar Documento</button>
           </div>
         </div>
 
         <!-- Historial de Compras Guardadas -->
         <div class="space-y-3">
           <div class="flex items-center justify-between">
-            <h4 class="text-xs font-bold text-slate-300 uppercase">📄 Documentos de Compra Registrados</h4>
-            <button type="button" onclick="cargarHistorialCompras()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg cursor-pointer">🔄 Actualizar</button>
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Documentos de Compra Registrados</h4>
+            <button type="button" onclick="cargarHistorialCompras()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-lg border border-slate-700 cursor-pointer whitespace-nowrap">Actualizar</button>
           </div>
-          <div class="overflow-x-auto bg-slate-950/30 rounded-2xl border border-slate-800">
+          <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
             <table class="w-full text-left text-xs text-slate-300">
               <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
                 <tr>
@@ -544,7 +748,7 @@
                   <th class="p-3">Total Est. ($ / Bs.)</th>
                 </tr>
               </thead>
-              <tbody id="tablaHistorialCompras" class="divide-y divide-slate-800/60"></tbody>
+              <tbody id="tablaHistorialCompras" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
             </table>
           </div>
         </div>
@@ -553,180 +757,337 @@
       <!-- Proveedores -->
       <div id="seccionProveedores" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 id="tituloFormProveedor" class="text-sm font-bold text-emerald-400 uppercase">🏭 Maestro de Proveedores</h3>
-          <button onclick="exportarProveedoresExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer">📥 Exportar Excel</button>
+          <h3 id="tituloFormProveedor" class="text-base font-bold text-white tracking-tight">Maestro de Proveedores</h3>
+          <button onclick="exportarProveedoresExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editProveedorId">
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">RIF *</label><input type="text" id="provRif" placeholder="J-12345678-0" onblur="validarRifInput(this)" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Razón Social *</label><input type="text" id="provRazonSocial" placeholder="DISTRIBUIDORA CENTRAL C.A." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Teléfono</label><input type="text" id="provTelefono" placeholder="0414-0000000" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico</label><input type="email" id="provEmail" placeholder="ventas@proveedor.com" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Persona de Contacto</label><input type="text" id="provContacto" placeholder="Nombre del contacto" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Contribuyente Especial</label><select id="provContribuyenteEspecial" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="true">SÍ</option><option value="false">NO</option></select></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable</label><input type="text" id="provCuentaContable" placeholder="210101" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">Dirección Fiscal</label><input type="text" id="provDireccion" placeholder="Dirección completa" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">RIF *</label><input type="text" id="provRif" placeholder="J-12345678-0" onblur="validarRifInput(this)" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Razón Social *</label><input type="text" id="provRazonSocial" placeholder="DISTRIBUIDORA CENTRAL C.A." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Teléfono</label><input type="text" id="provTelefono" placeholder="0414-0000000" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico</label><input type="email" id="provEmail" placeholder="ventas@proveedor.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Persona de Contacto</label><input type="text" id="provContacto" placeholder="Nombre del contacto" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Contribuyente Especial</label><select id="provContribuyenteEspecial" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="true">SÍ</option><option value="false">NO</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable</label><input type="text" id="provCuentaContable" placeholder="210101" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">Dirección Fiscal</label><input type="text" id="provDireccion" placeholder="Dirección completa" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div class="md:col-span-3 flex gap-3">
-            <button id="btnGuardarProveedor" onclick="guardarProveedor()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 rounded-xl text-sm cursor-pointer">💾 Guardar Proveedor</button>
-            <button id="btnCancelarProv" onclick="limpiarFormProveedor()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2.5 rounded-xl text-sm cursor-pointer">Cancelar</button>
+            <button id="btnGuardarProveedor" onclick="guardarProveedor()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Proveedor</button>
+            <button id="btnCancelarProv" onclick="limpiarFormProveedor()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
           </div>
         </div>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">RIF</th><th class="p-3">Razón Social</th><th class="p-3">Teléfono</th><th class="p-3">Correo</th><th class="p-3">Cta. Contable</th><th class="p-3 text-center">Contrib. Esp.</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaProveedoresGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">RIF</th><th class="p-3">Razón Social</th><th class="p-3">Teléfono</th><th class="p-3">Correo</th><th class="p-3">Cta. Contable</th><th class="p-3 text-center">Contrib. Esp.</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaProveedoresGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
       </div>
 
       <!-- Retenciones IVA -->
       <div id="seccionRetenciones" class="hidden space-y-6">
-        <h3 class="text-sm font-bold text-emerald-400 uppercase">🧾 Comprobantes de Retención de IVA</h3>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800 items-end">
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nro. Factura Ref.</label><input type="text" id="retFacturaRef" placeholder="FAC-0001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Base Imponible ($ USD)</label><input type="number" step="0.01" id="retBaseUsd" placeholder="100.00" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">% Retención</label><select id="retPorcentaje" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="75">75%</option><option value="100" selected>100%</option></select></div>
-          <div><button onclick="generarComprobanteRetencion()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl text-sm cursor-pointer">Generar Comprobante</button></div>
+        <h3 class="text-base font-bold text-white tracking-tight">Comprobantes de Retención de IVA (SENIAT)</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 items-end">
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nro. Factura Ref.</label><input type="text" id="retFacturaRef" placeholder="FAC-0001" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Base Imponible ($ USD)</label><input type="number" step="0.01" id="retBaseUsd" placeholder="100.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">% Retención</label><select id="retPorcentaje" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="75">75%</option><option value="100" selected>100%</option></select></div>
+          <div><button onclick="generarComprobanteRetencion()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Generar Comprobante</button></div>
         </div>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Comprobante</th><th class="p-3">Factura Ref.</th><th class="p-3">Base Imponible</th><th class="p-3">IVA</th><th class="p-3">IVA Retenido</th><th class="p-3 text-center">Acción</th></tr></thead><tbody id="tablaRetenciones" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Comprobante</th><th class="p-3">Factura Ref.</th><th class="p-3">Base Imponible</th><th class="p-3">IVA</th><th class="p-3">IVA Retenido</th><th class="p-3 text-center">Acción</th></tr></thead><tbody id="tablaRetenciones" class="divide-y divide-slate-800/60 tabular-nums"></tbody></table></div>
       </div>
 
       <!-- Kardex PPM -->
       <div id="seccionKardex" class="hidden space-y-6">
-        <h3 class="text-sm font-bold text-emerald-400 uppercase">📦 Kardex PPM y Movimientos</h3>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Fecha</th><th class="p-3">Artículo</th><th class="p-3">Movimiento</th><th class="p-3">Documento</th><th class="p-3 text-center">Entradas</th><th class="p-3 text-center">Salidas</th><th class="p-3 text-center">Saldo</th><th class="p-3">Costo Prom.</th></tr></thead><tbody id="tablaKardexMovimientos" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-white tracking-tight">Kardex PPM y Trazabilidad de SKU</h3>
+          <button type="button" onclick="cargarKardexMovimientos()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Actualizar</button>
+        </div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Fecha</th><th class="p-3">Artículo</th><th class="p-3">Movimiento</th><th class="p-3">Documento</th><th class="p-3 text-center">Entradas</th><th class="p-3 text-center">Salidas</th><th class="p-3 text-center">Saldo</th><th class="p-3">Costo Prom.</th></tr></thead><tbody id="tablaKardexMovimientos" class="divide-y divide-slate-800/60 tabular-nums"></tbody></table></div>
       </div>
 
-      <!-- Inventario Físico -->
+      <!-- Inventario Físico, Conciliación, Histórico Nube, Acta PDF & Excel (INV-002..008) -->
       <div id="seccionFisico" class="hidden space-y-6">
-        <h3 class="text-sm font-bold text-emerald-400 uppercase">🔍 Inventario Físico</h3>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">SKU</th><th class="p-3">Descripción</th><th class="p-3 text-center">Stock Teórico</th><th class="p-3 text-center">Conteo Físico</th></tr></thead><tbody id="tablaInventarioFisico" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Conteo Físico, Mermas y Conciliación Global</h3>
+            <p class="text-xs text-slate-400">Compara Stock Teórico vs. Conteo Físico, imprime Acta en PDF, importa/exporta en Excel y guarda histórico en la nube.</p>
+          </div>
+          <div class="flex flex-wrap gap-2 no-print">
+            <button type="button" onclick="exportarInventarioFisicoExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Plantilla Excel</button>
+            <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">
+              Importar Excel
+              <input type="file" accept=".xlsx,.xls" onchange="importarInventarioFisicoExcel(event)" class="hidden">
+            </label>
+            <button type="button" onclick="imprimirActaInventarioFisicoPdf()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Acta PDF</button>
+            <button type="button" onclick="guardarTodoInventarioFisico()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer whitespace-nowrap">Conciliar Todo y Guardar Acta</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 bg-slate-900 p-4 rounded-2xl border border-slate-800">
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Fecha de Toma</label>
+            <input type="date" id="fisicoFecha" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Observación / Depósito Auditado</label>
+            <input type="text" id="fisicoObservacion" placeholder="Ej: Conteo mensual almacén principal" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white">
+          </div>
+          <div>
+            <p class="text-xs text-slate-400">SKUs / Con Diferencia</p>
+            <p class="font-mono font-bold text-lg text-white tabular-nums mt-1"><span id="fisicoTotalSkus">0</span> / <span id="fisicoConDiferencia" class="text-amber-400">0</span></p>
+          </div>
+          <div>
+            <p class="text-xs text-slate-400">Impacto Neto ($ USD)</p>
+            <p id="fisicoValorDiferencia" class="font-mono font-bold text-lg text-slate-200 tabular-nums mt-1">$ 0.00</p>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+              <tr>
+                <th class="p-3">SKU</th>
+                <th class="p-3">Descripción / Costo</th>
+                <th class="p-3 text-right">Stock Teórico</th>
+                <th class="p-3 text-center">Conteo Físico</th>
+                <th class="p-3 text-right">Diferencia</th>
+                <th class="p-3 text-center no-print">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tablaInventarioFisico" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+          </table>
+        </div>
+
+        <div class="space-y-3 no-print">
+          <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Histórico de Actas de Conciliación (Nube)</h4>
+          <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr>
+                  <th class="p-3">Acta</th>
+                  <th class="p-3">Fecha</th>
+                  <th class="p-3">Observación</th>
+                  <th class="p-3 text-center">Ítems / Dif.</th>
+                  <th class="p-3 text-right">Impacto Neto</th>
+                  <th class="p-3 text-center">Descargas</th>
+                </tr>
+              </thead>
+              <tbody id="tablaHistoricoInventarioFisico" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transferencias entre Sucursales y Depósitos (INV-009) -->
+      <div id="seccionTransferencias" class="hidden space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Transferencias entre Sucursales y Depósitos (INV-009)</h3>
+            <p class="text-xs text-slate-400">Traslada existencias y lotes entre almacenes manteniendo trazabilidad exacta en el Kardex.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Artículo *</label>
+            <select id="transfProductoSelect" onchange="cargarLotesOrigenTransferencia()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Almacén Origen *</label>
+            <select id="transfOrigenAlmacenSelect" onchange="cargarLotesOrigenTransferencia()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Lote Origen (Disponible)</label>
+            <select id="transfLoteSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Almacén Destino *</label>
+            <select id="transfDestinoAlmacenSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Cantidad a Trasladar *</label>
+            <input type="number" step="0.001" min="0.001" id="transfCantidad" value="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Observación / Guía</label>
+            <input type="text" id="transfNota" placeholder="Reposición sucursal norte" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+          </div>
+          <div class="md:col-span-3">
+            <button id="btnEjecutarTransferencia" type="button" onclick="registrarTransferenciaDeposito()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Registrar Transferencia</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+              <tr>
+                <th class="p-3">Documento</th>
+                <th class="p-3">Fecha</th>
+                <th class="p-3">Artículo</th>
+                <th class="p-3">Ruta / Detalle</th>
+                <th class="p-3 text-center">Cantidad</th>
+              </tr>
+            </thead>
+            <tbody id="tablaTransferencias" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Sucursales -->
       <div id="seccionSucursales" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 id="tituloFormSucursal" class="text-sm font-bold text-emerald-400 uppercase">🏛️ Maestro de Sucursales</h3>
-          <button onclick="exportarSucursalesExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer">📥 Exportar Excel</button>
+          <h3 id="tituloFormSucursal" class="text-base font-bold text-white tracking-tight">Maestro de Sucursales</h3>
+          <button onclick="exportarSucursalesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editSucursalId">
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nombre de Sucursal *</label><input type="text" id="sucursalNombre" placeholder="SEDE PRINCIPAL" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Dirección</label><input type="text" id="sucursalDireccion" placeholder="Dirección de la sucursal" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nombre de Sucursal *</label><input type="text" id="sucursalNombre" placeholder="SEDE PRINCIPAL" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Dirección</label><input type="text" id="sucursalDireccion" placeholder="Dirección de la sucursal" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div class="flex items-end gap-2">
-            <button id="btnGuardarSucursal" onclick="guardarSucursal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer">💾 Guardar Sucursal</button>
-            <button id="btnCancelarSucursal" onclick="limpiarFormSucursal()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer">Cancelar</button>
+            <button id="btnGuardarSucursal" onclick="guardarSucursal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Sucursal</button>
+            <button id="btnCancelarSucursal" onclick="limpiarFormSucursal()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
           </div>
         </div>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Sucursal</th><th class="p-3">Dirección</th><th class="p-3">Fecha</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaSucursalesGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Sucursal</th><th class="p-3">Dirección</th><th class="p-3">Fecha</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaSucursalesGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
       </div>
 
       <!-- Almacenes -->
       <div id="seccionAlmacenes" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 id="tituloFormAlmacen" class="text-sm font-bold text-emerald-400 uppercase">🏬 Maestro de Almacenes / Depósitos</h3>
-          <button onclick="exportarAlmacenesExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer">📥 Exportar Excel</button>
+          <h3 id="tituloFormAlmacen" class="text-base font-bold text-white tracking-tight">Maestro de Almacenes / Depósitos</h3>
+          <button onclick="exportarAlmacenesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editAlmacenId">
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nombre del Almacén *</label><input type="text" id="almacenNombre" placeholder="DEPÓSITO CENTRAL" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Tipo</label><input type="text" id="almacenTipo" value="PRINCIPAL" placeholder="PRINCIPAL/SECUNDARIO" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Sucursal</label><select id="almacenSucursalSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="">-- Sucursal Principal / General --</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nombre del Almacén *</label><input type="text" id="almacenNombre" placeholder="DEPÓSITO CENTRAL" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Tipo</label><input type="text" id="almacenTipo" value="PRINCIPAL" placeholder="PRINCIPAL/SECUNDARIO" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Sucursal</label><select id="almacenSucursalSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="">-- Sucursal Principal / General --</option></select></div>
           <div class="flex items-end gap-2">
-            <button id="btnGuardarAlmacen" onclick="guardarAlmacen()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer">💾 Guardar Almacén</button>
-            <button id="btnCancelarAlmacen" onclick="limpiarFormAlmacen()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer">Cancelar</button>
+            <button id="btnGuardarAlmacen" onclick="guardarAlmacen()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Almacén</button>
+            <button id="btnCancelarAlmacen" onclick="limpiarFormAlmacen()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
           </div>
         </div>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Almacén</th><th class="p-3">Tipo</th><th class="p-3">Sucursal</th><th class="p-3">Fecha</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaAlmacenesGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Almacén</th><th class="p-3">Tipo</th><th class="p-3">Sucursal</th><th class="p-3">Fecha</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaAlmacenesGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
       </div>
 
       <!-- Inventario Lotes -->
       <div id="seccionLotes" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 id="tituloFormLote" class="text-sm font-bold text-emerald-400 uppercase">🏷️ Maestro de Lotes de Inventario</h3>
-          <button onclick="exportarLotesExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer">📥 Exportar Excel</button>
+          <h3 id="tituloFormLote" class="text-base font-bold text-white tracking-tight">Maestro de Lotes de Inventario</h3>
+          <button onclick="exportarLotesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editLoteId">
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Producto *</label><select id="loteProductoSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="">-- Producto --</option></select></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Almacén</label><select id="loteAlmacenSelect" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="">-- Almacén Principal --</option></select></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Número de Lote *</label><input type="text" id="loteNumero" placeholder="LOTE-2026-01" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Stock</label><input type="number" step="0.001" id="loteStock" value="0" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Ubicación / Pasillo</label><input type="text" id="loteUbicacion" placeholder="RACK B-2" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Fecha Vencimiento</label><input type="date" id="loteFechaVencimiento" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Producto *</label><select id="loteProductoSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="">-- Producto --</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Almacén</label><select id="loteAlmacenSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="">-- Almacén Principal --</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Número de Lote *</label><input type="text" id="loteNumero" placeholder="LOTE-2026-01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Stock</label><input type="number" step="0.001" id="loteStock" value="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Ubicación / Pasillo</label><input type="text" id="loteUbicacion" placeholder="RACK B-2" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Fecha Vencimiento</label><input type="date" id="loteFechaVencimiento" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div class="md:col-span-3 flex gap-3">
-            <button id="btnGuardarLote" onclick="guardarLote()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer">💾 Guardar Lote</button>
-            <button id="btnCancelarLote" onclick="limpiarFormLote()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer">Cancelar</button>
+            <button id="btnGuardarLote" onclick="guardarLote()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Lote</button>
+            <button id="btnCancelarLote" onclick="limpiarFormLote()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
           </div>
         </div>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Lote</th><th class="p-3">Material</th><th class="p-3">Sucursal / Almacén</th><th class="p-3">Ubicación</th><th class="p-3 text-center">Stock</th><th class="p-3">Vencimiento</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaLotesGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Lote</th><th class="p-3">Material</th><th class="p-3">Sucursal / Almacén</th><th class="p-3">Ubicación</th><th class="p-3 text-center">Stock</th><th class="p-3">Vencimiento</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaLotesGestion" class="divide-y divide-slate-800/60 tabular-nums"></tbody></table></div>
       </div>
 
-      <div id="seccionEtiquetas" class="hidden space-y-6"><div id="contenedorGridEtiquetas" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div></div>
-      <div id="seccionCuentas" class="hidden space-y-6"><h3 class="text-sm font-bold text-emerald-400 uppercase">📑 Cuentas por Cobrar (CxC)</h3><p class="text-xs text-slate-400">Módulo en preparación para gestión de créditos y abonos.</p></div>
+      <!-- Etiquetas QR Tamaño Carta PDF & Excel (CAT-004) -->
+      <div id="seccionEtiquetas" class="hidden space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3 no-print">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Etiquetas QR de Inventario (Hoja Tamaño Carta)</h3>
+            <p class="text-xs text-slate-400">Genera etiquetas listas para cortar e imprimir en papel tamaño Carta (PDF), impresión directa o listado Excel.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="exportarEtiquetasQrExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Exportar Excel</button>
+            <button type="button" onclick="imprimirEtiquetasQrNavegador()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Imprimir Directo</button>
+            <button type="button" onclick="imprimirEtiquetasQrPdf()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer whitespace-nowrap">Descargar PDF (Carta)</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-900 p-4 rounded-2xl border border-slate-800 no-print">
+          <div class="sm:col-span-2">
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Filtrar SKU, Descripción o Lote</label>
+            <input type="text" id="filtroEtiquetasQr" oninput="filtrarEtiquetasQr()" placeholder="Buscar producto para etiquetar..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Distribución en Carta</label>
+            <select id="formatoHojaEtiquetas" onchange="pintarGridEtiquetasQr()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+              <option value="3" selected>3 x 6 (18 etiquetas / hoja)</option>
+              <option value="2">2 x 5 (10 etiquetas grandes)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Copias por Artículo (PDF)</label>
+            <input type="number" id="copiasPorEtiquetaQr" min="1" max="20" value="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-white tabular-nums">
+          </div>
+        </div>
+
+        <div id="contenedorGridEtiquetas" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-white p-6 rounded-xl border border-slate-300"></div>
+      </div>
 
       <!-- Unidades de Medida -->
       <div id="seccionUnidades" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 id="tituloFormUnidad" class="text-sm font-bold text-emerald-400 uppercase">📐 Maestro de Unidades de Medida</h3>
-          <button onclick="exportarUnidadesExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer">📥 Exportar Excel</button>
+          <h3 id="tituloFormUnidad" class="text-base font-bold text-white tracking-tight">Maestro de Unidades de Medida</h3>
+          <button onclick="exportarUnidadesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
         </div>
-        <div class="flex flex-wrap gap-3 bg-slate-950/40 p-5 rounded-2xl border border-slate-800 items-center">
+        <div class="flex flex-wrap gap-3 bg-slate-900 p-5 rounded-2xl border border-slate-800 items-center">
           <input type="hidden" id="editUnidadId">
-          <input type="text" id="inputNuevaUnidad" placeholder="Ej: CAJA, BULTOS, PAR" class="flex-1 min-w-[200px] bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
-          <button id="btnGuardarUnidad" onclick="guardarUnidadMedida()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer">💾 Guardar Unidad</button>
-          <button id="btnCancelarUnidad" onclick="limpiarFormUnidadMedida()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer">Cancelar</button>
+          <input type="text" id="inputNuevaUnidad" placeholder="Ej: CAJA, BULTOS, PAR" class="flex-1 min-w-[200px] bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+          <button id="btnGuardarUnidad" onclick="guardarUnidadMedida()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Unidad</button>
+          <button id="btnCancelarUnidad" onclick="limpiarFormUnidadMedida()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
         </div>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Abreviatura / Nombre</th><th class="p-3">Fecha Registro</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaUnidadesGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Abreviatura / Nombre</th><th class="p-3">Fecha Registro</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaUnidadesGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
       </div>
 
       <!-- Tipos de IVA (Alícuotas) -->
       <div id="seccionTiposIva" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 id="tituloFormTipoIva" class="text-sm font-bold text-emerald-400 uppercase">💰 Maestro de Tipos de IVA (Alícuotas SENIAT)</h3>
-          <button onclick="exportarTiposIvaExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer">📥 Exportar Excel</button>
+          <h3 id="tituloFormTipoIva" class="text-base font-bold text-white tracking-tight">Maestro de Tipos de IVA (Alícuotas SENIAT)</h3>
+          <button onclick="exportarTiposIvaExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 items-end">
           <input type="hidden" id="editTipoIvaId">
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Descripción / Nombre *</label><input type="text" id="tipoIvaNombre" placeholder="Ej: IVA GENERAL 16%, REDUCIDO 8%, EXENTO 0%" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Porcentaje (%)</label><input type="number" step="0.01" id="tipoIvaPorcentaje" value="16" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Descripción / Nombre *</label><input type="text" id="tipoIvaNombre" placeholder="Ej: IVA GENERAL 16%, REDUCIDO 8%, EXENTO 0%" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Porcentaje (%)</label><input type="number" step="0.01" id="tipoIvaPorcentaje" value="16" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums"></div>
           <div class="flex gap-2">
-            <button id="btnGuardarTipoIva" onclick="guardarTipoIva()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer">💾 Guardar Alícuota</button>
-            <button id="btnCancelarTipoIva" onclick="limpiarFormTipoIva()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer">Cancelar</button>
+            <button id="btnGuardarTipoIva" onclick="guardarTipoIva()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Alícuota</button>
+            <button id="btnCancelarTipoIva" onclick="limpiarFormTipoIva()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
           </div>
         </div>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Descripción</th><th class="p-3">Porcentaje</th><th class="p-3">Fecha Registro</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaTiposIvaGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Descripción</th><th class="p-3">Porcentaje</th><th class="p-3">Fecha Registro</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaTiposIvaGestion" class="divide-y divide-slate-800/60 tabular-nums"></tbody></table></div>
       </div>
 
       <!-- Vías / Métodos de Pago -->
       <div id="seccionViasPago" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 id="tituloFormViaPago" class="text-sm font-bold text-emerald-400 uppercase">💳 Maestro de Vías y Métodos de Pago</h3>
-          <button onclick="exportarViasPagoExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer">📥 Exportar Excel</button>
+          <h3 id="tituloFormViaPago" class="text-base font-bold text-white tracking-tight">Maestro de Vías y Métodos de Pago</h3>
+          <button onclick="exportarViasPagoExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editViaPagoId">
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nombre del Método *</label><input type="text" id="viaPagoNombre" placeholder="Ej: PAGO MOVIL, ZELLE, BIOPAGO" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Código Interno</label><input type="text" id="viaPagoCodigo" placeholder="PM-01" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable</label><input type="text" id="viaPagoCuentaContable" placeholder="110102" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">¿Requiere Referencia?</label><select id="viaPagoReqRef" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="true" selected>SÍ</option><option value="false">NO</option></select></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Estatus</label><select id="viaPagoActivo" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="true" selected>ACTIVO</option><option value="false">INACTIVO</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nombre del Método *</label><input type="text" id="viaPagoNombre" placeholder="Ej: PAGO MOVIL, ZELLE, BIOPAGO" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Código Interno</label><input type="text" id="viaPagoCodigo" placeholder="PM-01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable</label><input type="text" id="viaPagoCuentaContable" placeholder="110102" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">¿Requiere Referencia?</label><select id="viaPagoReqRef" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="true" selected>SÍ</option><option value="false">NO</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Estatus</label><select id="viaPagoActivo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="true" selected>ACTIVO</option><option value="false">INACTIVO</option></select></div>
           <div class="flex items-end gap-2">
-            <button id="btnGuardarViaPago" onclick="guardarViaPago()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer">💾 Guardar Vía</button>
-            <button id="btnCancelarViaPago" onclick="limpiarFormViaPago()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer">Cancelar</button>
+            <button id="btnGuardarViaPago" onclick="guardarViaPago()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Vía</button>
+            <button id="btnCancelarViaPago" onclick="limpiarFormViaPago()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
           </div>
         </div>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Método de Pago</th><th class="p-3">Código</th><th class="p-3 text-center">Req. Ref.</th><th class="p-3">Cuenta Contable</th><th class="p-3 text-center">Estatus</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaViasPagoGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Método de Pago</th><th class="p-3">Código</th><th class="p-3 text-center">Req. Ref.</th><th class="p-3">Cuenta Contable</th><th class="p-3 text-center">Estatus</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaViasPagoGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
       </div>
 
       <!-- Artículos / Productos -->
       <div id="seccionProductos" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 id="tituloFormProducto" class="text-sm font-bold text-emerald-400 uppercase">📦 Maestro de Artículos y Servicios</h3>
-          <button onclick="exportarStockExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer">📥 Exportar Excel</button>
+          <h3 id="tituloFormProducto" class="text-base font-bold text-white tracking-tight">Maestro de Artículos y Servicios</h3>
+          <button onclick="exportarStockExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editProductoId">
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Código SKU</label><input type="text" id="prodSku" placeholder="SKU-001" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Categoría</label><input type="text" id="prodCategoria" placeholder="GENERAL" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">Descripción *</label><input type="text" id="prodDescripcion" placeholder="Nombre del artículo o servicio" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Ubicación</label><input type="text" id="prodUbicacion" placeholder="PASILLO A-1" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">¿Maneja Inventario?</label><select id="prodManejaInventario" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="true" selected>SÍ</option><option value="false">NO (Servicio)</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Código SKU</label><input type="text" id="prodSku" placeholder="SKU-001" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Categoría</label><input type="text" id="prodCategoria" placeholder="GENERAL" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">Descripción *</label><input type="text" id="prodDescripcion" placeholder="Nombre del artículo o servicio" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Ubicación</label><input type="text" id="prodUbicacion" placeholder="PASILLO A-1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">¿Maneja Inventario?</label><select id="prodManejaInventario" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="true" selected>SÍ</option><option value="false">NO (Servicio)</option></select></div>
           <div class="relative">
             <label class="block text-xs font-semibold text-slate-300 mb-1">Unidad de Medida (Buscar en Maestro) *</label>
             <input type="hidden" id="prodUnidadMedida">
@@ -738,7 +1099,7 @@
                 placeholder="Buscar unidad creada..."
                 onfocus="abrirBusquedaUnidad()"
                 oninput="filtrarUnidadesProducto(this.value)"
-                class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 pr-8 text-white text-sm font-mono"
+                class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pr-8 text-white text-sm font-mono"
               >
               <button
                 type="button"
@@ -753,11 +1114,11 @@
               class="hidden absolute z-30 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-slate-900 border border-slate-700 rounded-xl shadow-2xl divide-y divide-slate-800"
             ></div>
           </div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Stock Inicial</label><input type="number" step="0.001" id="prodStock" value="100" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Lote</label><input type="text" id="prodLote" value="SIN-LOTE" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Costo ($ USD)</label><input type="number" step="0.01" id="prodCosto" value="1.00" oninput="calcularPrecioPorcentaje()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">% Utilidad</label><input type="number" step="0.01" id="prodUtilidad" value="30.00" oninput="calcularPrecioPorcentaje()" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Precio Venta ($ USD)</label><input type="number" step="0.01" id="prodPrecioVenta" value="1.30" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Stock Inicial</label><input type="number" step="0.001" id="prodStock" value="100" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Lote</label><input type="text" id="prodLote" value="SIN-LOTE" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Costo ($ USD)</label><input type="number" step="0.01" id="prodCosto" value="1.00" oninput="calcularPrecioPorcentaje()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">% Utilidad</label><input type="number" step="0.01" id="prodUtilidad" value="30.00" oninput="calcularPrecioPorcentaje()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Precio Venta ($ USD)</label><input type="number" step="0.01" id="prodPrecioVenta" value="1.30" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold text-sm font-mono tabular-nums"></div>
           <div class="relative">
             <label class="block text-xs font-semibold text-slate-300 mb-1">Tipo de IVA (Buscar en Maestro) *</label>
             <input type="hidden" id="prodExento">
@@ -769,7 +1130,7 @@
                 placeholder="Buscar tipo de IVA creado..."
                 onfocus="abrirBusquedaTipoIva()"
                 oninput="filtrarTiposIvaProducto(this.value)"
-                class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 pr-8 text-white text-sm"
+                class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 pr-8 text-white text-sm"
               >
               <button
                 type="button"
@@ -784,42 +1145,88 @@
               class="hidden absolute z-30 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-slate-900 border border-slate-700 rounded-xl shadow-2xl divide-y divide-slate-800"
             ></div>
           </div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable</label><input type="text" id="prodCuentaContable" placeholder="110401" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable</label><input type="text" id="prodCuentaContable" placeholder="110401" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
           <div class="md:col-span-4 flex gap-3">
-            <button id="btnGuardarProducto" onclick="guardarProducto()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 rounded-xl text-sm cursor-pointer">💾 Guardar Artículo</button>
-            <button id="btnCancelarProd" onclick="limpiarFormProducto()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2.5 rounded-xl text-sm cursor-pointer">Cancelar</button>
+            <button id="btnGuardarProducto" onclick="guardarProducto()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Artículo</button>
+            <button id="btnCancelarProd" onclick="limpiarFormProducto()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
           </div>
         </div>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">SKU</th><th class="p-3">Categoría</th><th class="p-3">Descripción</th><th class="p-3">Ubicación</th><th class="p-3 text-center">Stock</th><th class="p-3">Costo ($)</th><th class="p-3">Precio Venta</th><th class="p-3">IVA</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaProductosGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">SKU</th><th class="p-3">Categoría</th><th class="p-3">Descripción</th><th class="p-3">Ubicación</th><th class="p-3 text-center">Stock</th><th class="p-3">Costo ($)</th><th class="p-3">Precio Venta</th><th class="p-3">IVA</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaProductosGestion" class="divide-y divide-slate-800/60 tabular-nums"></tbody></table></div>
       </div>
 
       <!-- Clientes -->
       <div id="seccionClientes" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
-          <h3 id="tituloFormCliente" class="text-sm font-bold text-emerald-400 uppercase">👥 Maestro de Clientes</h3>
-          <button onclick="exportarClientesExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer">📥 Exportar Excel</button>
+          <h3 id="tituloFormCliente" class="text-base font-bold text-white tracking-tight">Maestro de Clientes</h3>
+          <button onclick="exportarClientesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/40 p-5 rounded-2xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editClienteId">
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">RIF / Cédula *</label><input type="text" id="cliRif" placeholder="V-12345678-0" onblur="validarRifInput(this)" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nombre / Razón Social *</label><input type="text" id="cliRazonSocial" placeholder="CLIENTE EJEMPLO C.A." class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Teléfono</label><input type="text" id="cliTelefono" placeholder="0414-0000000" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico</label><input type="email" id="cliEmail" placeholder="cliente@correo.com" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Persona de Contacto</label><input type="text" id="cliContacto" placeholder="Nombre del contacto" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Contribuyente Especial</label><select id="cliContribuyenteEspecial" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="false" selected>NO</option><option value="true">SÍ</option></select></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable</label><input type="text" id="cliCuentaContable" placeholder="110201" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">Dirección Fiscal</label><input type="text" id="cliDireccion" placeholder="Dirección completa" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">RIF / Cédula *</label><input type="text" id="cliRif" placeholder="V-12345678-0" onblur="validarRifInput(this)" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nombre / Razón Social *</label><input type="text" id="cliRazonSocial" placeholder="CLIENTE EJEMPLO C.A." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Teléfono</label><input type="text" id="cliTelefono" placeholder="0414-0000000" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico</label><input type="email" id="cliEmail" placeholder="cliente@correo.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Persona de Contacto</label><input type="text" id="cliContacto" placeholder="Nombre del contacto" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Contribuyente Especial</label><select id="cliContribuyenteEspecial" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="false" selected>NO</option><option value="true">SÍ</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable</label><input type="text" id="cliCuentaContable" placeholder="110201" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">Dirección Fiscal</label><input type="text" id="cliDireccion" placeholder="Dirección completa" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div class="md:col-span-3 flex gap-3">
-            <button id="btnGuardarCliente" onclick="guardarCliente()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 rounded-xl text-sm cursor-pointer">💾 Guardar Cliente</button>
-            <button id="btnCancelarCli" onclick="limpiarFormCliente()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2.5 rounded-xl text-sm cursor-pointer">Cancelar</button>
+            <button id="btnGuardarCliente" onclick="guardarCliente()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Cliente</button>
+            <button id="btnCancelarCli" onclick="limpiarFormCliente()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
           </div>
         </div>
-        <div class="overflow-x-auto"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">RIF</th><th class="p-3">Razón Social</th><th class="p-3">Teléfono</th><th class="p-3">Correo</th><th class="p-3">Contacto</th><th class="p-3 text-center">Contrib. Esp.</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaClientesGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">RIF</th><th class="p-3">Razón Social</th><th class="p-3">Teléfono</th><th class="p-3">Correo</th><th class="p-3">Contacto</th><th class="p-3 text-center">Contrib. Esp.</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaClientesGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
       </div>
 
-      <div id="seccionReferidos" class="hidden space-y-6"><h3 class="text-sm font-bold text-amber-400 uppercase">🤝 Programa de Afiliados</h3><p class="text-xs text-slate-400">Comparte tu código de referido con otros comercios.</p></div>
-      <div id="seccionInquilinosMaster" class="hidden space-y-6"><h3 class="text-sm font-bold text-emerald-400 uppercase">🏢 Panel Master de Inquilinos</h3><p class="text-xs text-slate-400">Administración global de tenants.</p></div>
-    </main>
+      <!-- Programa de Afiliados -->
+      <div id="seccionReferidos" class="hidden space-y-6">
+        <div>
+          <h3 class="text-base font-bold text-white tracking-tight">Programa de Afiliados</h3>
+          <p class="text-xs text-slate-400">Comparte tu enlace de referido con otros comercios venezolanos.</p>
+        </div>
+        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4 max-w-2xl">
+          <div>
+            <p class="text-xs text-slate-400">Tu Código de Referido</p>
+            <p id="refCodigoMiEmpresa" class="text-xl font-bold font-mono text-emerald-400 mt-1">MFD-VE</p>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="text" id="refEnlaceCompartir" readonly class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-200">
+            <button type="button" onclick="copiarCodigoReferido()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer whitespace-nowrap">Copiar Enlace</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel Master SaaS Multitenant (MAS-001) -->
+      <div id="seccionInquilinosMaster" class="hidden space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Panel Master de Inquilinos SaaS (MAS-001)</h3>
+            <p class="text-xs text-slate-400">Administración multitenant de comercios registrados y asignación de planes.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-mono text-slate-400">Inquilinos: <strong id="masterTotalInquilinos" class="text-emerald-400 tabular-nums">0</strong></span>
+            <button type="button" onclick="cargarInquilinosMaster()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Actualizar</button>
+          </div>
+        </div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+              <tr>
+                <th class="p-3">Razón Social</th>
+                <th class="p-3">RIF</th>
+                <th class="p-3">Correo</th>
+                <th class="p-3">Rol</th>
+                <th class="p-3">Plan</th>
+                <th class="p-3">Estado</th>
+                <th class="p-3 text-center">Cambiar Plan</th>
+              </tr>
+            </thead>
+            <tbody id="tablaInquilinosMaster" class="divide-y divide-slate-800/60"></tbody>
+          </table>
+        </div>
+      </div>
+      </main>
+    </div>
   </div>
 
   <!-- MODAL FACTURA DIGITAL / COMPROBANTE FISCAL SENIAT -->

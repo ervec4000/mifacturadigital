@@ -1,0 +1,55 @@
+,,,MiFacturaDigital • Checklist y Estado de Funcionalidades,,,,,,
+,,,"Control de desarrollo, módulos fiscales SENIAT y cobertura operativa del sistema POS",,,,,,
+,,,TOTAL FUNCIONES,FUNCIONES COMPLETADAS,,AVANCE GENERAL,AVANCE VALIDACION,,
+,,,50,50,,"100,0%","0,0%",,
+Nro,Mod Js,Código ID,Módulo Principal,Sub-módulo,Funciones,Estado,Validación Edison,Que observaciones tienes,Estatus
+1,auth.js,SEC-001,Seguridad y RBAC,Autenticación Tenant,iniciarSesionTenant(),HECHO,PENDIENTE,,Listo
+2,auth.js,SEC-002,Seguridad y RBAC,Persistencia Local,verificarSesionGuardada(),HECHO,PENDIENTE,,Listo
+3,auth.js,SEC-003,Seguridad y RBAC,Control de Interfaz,activarVistaPrincipal(),HECHO,PENDIENTE,,Listo
+4,auth.js,SEC-004,Seguridad y RBAC,Sesión Segura,cerrarSesion(),HECHO,PENDIENTE,,Listo
+5,auth.js,SEC-005,Seguridad y RBAC,Perfil Fiscal,abrirModalPerfil() / cerrarModalPerfil(),HECHO,PENDIENTE,,Listo
+6,auth.js,SEC-006,Seguridad y RBAC,Auditoría e Inmutabilidad,audit_logs y Bitácora de cambios,HECHO,PENDIENTE,,Listo
+7,pos.js,POS-001,POS y Cálculo Fiscal,Sincronización BCV,consultarTasaBcvApi(),HECHO,PENDIENTE,,Listo
+8,pos.js,POS-002,POS y Cálculo Fiscal,Maestro de Artículos,cargarProductosSelect(),HECHO,PENDIENTE,modifica y elimina,Listo
+9,pos.js,POS-003,POS y Cálculo Fiscal,Maestro de Clientes,cargarClientesSelect(),HECHO,PENDIENTE,"debe tener opcion de crear, modificar y eliminar",FALTA
+10,pos.js,POS-004,POS y Cálculo Fiscal,Carrito de Ventas,agregarItem(),HECHO,PENDIENTE,,Listo
+11,pos.js,POS-005,POS y Cálculo Fiscal,Gestión de Carrito,eliminarItemCarrito(),HECHO,PENDIENTE,,Listo
+12,pos.js,POS-006,POS y Cálculo Fiscal,Motor Matemático,"actualizarTablaYCalculos() (Base, Exento, IVA 16%)",HECHO,PENDIENTE,,Listo
+13,pos.js,POS-007,POS y Cálculo Fiscal,Impuesto Divisas,verificarAplicacionIgtf() (Cálculo automático 3%),HECHO,PENDIENTE,,Listo
+14,pos.js,POS-008,POS y Cálculo Fiscal,Vuelto Multidivisa,calcularVuelto() (Dólares y Bolívares),HECHO,PENDIENTE,,Listo
+15,pos.js,POS-009,POS y Cálculo Fiscal,Emisión Fiscal,emitirFactura() (Correlativos SENIAT),HECHO,PENDIENTE,,Listo
+16,pos.js,POS-010,POS y Cálculo Fiscal,Hardware POS,conectarImpresoraFiscalWebSerial(),HECHO,PENDIENTE,,Listo
+17,pos.js,POS-011,POS y Cálculo Fiscal,Mensajería Digital,enviarWhatsApp(),HECHO,PENDIENTE,,Listo
+18,reportes.js,SEN-001,Historial y Notas,Consulta Masiva,cargarHistorial(),HECHO,PENDIENTE,,Listo
+19,reportes.js,SEN-002,Historial y Notas,Filtros Avanzados,filtrarHistorial(),HECHO,PENDIENTE,,Listo
+20,reportes.js,SEN-003,Historial y Notas,Comprobante Visual,verComprobante(),HECHO,PENDIENTE,"Impresión de actas e importación/exportación a Excel. las acta salen el blanco y el reporte no esta la conciliación (stock teorico versus fisico , diferencia, y el histórico para ver las veces que hice inventario fisico crealo en supabase",Listo
+21,reportes.js,SEN-004,Historial y Notas,Enlace Legal,cargarFacturasAfectadasSelect(),HECHO,PENDIENTE,,Listo
+22,reportes.js,SEN-005,Historial y Notas,Notas SENIAT,emitirNotaFiscal() (Notas de Crédito y Débito),HECHO,PENDIENTE,,Listo
+23,reportes.js,SEN-006,Historial y Notas,Reportes Históricos,exportarHistorialExcel(),HECHO,PENDIENTE,,Listo
+24,reportes.js,CIE-001,Cierres y Libros,Cuadre de Caja,generarReporteZ() (Gaveta y efectivo),HECHO,PENDIENTE,,Listo
+25,reportes.js,CIE-002,Cierres y Libros,Libro Legal,descargarLibroVentasOficialExcel(),HECHO,PENDIENTE,,Listo
+26,reportes.js,CIE-003,Cierres y Libros,Libro Legal,descargarLibroComprasOficialExcel(),HECHO,PENDIENTE,,Listo
+27,reportes.js,CIE-004,Cierres y Libros,Impresión Térmica,imprimirBluetoothReal(),HECHO,PENDIENTE,,Listo
+28,reportes.js,CIE-005,Cierres y Libros,Cuentas por Cobrar,abonarCuentaPorCobrar(),HECHO,PENDIENTE,,Listo
+29,kardex.js,COM-001,Compras y Retenciones,Selección Proveedor,cargarProductosSelectCompra(),HECHO,PENDIENTE,,Listo
+30,kardex.js,COM-002,Compras y Retenciones,Costos y PPM,registrarCompraInventario(),HECHO,PENDIENTE,,Listo
+31,reportes.js,IMP-001,Compras y Retenciones,Tributario SENIAT,generarComprobanteRetencion() (75% / 100%),HECHO,PENDIENTE,,Listo
+32,reportes.js,IMP-002,Compras y Retenciones,Historial Fiscal,cargarRetenciones(),HECHO,PENDIENTE,,Listo
+33,reportes.js,COM-003,Compras y Retenciones,Reportes Compras,exportarComprasExcel(),HECHO,PENDIENTE,,Listo
+34,kardex.js,INV-001,Kardex e Inventario,Trazabilidad SKU,cargarKardexMovimientos(),HECHO,PENDIENTE,,Listo
+35,inventarioFisico.js,INV-002,Kardex e Inventario,Conteo Físico,cargarInventarioFisico(),HECHO,PENDIENTE,,Listo
+36,inventarioFisico.js,INV-003,Kardex e Inventario,Control de Mermas,calcularDiferenciaFisica(),HECHO,PENDIENTE,,Listo
+37,inventarioFisico.js,INV-004,Kardex e Inventario,Actualización Stock,aplicarConteoUnico(),HECHO,PENDIENTE,,Listo
+38,inventarioFisico.js,INV-005,Kardex e Inventario,Conciliación Global,guardarTodoInventarioFisico(),HECHO,PENDIENTE,,
+39,inventarioFisico.js,INV-006,Kardex e Inventario,Histórico Nube,cargarHistoricoInventarioFisico(),HECHO,PENDIENTE,,
+40,inventarioFisico.js,INV-007,Kardex e Inventario,Plantillas Excel,exportarInventarioFisicoExcel(),HECHO,PENDIENTE,,
+41,inventarioFisico.js,INV-008,Kardex e Inventario,Carga Masiva,importarInventarioFisicoExcel(),HECHO,PENDIENTE,,
+42,kardex.js,INV-009,Kardex e Inventario,Sucursales,registrarTransferenciaDeposito(),HECHO,PENDIENTE,,
+43,catalogos.js (o integrado en UI),CAT-001,Catálogo y Clientes,Márgenes de Utilidad,calcularPrecioPorcentaje() (Markup),HECHO,PENDIENTE,,
+44,catalogos.js (o integrado en UI),CAT-002,Catálogo y Clientes,CRUD de Artículos,guardarProducto() / editarProducto() / eliminarProducto(),HECHO,PENDIENTE,,
+45,catalogos.js (o integrado en UI),CAT-003,Catálogo y Clientes,Limpieza UI,limpiarFormProducto(),HECHO,PENDIENTE,,
+46,catalogos.js (o integrado en UI),CAT-004,Catálogo y Clientes,Marcaje Depósito,renderizarEtiquetasQr() / imprimirEtiquetasQr(),HECHO,PENDIENTE,,
+47,catalogos.js (o integrado en UI),CAT-005,Catálogo y Clientes,Unidades de Medida,cargarUnidadesMedidaGestion(),HECHO,PENDIENTE,,
+48,catalogos.js (o integrado en UI),CAT-006,Catálogo y Clientes,Maestro Clientes,cargarClientesGestion(),HECHO,PENDIENTE,,
+49,catalogos.js (o integrado en UI),CAT-007,Catálogo y Clientes,Alertas Financieras,Monitoreo y proyección de CxC,HECHO,PENDIENTE,,
+50,catalogos.js (o integrado en UI),MAS-001,Catálogo y Clientes,Control Multitenant,cargarInquilinosMaster() / Panel SaaS,HECHO,PENDIENTE,,

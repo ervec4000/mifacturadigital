@@ -1054,3 +1054,287 @@ async function cargarRetenciones() {
     `;
   });
 }
+
+// ==========================================
+// SEN-006 / COM-003: EXPORTACIONES EXCEL
+// ==========================================
+
+async function exportarHistorialExcel() {
+  if (!tenantActual) return;
+  if (!documentosHistorialCache || documentosHistorialCache.length === 0) {
+    await cargarHistorial();
+  }
+  if (!documentosHistorialCache || documentosHistorialCache.length === 0) {
+    avisarReporte('No hay comprobantes fiscales para exportar.', 'warning');
+    return;
+  }
+
+  const matriz = [
+    ['EMISOR:', tenantActual.razon_social || '', 'RIF:', tenantActual.rif || ''],
+    [],
+    ['Tipo', 'Documento', 'Nro. Control', 'Fecha', 'Cliente', 'RIF Cliente', 'Método / Moneda', 'Tasa BCV', 'Subtotal Bs.', 'IVA Bs.', 'IGTF Bs.', 'Total Bs.', 'Estado']
+  ];
+
+  documentosHistorialCache.forEach(d => {
+    matriz.push([
+      d.tipoDoc || 'FACTURA',
+      d.numero || d.factura_nro || '',
+      d.nro_control || 'N/A',
+      formatearFecha8Digitos(d.created_at),
+      d.cliente_nombre || '',
+      d.cliente_rif || '',
+      d.metodo_pago || '',
+      Number(d.tasa_bcv || 1),
+      Number(d.subtotal_bs || 0),
+      Number(d.iva_bs || 0),
+      Number(d.igtf_bs || 0),
+      Number(d.total_bs || 0),
+      d.estado || 'EMITIDA'
+    ]);
+  });
+
+  descargarExcelMatriz(matriz, 'Historial_Comprobantes_SENIAT', 'Comprobantes');
+  avisarReporte('Historial de comprobantes exportado a Excel.', 'success');
+}
+
+async function exportarComprasExcel() {
+  if (!tenantActual) return;
+  const { data, error } = await supabaseClient
+    .from('kardex_movimientos')
+    .select('*, productos(codigo_sku, descripcion, unidad_medida)')
+    .eq('tenant_id', tenantActual.id)
+    .eq('tipo_movimiento', 'ENTRADA')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    avisarReporte('Error al consultar compras para exportar: ' + error.message, 'error');
+    return;
+  }
+
+  const compras = (data || []).filter(m => !/^REV-/i.test(String(m.documento_ref || '').trim()));
+  if (compras.length === 0) {
+    avisarReporte('No hay compras registradas para exportar.', 'warning');
+    return;
+  }
+
+  const matriz = [
+    ['EMPRESA:', tenantActual.razon_social || '', 'RIF:', tenantActual.rif || ''],
+    [],
+    ['Fecha', 'Referencia Documento', 'SKU', 'Material', 'Unidad', 'Cantidad', 'Costo Unit. (USD)', 'Tasa BCV', 'Total Est. (USD)', 'Total Est. (Bs.)']
+  ];
+
+  compras.forEach(m => {
+    const cant = Number(m.cantidad_in || 0);
+    const costo = Number(m.costo_promedio_usd || 0);
+    const tasa = Number(m.tasa_bcv || 1);
+    const totUsd = cant * costo;
+    matriz.push([
+      m.fecha || (m.created_at ? m.created_at.slice(0, 10) : ''),
+      m.documento_ref || '',
+      m.productos?.codigo_sku || 'S/N',
+      m.productos?.descripcion || 'Material',
+      m.productos?.unidad_medida || 'UND',
+      cant,
+      costo,
+      tasa,
+      Number(totUsd.toFixed(2)),
+      Number((totUsd * tasa).toFixed(2))
+    ]);
+  });
+
+  descargarExcelMatriz(matriz, 'Reporte_Compras_Detallado', 'Compras');
+  avisarReporte('Reporte detallado de compras exportado a Excel.', 'success');
+}
+
+// ==========================================
+// CIE-005 / CAT-007: CUENTAS POR COBRAR Y ALERTAS
+// ==========================================
+
+let cuentasPorCobrarCache = [];
+
+function leerAbonosCxcLocal(tenantId) {
+  try {
+    return JSON.parse(localStorage.getItem(`cxc_abonos_${tenantId}`) || '{}');
+  } catch (e) {
+    return {};
+  }
+}
+
+function guardarAbonoCxcLocal(tenantId, invoiceId, abonoObj) {
+  try {
+    const store = leerAbonosCxcLocal(tenantId);
+    if (!store[String(invoiceId)]) store[String(invoiceId)] = [];
+    store[String(invoiceId)].push(abonoObj);
+    localStorage.setItem(`cxc_abonos_${tenantId}`, JSON.stringify(store));
+  } catch (e) {}
+}
+
+async function cargarCuentasPorCobrar() {
+  if (!tenantActual) return;
+  const tenantId = tenantActual.id;
+
+  const [resInv, resAudit] = await Promise.all([
+    supabaseClient.from('invoices').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false }),
+    supabaseClient.from('audit_logs').select('*').eq('tenant_id', tenantId).eq('accion', 'ABONO_CXC')
+  ]);
+
+  const abonosPorFactura = {};
+  const localStore = leerAbonosCxcLocal(tenantId);
+  Object.keys(localStore).forEach(invId => {
+    abonosPorFactura[invId] = (localStore[invId] || []).reduce((acc, a) => acc + Number(a.montoUsd || 0), 0);
+  });
+
+  if (!resAudit.error && Array.isArray(resAudit.data)) {
+    const nubeSum = {};
+    resAudit.data.forEach(log => {
+      try {
+        const det = JSON.parse(log.detalle || '{}');
+        if (det.invoiceId && Number(det.montoUsd) > 0) {
+          nubeSum[String(det.invoiceId)] = (nubeSum[String(det.invoiceId)] || 0) + Number(det.montoUsd);
+        }
+      } catch (e) {}
+    });
+    Object.keys(nubeSum).forEach(invId => {
+      abonosPorFactura[invId] = Math.max(abonosPorFactura[invId] || 0, nubeSum[invId]);
+    });
+  }
+
+  const creditoList = (resInv.data || []).filter(inv => {
+    const nro = String(inv.factura_nro || '').toUpperCase();
+    const est = String(inv.estado || '').toUpperCase();
+    if (nro.startsWith('NC') || nro.startsWith('ND') || nro.startsWith('REV-') || est === 'ANULADA' || est === 'REVERSO') return false;
+    const meta = obtenerMetaFacturaLocal(tenantId, inv);
+    const cond = String(meta?.condicionPago || '').toUpperCase();
+    const met = String(inv.metodo_pago || '').toUpperCase();
+    return cond.includes('CRÉDITO') || cond.includes('CREDITO') || met.includes('CRÉDITO') || met.includes('CREDITO');
+  });
+
+  const hoyMs = Date.now();
+  let totalCarteraUsd = 0;
+  let pendienteTotalUsd = 0;
+  let vencidasCount = 0;
+
+  cuentasPorCobrarCache = creditoList.map(inv => {
+    const tasa = Number(inv.tasa_bcv || 1);
+    const totalUsd = Number(inv.monto_usd || (Number(inv.total_bs || 0) / tasa));
+    const abonadoUsd = Math.min(totalUsd, abonosPorFactura[String(inv.id)] || 0);
+    const saldoUsd = Math.max(0, totalUsd - abonadoUsd);
+    const diasTranscurridos = Math.max(0, Math.floor((hoyMs - new Date(inv.created_at).getTime()) / 86400000));
+    const vencida = saldoUsd > 0.01 && diasTranscurridos > 15;
+    if (vencida) vencidasCount += 1;
+    totalCarteraUsd += totalUsd;
+    pendienteTotalUsd += saldoUsd;
+
+    return {
+      ...inv,
+      tasa,
+      totalUsd,
+      abonadoUsd,
+      saldoUsd,
+      diasTranscurridos,
+      vencida
+    };
+  });
+
+  const elTot = document.getElementById('cxcTotalCartera');
+  const elPen = document.getElementById('cxcPendienteCobro');
+  const elVen = document.getElementById('cxcVencidasAlerta');
+  if (elTot) elTot.textContent = `$ ${totalCarteraUsd.toFixed(2)}`;
+  if (elPen) elPen.textContent = `$ ${pendienteTotalUsd.toFixed(2)}`;
+  if (elVen) elVen.textContent = `${vencidasCount} factura(s) > 15 días`;
+
+  const tbody = document.getElementById('tablaCuentasPorCobrar');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (cuentasPorCobrarCache.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-5 text-center text-slate-500">No existen facturas emitidas a CRÉDITO pendientes de cobro.</td></tr>`;
+    return;
+  }
+
+  cuentasPorCobrarCache.forEach(c => {
+    const estatus = c.saldoUsd <= 0.01
+      ? '<span class="text-emerald-400 font-semibold">SOLVENTE</span>'
+      : (c.vencida
+          ? `<span class="text-rose-400 font-semibold">VENCIDA (${c.diasTranscurridos}d)</span>`
+          : `<span class="text-amber-300 font-semibold">VIGENTE (${c.diasTranscurridos}d)</span>`);
+
+    const accionHtml = c.saldoUsd <= 0.01
+      ? `<span class="text-xs text-slate-500 font-mono">Liquidada</span>`
+      : `<div class="flex items-center justify-center gap-1.5">
+           <input type="number" step="0.01" min="0.01" max="${c.saldoUsd.toFixed(2)}" id="abonoInput_${esc(c.id)}" value="${c.saldoUsd.toFixed(2)}" class="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-white tabular-nums">
+           <button type="button" onclick='abonarCuentaPorCobrar("${esc(c.id)}")' class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap">Registrar Abono</button>
+         </div>`;
+
+    tbody.innerHTML += `
+      <tr class="hover:bg-slate-900 border-b border-slate-800/40">
+        <td class="p-3 font-mono font-bold text-white">${esc(c.factura_nro)}<div class="text-[11px] text-slate-500">${formatearFecha8Digitos(c.created_at)}</div></td>
+        <td class="p-3 text-slate-200">${esc(c.cliente_nombre)}<div class="text-[11px] font-mono text-slate-500">${esc(c.cliente_rif)}</div></td>
+        <td class="p-3 font-mono tabular-nums text-slate-300">$ ${c.totalUsd.toFixed(2)}</td>
+        <td class="p-3 font-mono tabular-nums text-emerald-400">$ ${c.abonadoUsd.toFixed(2)}</td>
+        <td class="p-3 font-mono tabular-nums font-bold ${c.saldoUsd > 0.01 ? 'text-amber-300' : 'text-emerald-400'}">$ ${c.saldoUsd.toFixed(2)}</td>
+        <td class="p-3 text-xs">${estatus}</td>
+        <td class="p-3 text-center">${accionHtml}</td>
+      </tr>
+    `;
+  });
+}
+
+async function abonarCuentaPorCobrar(invoiceId) {
+  if (!tenantActual) return;
+  const tenantId = tenantActual.id;
+  const item = cuentasPorCobrarCache.find(c => String(c.id) === String(invoiceId));
+  if (!item) return;
+
+  const input = document.getElementById(`abonoInput_${invoiceId}`);
+  const montoUsd = parseFloat(input?.value || item.saldoUsd) || 0;
+  if (montoUsd <= 0) {
+    avisarReporte('Ingresa un monto de abono mayor a 0.', 'warning');
+    return;
+  }
+  const montoAplicado = Math.min(montoUsd, item.saldoUsd);
+  const abonoObj = {
+    invoiceId,
+    facturaNro: item.factura_nro,
+    montoUsd: Number(montoAplicado.toFixed(2)),
+    fecha: new Date().toISOString()
+  };
+
+  guardarAbonoCxcLocal(tenantId, invoiceId, abonoObj);
+  await supabaseClient.from('audit_logs').insert([{
+    tenant_id: tenantId,
+    accion: 'ABONO_CXC',
+    detalle: JSON.stringify(abonoObj)
+  }]);
+
+  avisarReporte(`Abono de $ ${montoAplicado.toFixed(2)} registrado en factura ${item.factura_nro}.`, 'success');
+  await cargarCuentasPorCobrar();
+}
+
+function exportarCuentasPorCobrarExcel() {
+  if (!tenantActual) return;
+  if (!cuentasPorCobrarCache || cuentasPorCobrarCache.length === 0) {
+    avisarReporte('No hay cuentas por cobrar para exportar.', 'warning');
+    return;
+  }
+  const matriz = [
+    ['EMPRESA:', tenantActual.razon_social || '', 'REPORTE:', 'CUENTAS POR COBRAR (CXC)'],
+    [],
+    ['Factura', 'Fecha Emisión', 'Cliente', 'RIF', 'Total USD', 'Abonado USD', 'Saldo Pendiente USD', 'Días', 'Estado']
+  ];
+  cuentasPorCobrarCache.forEach(c => {
+    matriz.push([
+      c.factura_nro,
+      formatearFecha8Digitos(c.created_at),
+      c.cliente_nombre,
+      c.cliente_rif,
+      Number(c.totalUsd.toFixed(2)),
+      Number(c.abonadoUsd.toFixed(2)),
+      Number(c.saldoUsd.toFixed(2)),
+      c.diasTranscurridos,
+      c.saldoUsd <= 0.01 ? 'SOLVENTE' : (c.vencida ? 'VENCIDA' : 'VIGENTE')
+    ]);
+  });
+  descargarExcelMatriz(matriz, 'Cuentas_Por_Cobrar', 'CxC');
+}
+

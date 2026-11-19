@@ -1932,3 +1932,96 @@ async function cargarViasPagoSelectPos() {
     if (typeof verificarAplicacionIgtf === 'function') verificarAplicacionIgtf();
   }
 }
+
+// ==========================================
+// 11. AFILIADOS Y PANEL MASTER SAAS (MAS-001)
+// ==========================================
+
+function cargarDatosReferidos() {
+  if (!tenantActual) return;
+  const base = String(tenantActual.rif || tenantActual.id || 'VE2026').replace(/[^A-Z0-9]/gi, '').slice(0, 8).toUpperCase();
+  const codigo = `MFD-${base}`;
+  const enlace = `${window.location.origin}/?ref=${encodeURIComponent(codigo)}`;
+
+  const elCod = document.getElementById('refCodigoMiEmpresa');
+  const elUrl = document.getElementById('refEnlaceCompartir');
+  if (elCod) elCod.textContent = codigo;
+  if (elUrl) elUrl.value = enlace;
+}
+
+async function copiarCodigoReferido() {
+  const elUrl = document.getElementById('refEnlaceCompartir');
+  const texto = elUrl?.value || document.getElementById('refCodigoMiEmpresa')?.textContent || '';
+  if (!texto) return;
+  try {
+    await navigator.clipboard.writeText(texto);
+    avisarUsuario('Enlace de referido copiado al portapapeles.', 'success');
+  } catch (e) {
+    avisarUsuario(`Código de referido: ${texto}`, 'info', 6000);
+  }
+}
+
+let inquilinosMasterCache = [];
+
+async function cargarInquilinosMaster() {
+  const tbody = document.getElementById('tablaInquilinosMaster');
+  if (!tbody) return;
+  tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Consultando inquilinos SaaS...</td></tr>`;
+
+  const { data, error } = await supabaseClient
+    .from('tenants')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-rose-400">${esc(explicarErrorSupabase('tenants', 'consultar', error))}</td></tr>`;
+    return;
+  }
+
+  inquilinosMasterCache = data || [];
+  const totalEl = document.getElementById('masterTotalInquilinos');
+  if (totalEl) totalEl.textContent = String(inquilinosMasterCache.length);
+
+  tbody.innerHTML = '';
+  if (inquilinosMasterCache.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin inquilinos registrados.</td></tr>`;
+    return;
+  }
+
+  inquilinosMasterCache.forEach(t => {
+    const plan = String(t.plan_activo || 'Freemium').toUpperCase();
+    const rol = String(t.rol || 'cliente').toUpperCase();
+    tbody.innerHTML += `
+      <tr class="hover:bg-slate-900 border-b border-slate-800/40">
+        <td class="p-3 font-medium text-white">${esc(t.razon_social || 'Sin Razón Social')}</td>
+        <td class="p-3 font-mono text-slate-300">${esc(t.rif || 'N/A')}</td>
+        <td class="p-3 font-mono text-slate-400">${esc(t.email || '')}</td>
+        <td class="p-3 font-mono text-xs text-slate-300">${esc(rol)}</td>
+        <td class="p-3 font-mono text-xs font-bold text-emerald-400">${esc(plan)}</td>
+        <td class="p-3 text-emerald-400 font-semibold text-xs">Activo</td>
+        <td class="p-3 text-center">
+          <select onchange='cambiarPlanInquilinoMaster("${esc(t.id)}", this.value)' class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 cursor-pointer">
+            <option value="Freemium" ${plan === 'FREEMIUM' ? 'selected' : ''}>Freemium</option>
+            <option value="Pyme" ${plan === 'PYME' ? 'selected' : ''}>Pyme</option>
+            <option value="Enterprise" ${plan === 'ENTERPRISE' ? 'selected' : ''}>Enterprise</option>
+          </select>
+        </td>
+      </tr>
+    `;
+  });
+}
+
+async function cambiarPlanInquilinoMaster(tenantIdTarget, nuevoPlan) {
+  const { error } = await supabaseClient
+    .from('tenants')
+    .update({ plan_activo: nuevoPlan })
+    .eq('id', tenantIdTarget);
+
+  if (error) {
+    avisarUsuario(`No se pudo actualizar el plan: ${error.message}`, 'error');
+    return;
+  }
+  avisarUsuario(`Plan actualizado a ${nuevoPlan}.`, 'success');
+  await cargarInquilinosMaster();
+}
+
