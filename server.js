@@ -111,9 +111,33 @@ app.get('/api/tasa-bcv', async (req, res) => {
   return res.status(502).json(resultado);
 });
 
-app.use(express.static(path.join(__dirname)));
+app.get('/api/saas/pasarela-estado', (req, res) => {
+  const proveedores = {
+    stripe: Boolean(process.env.STRIPE_SECRET_KEY),
+    paypal: Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET),
+    lemonSqueezy: Boolean(process.env.LEMONSQUEEZY_API_KEY),
+    mercadoPago: Boolean(process.env.MERCADOPAGO_ACCESS_TOKEN)
+  };
+  const algunProveedorActivo = Object.values(proveedores).some(Boolean);
+  res.json({
+    ok: true,
+    algunProveedorActivo,
+    proveedores,
+    transferenciaBancariaActiva: true,
+    pagoMovilActivo: true
+  });
+});
+
+app.use(express.static(path.join(__dirname), {
+  setHeaders: (res, filePath) => {
+    if (/\.(html|js|sql|css)$/i.test(filePath)) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+    }
+  }
+}));
 
 app.get('*', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 

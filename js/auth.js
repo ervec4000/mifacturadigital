@@ -61,12 +61,22 @@ async function iniciarSesionTenant() {
   if (!tenantActual.plan_activo) tenantActual.plan_activo = 'Freemium';
 
   localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
+  if (typeof sincronizarMetaSaasTenantActual === 'function') {
+    await sincronizarMetaSaasTenantActual();
+  }
   activarVistaPrincipal();
 }
 
-function verificarSesionGuardada() {
+async function verificarSesionGuardada() {
   const guardado = localStorage.getItem('tenant_actual');
-  if (guardado) { tenantActual = JSON.parse(guardado); activarVistaPrincipal(); }
+  if (guardado) {
+    tenantActual = JSON.parse(guardado);
+    activarVistaPrincipal();
+    if (typeof sincronizarMetaSaasTenantActual === 'function') {
+      await sincronizarMetaSaasTenantActual();
+      if (typeof aplicarPermisosMenuTenant === 'function') aplicarPermisosMenuTenant();
+    }
+  }
 }
 
 function activarVistaPrincipal() {
@@ -87,15 +97,29 @@ function activarVistaPrincipal() {
 
   if (nombreEl) nombreEl.innerText = tenantActual.razon_social || tenantActual.email;
   if (rifEl) rifEl.innerText = tenantActual.rif || 'J-00000000-0';
-  if (rolEl) rolEl.innerText = (tenantActual.rol || 'freemium').toUpperCase();
+  if (rolEl) rolEl.innerText = (tenantActual.rol || 'tenant').toUpperCase();
   if (planEl) planEl.innerText = (tenantActual.plan_activo || 'Freemium').toUpperCase();
 
-  const esMaster = tenantActual.rol === 'master' || tenantActual.email === 'ervec2000@gmail.com';
-  document.querySelectorAll('.tab-master').forEach(el => {
-    if (esMaster) el.classList.remove('hidden'); else el.classList.add('hidden');
-  });
+  if (typeof aplicarPermisosMenuTenant === 'function') {
+    aplicarPermisosMenuTenant();
+  } else {
+    const esMaster = String(tenantActual.rol || '').toLowerCase() === 'master' || String(tenantActual.email || '').toLowerCase() === 'ervec2000@gmail.com';
+    document.querySelectorAll('.tab-master').forEach(el => {
+      if (esMaster) el.classList.remove('hidden'); else el.classList.add('hidden');
+    });
+  }
 
-  cambiarPestana('pos');
+  let pestanaInicial = 'pos';
+  if (typeof esUsuarioMaster === 'function' && esUsuarioMaster(tenantActual)) {
+    pestanaInicial = 'inquilinosMaster';
+  } else if (typeof puedeAccederModuloErp === 'function' && !puedeAccederModuloErp('pos')) {
+    const permitidos = typeof obtenerPermisosEfectivosTenant === 'function' ? obtenerPermisosEfectivosTenant(tenantActual) : ['suscripcion'];
+    pestanaInicial = permitidos[0] || 'suscripcion';
+  }
+  cambiarPestana(pestanaInicial);
+  if (pestanaInicial === 'inquilinosMaster' && typeof marcarBotonSidebarMaster === 'function') {
+    marcarBotonSidebarMaster('tenants');
+  }
 }
 
 function cerrarSesion() {
@@ -165,6 +189,7 @@ const TITULOS_MODULOS_ERP = {
   etiquetas: 'Inventario y Kardex / Etiquetas QR Tamaño Carta (CAT-004)',
   compras: 'Compras y Tributos / Registro de Compras y PPM (COM-001 · COM-003)',
   retenciones: 'Compras y Tributos / Retenciones IVA SENIAT (IMP-001 · IMP-002)',
+  contabilidad: 'Contabilidad y ERP / Plan de Cuentas, Libro Diario e Integración VEN-NIF',
   productos: 'Catálogos y Maestros / Gestión de Artículos (CAT-001 · CAT-003)',
   clientes: 'Catálogos y Maestros / Maestro de Clientes (CAT-006)',
   proveedores: 'Catálogos y Maestros / Maestro de Proveedores',
@@ -174,16 +199,26 @@ const TITULOS_MODULOS_ERP = {
   tiposIva: 'Catálogos y Maestros / Alícuotas e IVA',
   viasPago: 'Catálogos y Maestros / Vías y Métodos de Pago',
   referidos: 'Catálogos y Maestros / Programa de Afiliados',
-  inquilinosMaster: 'Catálogos y Maestros / Panel Master Multitenant SaaS (MAS-001)'
+  suscripcion: 'Cuenta y Suscripción / Mi Plan y Pagos SaaS',
+  inquilinosMaster: 'Administración SaaS / Panel Master Multitenant (MAS-001)'
 };
 
 function cambiarPestana(pestana) {
+  if (typeof puedeAccederModuloErp === 'function' && tenantActual && !puedeAccederModuloErp(pestana)) {
+    avisarAuth('Este módulo no está habilitado en la configuración de tu comercio. Consulta tu plan o contacta al administrador.', 'warning');
+    if (pestana !== 'suscripcion') {
+      pestana = 'suscripcion';
+    } else {
+      return;
+    }
+  }
+
   const tabs = [
     'pos', 'historial', 'notasFiscales', 'cierrez', 'cuentas',
     'kardex', 'fisico', 'transferencias', 'lotes', 'etiquetas',
-    'compras', 'retenciones',
+    'compras', 'retenciones', 'contabilidad',
     'productos', 'clientes', 'proveedores', 'sucursales', 'almacenes',
-    'unidades', 'tiposIva', 'viasPago', 'referidos', 'inquilinosMaster'
+    'unidades', 'tiposIva', 'viasPago', 'referidos', 'suscripcion', 'inquilinosMaster'
   ];
 
   tabs.forEach(t => {
@@ -231,6 +266,7 @@ function cambiarPestana(pestana) {
   }
   if (pestana === 'proveedores' && typeof cargarProveedoresGestion === 'function') cargarProveedoresGestion();
   if (pestana === 'retenciones') cargarRetenciones();
+  if (pestana === 'contabilidad' && typeof cargarModuloContabilidad === 'function') cargarModuloContabilidad();
   if (pestana === 'kardex') cargarKardexMovimientos();
   if (pestana === 'fisico') {
     const fFisico = document.getElementById('fisicoFecha');
@@ -262,7 +298,11 @@ function cambiarPestana(pestana) {
   }
   if (pestana === 'clientes' && typeof cargarClientesGestion === 'function') cargarClientesGestion();
   if (pestana === 'referidos' && typeof cargarDatosReferidos === 'function') cargarDatosReferidos();
-  if (pestana === 'inquilinosMaster' && typeof cargarInquilinosMaster === 'function') cargarInquilinosMaster();
+  if (pestana === 'suscripcion' && typeof cargarModuloSuscripcion === 'function') cargarModuloSuscripcion();
+  if (pestana === 'inquilinosMaster') {
+    if (typeof cargarPanelMasterCompleto === 'function') cargarPanelMasterCompleto();
+    else if (typeof cargarInquilinosMaster === 'function') cargarInquilinosMaster();
+  }
   if (pestana === 'pos') {
     if (typeof inicializarModuloPos === 'function') {
       inicializarModuloPos();

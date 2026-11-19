@@ -144,7 +144,7 @@ async function cargarProveedoresSelectCompra() {
     .eq('tenant_id', tenantId)
     .order('razon_social', { ascending: true });
 
-  compraProveedoresCache = data || [];
+  compraProveedoresCache = (data || []).map(p => typeof obtenerMetaContableRegistro === 'function' ? obtenerMetaContableRegistro(tenantId, 'proveedores', p) : p);
   const sel = document.getElementById('compraProveedorSelect');
   if (!sel) return;
   sel.innerHTML = '<option value="">-- Seleccionar Proveedor --</option>';
@@ -440,8 +440,19 @@ async function registrarCompraInventario() {
 
   try {
     const docNro = await calcularProximoDocumentoCompra();
+    let baseGravadaCompraUsd = 0;
+    let montoExentoCompraUsd = 0;
+    let ivaCompraUsd = 0;
 
     for (const item of carritoCompraItems) {
+      const subItemUsd = Number(item.cantidad) * Number(item.costoUsd);
+      if (Number(item.ivaPorcentaje) === 0) {
+        montoExentoCompraUsd += subItemUsd;
+      } else {
+        baseGravadaCompraUsd += subItemUsd;
+        ivaCompraUsd += subItemUsd * (Number(item.ivaPorcentaje) / 100);
+      }
+
       // 1. Consultar material actual en `productos` para calcular saldo PPM
       const { data: prodData, error: prodErr } = await supabaseClient
         .from('productos')
@@ -470,30 +481,54 @@ async function registrarCompraInventario() {
         item.fechaVencimiento ? `VENC:${item.fechaVencimiento}` : null
       ].filter(Boolean).join(' | ');
 
-      const resKardex = await supabaseClient
-        .from('kardex_movimientos')
-        .insert([{
-          tenant_id: tenantId,
-          producto_id: item.productoId,
-          tipo_movimiento: 'ENTRADA',
-          documento_ref: refCompuesta,
-          cantidad_in: item.cantidad,
-          cantidad_out: 0,
-          saldo_cantidad: nuevoStock,
-          costo_promedio_usd: item.costoUsd,
-          tasa_bcv: tasaBcv,
-          fecha: fechaCompra
-        }])
-        .select();
+      const sucItemObj = compraSucursalesCache.find(s => String(s.id) === String(item.sucursalId));
+      const almItemObj = compraAlmacenesCache.find(a => String(a.id) === String(item.almacenId));
+      const sucMeta = sucItemObj && typeof obtenerMetaContableRegistro === 'function' ? obtenerMetaContableRegistro(tenantId, 'sucursales', sucItemObj) : sucItemObj;
+      const almMeta = almItemObj && typeof obtenerMetaContableRegistro === 'function' ? obtenerMetaContableRegistro(tenantId, 'almacenes', almItemObj) : almItemObj;
 
-      if (resKardex.error) {
-        const code = String(resKardex.error.code || '');
-        if (code === '42501' || /row-level security/i.test(resKardex.error.message || '')) {
-          avisarKardex('Permiso denegado por Supabase (RLS 42501) en "kardex_movimientos". Habilita la política RLS para poder guardar el documento de compra en el Kardex.', 'error', 10000);
-        } else {
-          avisarKardex(`Error al guardar en Kardex: ${resKardex.error.message}`, 'error', 9000);
+      const payloadKardexBase = {
+        tenant_id: tenantId,
+        producto_id: item.productoId,
+        tipo_movimiento: 'ENTRADA',
+        documento_ref: refCompuesta,
+        cantidad_in: item.cantidad,
+        cantidad_out: 0,
+        saldo_cantidad: nuevoStock,
+        costo_promedio_usd: item.costoUsd,
+        tasa_bcv: tasaBcv,
+        fecha: fechaCompra
+      };
+
+      const payloadKardexContab = {
+        sucursal_id: item.sucursalId || null,
+        almacen_id: item.almacenId || null,
+        lote: item.lote || null,
+        costo_total_usd: Number(subItemUsd.toFixed(4)),
+        costo_total_bs: Number((subItemUsd * tasaBcv).toFixed(2)),
+        cuenta_inventario: almMeta?.cuenta_inventario || prodData.cuenta_contable || null,
+        cuenta_contrapartida: prov?.cuenta_contable || null,
+        centro_costo: sucMeta?.centro_costo || null,
+        periodo_contable: fechaCompra.slice(0, 7)
+      };
+
+      let resKardex;
+      if (typeof guardarRegistroConCompatibilidadContable === 'function') {
+        const resComp = await guardarRegistroConCompatibilidadContable('kardex_movimientos', null, tenantId, payloadKardexBase, payloadKardexContab);
+        if (!resComp.ok) {
+          avisarKardex(resComp.message, 'error', 10000);
+          return;
         }
-        return;
+      } else {
+        resKardex = await supabaseClient.from('kardex_movimientos').insert([payloadKardexBase]).select();
+        if (resKardex.error) {
+          const code = String(resKardex.error.code || '');
+          if (code === '42501' || /row-level security/i.test(resKardex.error.message || '')) {
+            avisarKardex('Permiso denegado por Supabase (RLS 42501) en "kardex_movimientos". Habilita la política RLS para poder guardar el documento de compra en el Kardex.', 'error', 10000);
+          } else {
+            avisarKardex(`Error al guardar en Kardex: ${resKardex.error.message}`, 'error', 9000);
+          }
+          return;
+        }
       }
 
       // 3. Actualizar stock y costo del material en `productos`
@@ -566,7 +601,22 @@ async function registrarCompraInventario() {
       }
     }
 
-    avisarKardex(`¡Documento de Compra ${docNro} registrado con éxito (${carritoCompraItems.length} renglón/es)!`, 'success', 7000);
+    if (typeof registrarAsientoAutomaticoCompra === 'function') {
+      await registrarAsientoAutomaticoCompra({
+        docNro,
+        nroFactura,
+        fecha: fechaCompra,
+        tasaBcv,
+        proveedorRif: prov?.rif || 'N/A',
+        proveedorNombre: prov?.razon_social || provLabel,
+        proveedorCuenta: prov?.cuenta_contable || null,
+        baseGravadaUsd: baseGravadaCompraUsd,
+        montoExentoUsd: montoExentoCompraUsd,
+        ivaUsd: ivaCompraUsd
+      });
+    }
+
+    avisarKardex(`¡Documento de Compra ${docNro} registrado y contabilizado (${carritoCompraItems.length} renglón/es)!`, 'success', 7000);
     carritoCompraItems = [];
     document.getElementById('compraNumeroFactura').value = '';
     document.getElementById('compraNumeroControl').value = '';

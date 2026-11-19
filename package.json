@@ -8,7 +8,7 @@
     "dev": "node server.js",
     "start": "node server.js",
     "build": "node --check server.js",
-    "lint": "node --check server.js && node --check js/landing.js && node --check js/auth.js && node --check js/pos.js && node --check js/kardex.js && node --check js/inventarioFisico.js && node --check js/reportes.js && node --check js/catalogos.js"
+    "lint": "node --check server.js && node --check js/landing.js && node --check js/auth.js && node --check js/suscripciones.js && node --check js/contabilidad.js && node --check js/pos.js && node --check js/kardex.js && node --check js/inventarioFisico.js && node --check js/reportes.js && node --check js/catalogos.js"
   },
   "dependencies": {
     "express": "^4.21.2"

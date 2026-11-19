@@ -251,8 +251,29 @@
 
       <!-- Navegación Agrupada -->
       <nav class="flex-1 overflow-y-auto custom-scroll p-3 space-y-5">
+        <!-- 0. ADMINISTRACIÓN MASTER SAAS (EXCLUSIVO MASTER) -->
+        <div id="sidebarGrupoMaster" class="tab-master hidden space-y-1 pb-3 border-b border-slate-800">
+          <p class="sidebar-section-title px-2.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400">Administración Master</p>
+          <button type="button" onclick="abrirSubModuloMaster('tenants')" id="btnTabMasterTenants" title="Inquilinos y Menús de Clientes" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>
+            <span class="sidebar-label truncate">Inquilinos y Menús</span>
+          </button>
+          <button type="button" onclick="abrirSubModuloMaster('pagos')" id="btnTabMasterPagos" title="Planes de Suscripción y Pagos" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            <span class="sidebar-label truncate">Suscripciones y Pagos</span>
+          </button>
+          <button type="button" onclick="abrirSubModuloMaster('infraestructura')" id="btnTabMasterSql" title="Implantación SQL y Base de Datos" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
+            <span class="sidebar-label truncate">Implantación SQL / BD</span>
+          </button>
+          <button type="button" onclick="toggleVistaErpEnMaster()" id="btnToggleModulosErpMaster" title="Mostrar u ocultar módulos operativos de comercio" class="w-full flex items-center gap-2.5 px-2.5 py-2 mt-1 rounded-lg border border-slate-800 bg-slate-950/70 text-slate-300 hover:text-white hover:border-slate-700 text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            <span id="btnToggleModulosErpMasterLabel" class="sidebar-label truncate">Ver Módulos Comercio</span>
+          </button>
+        </div>
+
         <!-- 1. POS y Facturación -->
-        <div class="space-y-1">
+        <div class="sidebar-section-group cliente-erp-group space-y-1">
           <p class="sidebar-section-title px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">POS y Facturación</p>
           <button type="button" onclick="cambiarPestana('pos')" id="btnTabPos" title="Facturación POS" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m-2 4h2M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
@@ -261,7 +282,7 @@
         </div>
 
         <!-- 2. Historial y Cierres -->
-        <div class="space-y-1">
+        <div class="sidebar-section-group cliente-erp-group space-y-1">
           <p class="sidebar-section-title px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Historial y Cierres</p>
           <button type="button" onclick="cambiarPestana('historial')" id="btnTabHistorial" title="Historial de Comprobantes" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -282,7 +303,7 @@
         </div>
 
         <!-- 3. Inventario y Kardex -->
-        <div class="space-y-1">
+        <div class="sidebar-section-group cliente-erp-group space-y-1">
           <p class="sidebar-section-title px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Inventario y Kardex</p>
           <button type="button" onclick="cambiarPestana('kardex')" id="btnTabKardex" title="Trazabilidad SKU (Kardex)" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
@@ -307,7 +328,7 @@
         </div>
 
         <!-- 4. Compras y Tributos -->
-        <div class="space-y-1">
+        <div class="sidebar-section-group cliente-erp-group space-y-1">
           <p class="sidebar-section-title px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Compras y Tributos</p>
           <button type="button" onclick="cambiarPestana('compras')" id="btnTabCompras" title="Registro de Compras" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -317,10 +338,14 @@
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
             <span class="sidebar-label truncate">Retenciones IVA</span>
           </button>
+          <button type="button" onclick="cambiarPestana('contabilidad')" id="btnTabContabilidad" title="Contabilidad VEN-NIF e Integración ERP" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            <span class="sidebar-label truncate">Contabilidad y ERP</span>
+          </button>
         </div>
 
         <!-- 5. Catálogos y Maestros -->
-        <div class="space-y-1">
+        <div class="sidebar-section-group cliente-erp-group space-y-1">
           <p class="sidebar-section-title px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Catálogos y Maestros</p>
           <button type="button" onclick="cambiarPestana('productos')" id="btnTabProductos" title="Gestión de Artículos" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
@@ -358,9 +383,14 @@
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
             <span class="sidebar-label truncate">Afiliados</span>
           </button>
-          <button type="button" onclick="cambiarPestana('inquilinosMaster')" id="btnTabInquilinosMaster" title="Panel Master SaaS" class="tab-master hidden w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
-            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>
-            <span class="sidebar-label truncate">Panel Master SaaS</span>
+        </div>
+
+        <!-- 6. Cuenta y Suscripción (Clientes) -->
+        <div class="sidebar-section-group cliente-erp-group space-y-1">
+          <p class="sidebar-section-title px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Cuenta y Suscripción</p>
+          <button type="button" onclick="cambiarPestana('suscripcion')" id="btnTabSuscripcion" title="Mi Plan y Pagos" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            <span class="sidebar-label truncate">Mi Plan y Pagos</span>
           </button>
         </div>
       </nav>
@@ -379,7 +409,7 @@
             <p class="text-[11px] font-mono text-slate-400 truncate">
               <span id="headerTenantNombre" class="text-slate-200 font-medium">Comercio</span>
               <span class="mx-1.5 text-slate-700">·</span>
-              <span class="text-emerald-400 font-semibold">Activo</span>
+              <span id="headerTenantEstado" class="text-emerald-400 font-semibold">Activo</span>
               <span class="mx-1.5 text-slate-700">·</span>
               RIF <span id="headerTenantRif">J-00000000-0</span>
               <span class="mx-1.5 text-slate-700 hidden sm:inline">·</span>
@@ -1012,8 +1042,12 @@
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico</label><input type="email" id="provEmail" placeholder="ventas@proveedor.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Persona de Contacto</label><input type="text" id="provContacto" placeholder="Nombre del contacto" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Contribuyente Especial</label><select id="provContribuyenteEspecial" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="true">SÍ</option><option value="false">NO</option></select></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable</label><input type="text" id="provCuentaContable" placeholder="210101" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">Dirección Fiscal</label><input type="text" id="provDireccion" placeholder="Dirección completa" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable (CxP)</label><input type="text" id="provCuentaContable" placeholder="2.1.01.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Tipo Persona (ISLR/IVA)</label><select id="provTipoPersona" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="PJD" selected>PJD - Jurídica Domiciliada</option><option value="PNR">PNR - Natural Residente</option><option value="PJND">PJND - Jurídica No Domiciliada</option><option value="PNNR">PNNR - Natural No Residente</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">% Retención IVA</label><select id="provRetencionIvaPct" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"><option value="75" selected>75%</option><option value="100">100%</option><option value="0">0% (Exento)</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Días de Crédito</label><input type="number" min="0" id="provDiasCredito" value="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cta. Anticipos a Proveedores</label><input type="text" id="provCuentaAnticipos" placeholder="1.1.06.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Dirección Fiscal</label><input type="text" id="provDireccion" placeholder="Dirección completa" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div class="md:col-span-3 flex gap-3">
             <button id="btnGuardarProveedor" onclick="guardarProveedor()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Proveedor</button>
             <button id="btnCancelarProv" onclick="limpiarFormProveedor()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
@@ -1272,10 +1306,11 @@
           <h3 id="tituloFormSucursal" class="text-base font-bold text-white tracking-tight">Maestro de Sucursales</h3>
           <button onclick="exportarSucursalesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-900 p-5 rounded-2xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editSucursalId">
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nombre de Sucursal *</label><input type="text" id="sucursalNombre" placeholder="SEDE PRINCIPAL" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Dirección</label><input type="text" id="sucursalDireccion" placeholder="Dirección de la sucursal" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Centro de Costo Contable</label><input type="text" id="sucursalCentroCosto" placeholder="CC-01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
           <div class="flex items-end gap-2">
             <button id="btnGuardarSucursal" onclick="guardarSucursal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Sucursal</button>
             <button id="btnCancelarSucursal" onclick="limpiarFormSucursal()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
@@ -1290,11 +1325,12 @@
           <h3 id="tituloFormAlmacen" class="text-base font-bold text-white tracking-tight">Maestro de Almacenes / Depósitos</h3>
           <button onclick="exportarAlmacenesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-900 p-5 rounded-2xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editAlmacenId">
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nombre del Almacén *</label><input type="text" id="almacenNombre" placeholder="DEPÓSITO CENTRAL" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Tipo</label><input type="text" id="almacenTipo" value="PRINCIPAL" placeholder="PRINCIPAL/SECUNDARIO" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Sucursal</label><select id="almacenSucursalSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="">-- Sucursal Principal / General --</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Inventario</label><input type="text" id="almacenCuentaInventario" placeholder="1.1.04.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
           <div class="flex items-end gap-2">
             <button id="btnGuardarAlmacen" onclick="guardarAlmacen()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Almacén</button>
             <button id="btnCancelarAlmacen" onclick="limpiarFormAlmacen()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
@@ -1381,11 +1417,14 @@
           <h3 id="tituloFormTipoIva" class="text-base font-bold text-white tracking-tight">Maestro de Tipos de IVA (Alícuotas SENIAT)</h3>
           <button onclick="exportarTiposIvaExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 items-end">
+        <div class="grid grid-cols-1 md:grid-cols-6 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 items-end">
           <input type="hidden" id="editTipoIvaId">
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Descripción / Nombre *</label><input type="text" id="tipoIvaNombre" placeholder="Ej: IVA GENERAL 16%, REDUCIDO 8%, EXENTO 0%" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">Descripción / Nombre *</label><input type="text" id="tipoIvaNombre" placeholder="Ej: IVA GENERAL 16%, REDUCIDO 8%, EXENTO 0%" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Porcentaje (%)</label><input type="number" step="0.01" id="tipoIvaPorcentaje" value="16" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums"></div>
-          <div class="flex gap-2">
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cód. SENIAT</label><select id="tipoIvaCodigoSeniat" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"><option value="G" selected>G (General)</option><option value="R">R (Reducida)</option><option value="A">A (Adicional)</option><option value="E">E (Exento)</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cta. IVA Débito</label><input type="text" id="tipoIvaCuentaDebito" placeholder="2.1.04.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cta. IVA Crédito</label><input type="text" id="tipoIvaCuentaCredito" placeholder="1.1.05.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div class="md:col-span-6 flex gap-2">
             <button id="btnGuardarTipoIva" onclick="guardarTipoIva()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Alícuota</button>
             <button id="btnCancelarTipoIva" onclick="limpiarFormTipoIva()" class="hidden bg-slate-800 text-slate-300 px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
           </div>
@@ -1399,11 +1438,13 @@
           <h3 id="tituloFormViaPago" class="text-base font-bold text-white tracking-tight">Maestro de Vías y Métodos de Pago</h3>
           <button onclick="exportarViasPagoExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editViaPagoId">
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nombre del Método *</label><input type="text" id="viaPagoNombre" placeholder="Ej: PAGO MOVIL, ZELLE, BIOPAGO" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Código Interno</label><input type="text" id="viaPagoCodigo" placeholder="PM-01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable</label><input type="text" id="viaPagoCuentaContable" placeholder="110102" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable (Caja/Banco)</label><input type="text" id="viaPagoCuentaContable" placeholder="1.1.01.02" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Moneda de Cuenta</label><select id="viaPagoMoneda" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"><option value="VES" selected>VES (Bs.)</option><option value="USD">USD ($ Divisas)</option><option value="MIXTO">MIXTO</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">¿Causa IGTF 3%?</label><select id="viaPagoCausaIgtf" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="false" selected>NO</option><option value="true">SÍ (Divisa)</option></select></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">¿Requiere Referencia?</label><select id="viaPagoReqRef" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="true" selected>SÍ</option><option value="false">NO</option></select></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Estatus</label><select id="viaPagoActivo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="true" selected>ACTIVO</option><option value="false">INACTIVO</option></select></div>
           <div class="flex items-end gap-2">
@@ -1484,7 +1525,11 @@
               class="hidden absolute z-30 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-slate-900 border border-slate-700 rounded-xl shadow-2xl divide-y divide-slate-800"
             ></div>
           </div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable</label><input type="text" id="prodCuentaContable" placeholder="110401" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cta. Inventario / Activo</label><input type="text" id="prodCuentaContable" placeholder="1.1.04.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cta. Ingresos (Ventas)</label><input type="text" id="prodCuentaIngreso" placeholder="4.1.01.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cta. Costo de Ventas</label><input type="text" id="prodCuentaCosto" placeholder="5.1.01.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cta. Devoluciones</label><input type="text" id="prodCuentaDevolucion" placeholder="4.1.02.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Centro de Costo</label><input type="text" id="prodCentroCosto" placeholder="CC-01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
           <div class="md:col-span-4 flex gap-3">
             <button id="btnGuardarProducto" onclick="guardarProducto()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Artículo</button>
             <button id="btnCancelarProd" onclick="limpiarFormProducto()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
@@ -1507,8 +1552,10 @@
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Correo Electrónico</label><input type="email" id="cliEmail" placeholder="cliente@correo.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Persona de Contacto</label><input type="text" id="cliContacto" placeholder="Nombre del contacto" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Contribuyente Especial</label><select id="cliContribuyenteEspecial" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="false" selected>NO</option><option value="true">SÍ</option></select></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable</label><input type="text" id="cliCuentaContable" placeholder="110201" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">Dirección Fiscal</label><input type="text" id="cliDireccion" placeholder="Dirección completa" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cuenta Contable (CxC)</label><input type="text" id="cliCuentaContable" placeholder="1.1.02.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Cta. Anticipos Clientes</label><input type="text" id="cliCuentaAnticipos" placeholder="2.1.03.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Días / Límite Crédito ($)</label><div class="grid grid-cols-2 gap-2"><input type="number" min="0" id="cliDiasCredito" value="0" placeholder="Días" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums"><input type="number" min="0" step="0.01" id="cliLimiteCredito" value="0" placeholder="$ Límite" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums"></div></div>
+          <div class="md:col-span-3"><label class="block text-xs font-semibold text-slate-300 mb-1">Dirección Fiscal</label><input type="text" id="cliDireccion" placeholder="Dirección completa" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div class="md:col-span-3 flex gap-3">
             <button id="btnGuardarCliente" onclick="guardarCliente()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Guardar Cliente</button>
             <button id="btnCancelarCli" onclick="limpiarFormCliente()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
@@ -1535,36 +1582,533 @@
         </div>
       </div>
 
-      <!-- Panel Master SaaS Multitenant (MAS-001) -->
+      <!-- Panel Master SaaS Multitenant (MAS-001 · Solo Usuario Master) -->
       <div id="seccionInquilinosMaster" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h3 class="text-base font-bold text-white tracking-tight">Panel Master de Inquilinos SaaS (MAS-001)</h3>
-            <p class="text-xs text-slate-400">Administración multitenant de comercios registrados y asignación de planes.</p>
+            <p class="text-xs text-slate-400">Control centralizado de comercios, planes de suscripción, permisos de menú, validación de pagos e implantación SQL.</p>
           </div>
-          <div class="flex items-center gap-3">
-            <span class="text-xs font-mono text-slate-400">Inquilinos: <strong id="masterTotalInquilinos" class="text-emerald-400 tabular-nums">0</strong></span>
-            <button type="button" onclick="cargarInquilinosMaster()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Actualizar</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="abrirModalInquilinoMaster()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">+ Nuevo Inquilino</button>
+            <button type="button" onclick="cargarPanelMasterCompleto()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Actualizar</button>
           </div>
         </div>
-        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
-          <table class="w-full text-left text-xs text-slate-300">
-            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
-              <tr>
-                <th class="p-3">Razón Social</th>
-                <th class="p-3">RIF</th>
-                <th class="p-3">Correo</th>
-                <th class="p-3">Rol</th>
-                <th class="p-3">Plan</th>
-                <th class="p-3">Estado</th>
-                <th class="p-3 text-center">Cambiar Plan</th>
-              </tr>
-            </thead>
-            <tbody id="tablaInquilinosMaster" class="divide-y divide-slate-800/60"></tbody>
-          </table>
+
+        <!-- KPIs Master -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Total Inquilinos</p>
+            <p id="masterTotalInquilinos" class="text-lg font-bold font-mono text-white tabular-nums mt-1">0</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Comercios Activos</p>
+            <p id="masterKpiActivos" class="text-lg font-bold font-mono text-emerald-400 tabular-nums mt-1">0</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Planes Pagos / Admin</p>
+            <p id="masterKpiPagosPlan" class="text-lg font-bold font-mono text-slate-200 tabular-nums mt-1">0</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Pagos por Verificar</p>
+            <p id="masterKpiPagosPendientes" class="text-lg font-bold font-mono text-amber-300 tabular-nums mt-1">0</p>
+          </div>
+        </div>
+
+        <!-- Sub-navegación Master -->
+        <div class="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3">
+          <button type="button" id="btnMasterSub_tenants" onclick="cambiarSubtabMaster('tenants')" class="px-3.5 py-2 rounded-xl text-xs font-semibold border bg-emerald-600 text-white border-emerald-500 cursor-pointer whitespace-nowrap">Directorio y Menús por Tenant</button>
+          <button type="button" id="btnMasterSub_pagos" onclick="cambiarSubtabMaster('pagos')" class="px-3.5 py-2 rounded-xl text-xs font-semibold border bg-slate-900 text-slate-300 border-slate-800 cursor-pointer whitespace-nowrap">Suscripciones y Verificación de Pagos</button>
+          <button type="button" id="btnMasterSub_infraestructura" onclick="cambiarSubtabMaster('infraestructura')" class="px-3.5 py-2 rounded-xl text-xs font-semibold border bg-slate-900 text-slate-300 border-slate-800 cursor-pointer whitespace-nowrap">Implantación SQL y Base de Datos</button>
+        </div>
+
+        <!-- SUBPANEL 1: DIRECTORIO DE TENANTS Y PERMISOS DE MENÚ -->
+        <div id="masterSubPanel_tenants" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <div class="sm:col-span-2">
+              <input type="text" id="masterFiltroTexto" oninput="renderizarTablaInquilinosMaster()" placeholder="Buscar por Razón Social, RIF o Correo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+            </div>
+            <div>
+              <select id="masterFiltroPlan" onchange="renderizarTablaInquilinosMaster()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                <option value="">Todos los Planes</option>
+                <option value="Freemium">Freemium</option>
+                <option value="Pyme">Pyme</option>
+                <option value="Enterprise">Enterprise</option>
+                <option value="Administración">Administración</option>
+              </select>
+            </div>
+            <div>
+              <select id="masterFiltroEstado" onchange="renderizarTablaInquilinosMaster()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+                <option value="">Todos los Estados</option>
+                <option value="ACTIVO">Solo Activos</option>
+                <option value="SUSPENDIDO">Suspendidos</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr>
+                  <th class="p-3">Comercio / RIF</th>
+                  <th class="p-3">Correo / Teléfono</th>
+                  <th class="p-3">Plan / Ciclo</th>
+                  <th class="p-3">Vigencia</th>
+                  <th class="p-3">Estado</th>
+                  <th class="p-3">Menús Activos</th>
+                  <th class="p-3 text-center">Acciones Master</th>
+                </tr>
+              </thead>
+              <tbody id="tablaInquilinosMaster" class="divide-y divide-slate-800/60"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- SUBPANEL 2: SUSCRIPCIONES POR TENANT, BANDEJA DE PAGOS Y CUENTAS RECEPTORAS -->
+        <div id="masterSubPanel_pagos" class="hidden space-y-6">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Estado de Suscripción por Inquilino</h4>
+            <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                  <tr>
+                    <th class="p-3">Comercio</th>
+                    <th class="p-3">Plan Actual</th>
+                    <th class="p-3">Ciclo</th>
+                    <th class="p-3 text-right">Tarifa Ref.</th>
+                    <th class="p-3">Vencimiento</th>
+                    <th class="p-3">Último Pago Aprobado</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaSuscripcionesMaster" class="divide-y divide-slate-800/60"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-amber-300">Bandeja de Reportes de Pago (Transferencias / Pago Móvil / Zelle)</h4>
+            <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                  <tr>
+                    <th class="p-3">Inquilino / Fecha</th>
+                    <th class="p-3">Plan Solicitado</th>
+                    <th class="p-3">Método / Banco</th>
+                    <th class="p-3">Referencia</th>
+                    <th class="p-3 text-right">Monto</th>
+                    <th class="p-3">Estado</th>
+                    <th class="p-3 text-center">Validación Master</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaBandejaPagosMaster" class="divide-y divide-slate-800/60"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Cuentas Bancarias y Pago Móvil del Administrador Master</h4>
+                <p class="text-[11px] text-slate-400">Estas cuentas se muestran automáticamente en la pantalla "Mi Plan y Pagos" de tus clientes.</p>
+              </div>
+              <button type="button" onclick="guardarConfigBancosMaster()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer whitespace-nowrap">Guardar Cuentas Receptoras</button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div><label class="block text-[11px] text-slate-400 mb-1">Banco Transferencia</label><input type="text" id="masterCfgBancoNombre" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white"></div>
+              <div><label class="block text-[11px] text-slate-400 mb-1">N° Cuenta (20 dígitos)</label><input type="text" id="masterCfgBancoCuenta" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+              <div><label class="block text-[11px] text-slate-400 mb-1">Titular / RIF Cuenta</label><div class="grid grid-cols-2 gap-2"><input type="text" id="masterCfgBancoTitular" placeholder="Titular" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white"><input type="text" id="masterCfgBancoRif" placeholder="J-..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div></div>
+              <div><label class="block text-[11px] text-slate-400 mb-1">Banco Pago Móvil</label><input type="text" id="masterCfgPmBanco" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white"></div>
+              <div><label class="block text-[11px] text-slate-400 mb-1">Teléfono Pago Móvil</label><input type="text" id="masterCfgPmTelefono" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+              <div><label class="block text-[11px] text-slate-400 mb-1">Cédula / RIF Pago Móvil</label><input type="text" id="masterCfgPmRif" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+              <div><label class="block text-[11px] text-slate-400 mb-1">Zelle (Correo Opcional)</label><input type="text" id="masterCfgZelle" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+              <div class="sm:col-span-2"><label class="block text-[11px] text-slate-400 mb-1">Binance Pay / USDT ID (Opcional)</label><input type="text" id="masterCfgBinance" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBPANEL 3: IMPLANTACIÓN TÉCNICA Y SCRIPTS SQL (EXCLUSIVO MASTER) -->
+        <div id="masterSubPanel_infraestructura" class="hidden tab-master space-y-4">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <div>
+              <h4 class="text-sm font-bold text-white">Implantación de Base de Datos Supabase (Solo Usuario Master)</h4>
+              <p class="text-xs text-slate-400 mt-1">Estas utilidades técnicas están ocultas para los inquilinos finales. Úsalas únicamente para aplicar o auditar migraciones SQL en Supabase.</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs font-bold text-white">1. Esquema Contable VEN-NIF</span>
+                  <span id="contabEstadoEsquemaBadge" class="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">Verificando BD...</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Tablas <code class="text-slate-300">plan_cuentas</code>, <code class="text-slate-300">asientos_contables</code>, <code class="text-slate-300">asientos_detalle</code> y columnas contables.</p>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="copiarScriptSqlMigracion()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer whitespace-nowrap">Copiar .SQL Contabilidad</button>
+                  <button type="button" onclick="descargarScriptSqlMigracion()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer whitespace-nowrap">Descargar .SQL Contabilidad</button>
+                </div>
+              </div>
+              <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs font-bold text-white">2. Esquema SaaS Suscripciones & Pagos</span>
+                  <span id="saasEstadoEsquemaBadge" class="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">Verificando BD...</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Columnas de plan/permisos en <code class="text-slate-300">tenants</code> y tablas <code class="text-slate-300">saas_pagos_suscripcion</code> / <code class="text-slate-300">saas_config_pagos</code>.</p>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="copiarScriptSqlSaas()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer whitespace-nowrap">Copiar .SQL SaaS</button>
+                  <button type="button" onclick="descargarScriptSqlSaas()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer whitespace-nowrap">Descargar .SQL SaaS</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mi Plan, Suscripción y Pagos SaaS (Vista Clientes y Tenants) -->
+      <div id="seccionSuscripcion" class="hidden space-y-6">
+        <div id="suscBannerSuspendido" class="hidden bg-rose-950/70 border border-rose-500/60 text-rose-100 rounded-2xl p-4 text-xs">
+          Tu comercio se encuentra temporalmente suspendido por el administrador Master. Reporta tu pago de renovación o regulariza tu suscripción abajo para reactivar los módulos ERP.
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Mi Plan de Suscripción y Módulos Habilitados</h3>
+            <p class="text-xs text-slate-400">Consulta tu plan vigente, los módulos autorizados por el administrador y reporta renovaciones mensuales o anuales.</p>
+          </div>
+          <div class="flex items-center gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl">
+            <button type="button" id="btnCicloMensualUI" onclick="setCicloSuscripcionUI('MENSUAL')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white cursor-pointer whitespace-nowrap">Pago Mensual</button>
+            <button type="button" id="btnCicloAnualUI" onclick="setCicloSuscripcionUI('ANUAL')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white cursor-pointer whitespace-nowrap">Pago Anual (-20%)</button>
+          </div>
+        </div>
+
+        <!-- Resumen Suscripción Actual -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Plan Actual</p>
+            <p id="suscPlanActual" class="text-lg font-bold font-mono text-emerald-400 mt-1">FREEMIUM</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Ciclo de Facturación</p>
+            <p id="suscCicloActual" class="text-lg font-bold font-mono text-white mt-1">MENSUAL</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Vigencia</p>
+            <p id="suscVigenciaActual" class="text-sm font-bold font-mono text-slate-200 mt-1.5">--</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Estado de Cuenta</p>
+            <p id="suscEstadoCuenta" class="text-sm font-bold font-mono text-emerald-400 mt-1.5">ACTIVO</p>
+          </div>
+        </div>
+
+        <!-- Módulos habilitados por Master -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Módulos del Menú Habilitados para tu Comercio</h4>
+          <div id="suscListaModulosHabilitados" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- Comparativa de Planes -->
+        <div id="suscGridPlanes" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+
+        <!-- Pasarela / Reporte de Pagos -->
+        <div id="panelReportarPagoSusc" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div>
+              <h4 class="text-sm font-bold text-white">Renovar o Actualizar Plan de Suscripción</h4>
+              <p class="text-xs text-slate-400">Elige entre Transferencia Bancaria / Pago Móvil (validación inmediata) o Pasarela de Tarjetas.</p>
+            </div>
+            <div class="flex items-center gap-1 p-1 bg-slate-950 border border-slate-800 rounded-xl">
+              <button type="button" id="btnTabPagoTransf" onclick="cambiarMetodoPagoSuscTab('transferencia')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white cursor-pointer whitespace-nowrap">Transferencia / Pago Móvil</button>
+              <button type="button" id="btnTabPagoTarj" onclick="cambiarMetodoPagoSuscTab('tarjeta')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-950 text-slate-300 cursor-pointer whitespace-nowrap">Tarjeta Internacional</button>
+            </div>
+          </div>
+
+          <!-- Panel 1: Transferencia / Pago Móvil / Zelle -->
+          <div id="panelPagoTransferencia" class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div class="lg:col-span-5 bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3 text-xs">
+              <p class="text-[11px] font-bold uppercase tracking-wider text-emerald-400">Cuentas Oficiales Receptoras</p>
+              <div class="space-y-1 text-slate-300">
+                <p><span class="text-slate-400">Banco:</span> <strong id="cliBancoNombre" class="text-white">--</strong></p>
+                <p><span class="text-slate-400">Cuenta:</span> <strong id="cliBancoCuenta" class="font-mono text-white">--</strong></p>
+                <p><span class="text-slate-400">Titular:</span> <span id="cliBancoTitular">--</span> (<span id="cliBancoRif" class="font-mono">--</span>)</p>
+              </div>
+              <div class="border-t border-slate-800 pt-2.5 space-y-1 text-slate-300">
+                <p class="font-semibold text-white">Pago Móvil (Bs. a Tasa BCV)</p>
+                <p><span class="text-slate-400">Banco:</span> <span id="cliPmBanco">--</span></p>
+                <p><span class="text-slate-400">Teléfono:</span> <strong id="cliPmTelefono" class="font-mono text-emerald-400">--</strong></p>
+                <p><span class="text-slate-400">Cédula / RIF:</span> <strong id="cliPmRif" class="font-mono text-white">--</strong></p>
+              </div>
+              <div class="border-t border-slate-800 pt-2.5 space-y-1 text-slate-300">
+                <p><span class="text-slate-400">Zelle:</span> <span id="cliZelleCorreo" class="font-mono text-white">--</span></p>
+                <p><span class="text-slate-400">Binance Pay / USDT:</span> <span id="cliBinanceId" class="font-mono text-white">--</span></p>
+              </div>
+            </div>
+
+            <form id="formReportarPagoSusc" onsubmit="enviarReportePagoSuscripcion(event)" class="lg:col-span-7 space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-400 mb-1">Plan a Pagar</label>
+                  <select id="pagoSuscPlan" onchange="actualizarCalculoPagoSuscripcion()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+                    <option value="Pyme">Plan Pyme ($19/mes · $182/año)</option>
+                    <option value="Enterprise">Plan Enterprise ($49/mes · $470/año)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-400 mb-1">Modalidad</label>
+                  <select id="pagoSuscCiclo" onchange="actualizarCalculoPagoSuscripcion()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+                    <option value="MENSUAL">Mensual (30 días)</option>
+                    <option value="ANUAL">Anual (365 días · -20%)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-400 mb-1">Método Usado</label>
+                  <select id="pagoSuscMetodo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+                    <option value="PAGO MOVIL">Pago Móvil (Bs.)</option>
+                    <option value="TRANSFERENCIA">Transferencia Bancaria (Bs.)</option>
+                    <option value="ZELLE">Zelle ($ USD)</option>
+                    <option value="BINANCE USDT">Binance Pay / USDT</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Banco / Origen</label><input type="text" id="pagoSuscBanco" placeholder="Ej. Banesco / Mercantil" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white"></div>
+                <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">N° Referencia *</label><input type="text" id="pagoSuscReferencia" required placeholder="Ej. 00459182" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-white"></div>
+                <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Fecha de Pago</label><input type="date" id="pagoSuscFecha" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-white"></div>
+              </div>
+
+              <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Observación / Titular Remitente</label><input type="text" id="pagoSuscNota" placeholder="Titular o comentario opcional..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white"></div>
+
+              <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-950 border border-slate-800 rounded-xl p-3">
+                <div class="font-mono text-xs">
+                  <span class="text-slate-400">Monto a Transferir:</span>
+                  <strong id="pagoSuscTotalUsd" class="text-emerald-400 ml-1 tabular-nums">$ 19.00</strong>
+                  <span class="text-slate-500 mx-1.5">|</span>
+                  <strong id="pagoSuscTotalBs" class="text-white tabular-nums">Bs. 0.00</strong>
+                  <p id="pagoSuscTasaInfo" class="text-[10px] text-slate-500 mt-0.5">Tasa BCV: --</p>
+                </div>
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl cursor-pointer whitespace-nowrap">Reportar Pago para Activación</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Panel 2: Pasarela de Tarjetas Internacional / Recurrente -->
+          <div id="panelPagoTarjeta" class="hidden bg-slate-950 border border-slate-800 rounded-xl p-5 space-y-3 text-xs">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h5 class="text-sm font-bold text-white">Cobro Automático con Tarjeta de Crédito / Débito (Mensual o Anual)</h5>
+              <span id="estadoPasarelaTarjetasBadge" class="text-xs font-mono font-bold text-amber-300">Verificando pasarela...</span>
+            </div>
+            <p class="text-slate-300 leading-relaxed">
+              Por seguridad bancaria (PCI-DSS), los cobros con tarjeta internacional (Visa / Mastercard) y débito recurrente mensual/anual se procesan mediante redirección segura (Checkout / Webhook) a una pasarela comercial conectada en el servidor (<code class="text-emerald-400">Stripe</code>, <code class="text-emerald-400">Lemon Squeezy</code>, <code class="text-emerald-400">PayPal</code> o botón de pago bancario venezolano).
+            </p>
+            <p class="text-slate-400">
+              Mientras no se carguen las llaves comerciales (<code class="text-slate-300">STRIPE_SECRET_KEY</code> / <code class="text-slate-300">LEMONSQUEEZY_API_KEY</code> / <code class="text-slate-300">PAYPAL_CLIENT_ID</code>) en el entorno del servidor, utiliza la pestaña <strong>Transferencia / Pago Móvil</strong> para reportar tu pago y activar tu suscripción al instante con el administrador Master.
+            </p>
+          </div>
+        </div>
+
+        <!-- Historial de Pagos del Cliente -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Historial de Pagos y Solicitudes de Suscripción</h4>
+          <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr>
+                  <th class="p-3">Fecha</th>
+                  <th class="p-3">Plan / Ciclo</th>
+                  <th class="p-3">Método</th>
+                  <th class="p-3">Referencia</th>
+                  <th class="p-3 text-right">Monto</th>
+                  <th class="p-3">Estado</th>
+                </tr>
+              </thead>
+              <tbody id="tablaHistorialPagosCliente" class="divide-y divide-slate-800/60"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contabilidad VEN-NIF e Integración ERP -->
+      <div id="seccionContabilidad" class="hidden space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Contabilidad VEN-NIF e Integración con Sistemas Contables</h3>
+            <p class="text-xs text-slate-400">Asientos automáticos de partida doble, Plan de Cuentas, Balance de Comprobación y exportación estándar para ERP contable.</p>
+          </div>
+        </div>
+
+        <!-- KPIs Contables -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Asientos en Libro Diario</p>
+            <p id="contabKpiAsientos" class="text-lg font-bold font-mono text-white tabular-nums mt-1">0</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Total Debe (Bs.)</p>
+            <p id="contabKpiDebeBs" class="text-lg font-bold font-mono text-emerald-400 tabular-nums mt-1">Bs. 0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Total Haber (Bs.)</p>
+            <p id="contabKpiHaberBs" class="text-lg font-bold font-mono text-emerald-400 tabular-nums mt-1">Bs. 0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Volumen Ref. ($ USD)</p>
+            <p id="contabKpiTotalUsd" class="text-lg font-bold font-mono text-slate-200 tabular-nums mt-1">$ 0.00</p>
+          </div>
+        </div>
+
+        <!-- Libro Diario de Asientos Contables -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Libro Diario (Partida Doble Automática)</h4>
+            <div class="flex flex-wrap items-center gap-2">
+              <input type="month" id="contabFiltroPeriodo" onchange="renderizarLibroDiario()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs font-mono text-white">
+              <select id="contabFiltroOrigen" onchange="renderizarLibroDiario()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white">
+                <option value="">Todos los módulos</option>
+                <option value="VENTA_POS">Ventas POS</option>
+                <option value="NOTA_CREDITO">Notas de Crédito</option>
+                <option value="NOTA_DEBITO">Notas de Débito</option>
+                <option value="COMPRA">Compras</option>
+                <option value="ABONO_CXC">Abonos CxC</option>
+                <option value="RETENCION_IVA">Retenciones IVA</option>
+              </select>
+              <button type="button" onclick="sincronizarAsientosHistoricos()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl cursor-pointer whitespace-nowrap">Sincronizar Documentos</button>
+              <button type="button" onclick="exportarLibroDiarioExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer whitespace-nowrap">Libro Diario Excel</button>
+              <button type="button" onclick="exportarBalanceComprobacionExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer whitespace-nowrap">Balance Comprobación</button>
+              <button type="button" onclick="exportarPaqueteIntegracionJson()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-700/40 text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer whitespace-nowrap">Exportar JSON ERP</button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr>
+                  <th class="p-3">Comprobante / Fecha</th>
+                  <th class="p-3">Módulo / Concepto</th>
+                  <th class="p-3">Doc. Origen</th>
+                  <th class="p-3 text-right">Debe (Bs.)</th>
+                  <th class="p-3 text-right">Haber (Bs.)</th>
+                  <th class="p-3 text-center">Detalle</th>
+                </tr>
+              </thead>
+              <tbody id="tablaAsientosContables" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Configuración Contable de la Empresa (Mapeo por Defecto) -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Parámetros Fiscales y Cuentas Contables por Defecto (Empresa)</h4>
+              <p class="text-[11px] text-slate-400">Estas cuentas se usan automáticamente al contabilizar facturas, notas, compras, retenciones y cobranzas.</p>
+            </div>
+            <button type="button" onclick="guardarConfigContableEmpresa()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer whitespace-nowrap">Guardar Mapeo Contable</button>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Moneda Funcional</label><select id="cfgContMoneda" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white font-mono"><option value="VES">VES (Bolívares)</option><option value="USD">USD (Dólares)</option></select></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Régimen IVA</label><select id="cfgContRegimenIva" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white"><option value="ORDINARIO">Contribuyente Ordinario</option><option value="CONTRIBUYENTE_ESPECIAL">Contribuyente Especial</option><option value="FORMAL">Contribuyente Formal</option></select></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Inicio Ejercicio (DD-MM)</label><input type="text" id="cfgContEjercicioInicio" value="01-01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Agente Ret. IVA</label><select id="cfgContAgenteRetencion" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white"><option value="false">NO</option><option value="true">SÍ</option></select></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">% Retención Def.</label><input type="number" step="0.01" id="cfgContPctRetencion" value="75" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white tabular-nums"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Asientos Automáticos</label><select id="cfgContAutoAsientos" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white"><option value="true">ACTIVADOS</option><option value="false">MANUAL</option></select></div>
+
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Cta. CxC Clientes</label><input type="text" id="cfgCtaCxc" value="1.1.02.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Cta. CxP Proveedores</label><input type="text" id="cfgCtaCxp" value="2.1.01.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Cta. IVA Débito Fiscal</label><input type="text" id="cfgCtaIvaDebito" value="2.1.04.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Cta. IVA Crédito Fiscal</label><input type="text" id="cfgCtaIvaCredito" value="1.1.05.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Cta. IGTF 3% por Pagar</label><input type="text" id="cfgCtaIgtf" value="2.1.04.05" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Cta. Ret. IVA por Enterar</label><input type="text" id="cfgCtaRetIva" value="2.1.04.06" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Cta. Ventas Gravadas</label><input type="text" id="cfgCtaVentasGravadas" value="4.1.01.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Cta. Ventas Exentas</label><input type="text" id="cfgCtaVentasExentas" value="4.1.01.02" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Cta. Devoluciones Ventas</label><input type="text" id="cfgCtaDevoluciones" value="4.1.02.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Cta. Inventario Mercancías</label><input type="text" id="cfgCtaInventario" value="1.1.04.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Cta. Costo de Ventas</label><input type="text" id="cfgCtaCostoVentas" value="5.1.01.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Cta. Dif. Cambiario BCV</label><input type="text" id="cfgCtaDifCambiario" value="7.1.01.01" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+          </div>
+        </div>
+
+        <!-- Plan de Cuentas VEN-NIF -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Plan de Cuentas Contables (VEN-NIF)</h4>
+            <input type="text" id="filtroPlanCuentas" oninput="renderizarTablaPlanCuentas()" placeholder="Buscar código o nombre de cuenta..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white w-64">
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-6 gap-3 items-end">
+            <input type="hidden" id="editPlanCuentaId">
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Código *</label><input type="text" id="planCuentaCodigo" placeholder="1.1.01.05" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white"></div>
+            <div class="md:col-span-2"><label class="block text-[11px] font-semibold text-slate-400 mb-1">Nombre de Cuenta *</label><input type="text" id="planCuentaNombre" placeholder="BANCO MERCANTIL CTA CORRIENTE" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Tipo</label><select id="planCuentaTipo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white"><option value="ACTIVO">ACTIVO</option><option value="PASIVO">PASIVO</option><option value="PATRIMONIO">PATRIMONIO</option><option value="INGRESO">INGRESO</option><option value="COSTO">COSTO</option><option value="GASTO">GASTO</option><option value="ORDEN">ORDEN</option></select></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Naturaleza</label><select id="planCuentaNaturaleza" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white"><option value="DEUDORA">DEUDORA</option><option value="ACREEDORA">ACREEDORA</option></select></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Nivel / Movimiento</label><select id="planCuentaMov" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white"><option value="true">Auxiliar (Acepta Mov.)</option><option value="false">Título / Agrupadora</option></select></div>
+            <div class="md:col-span-6 flex gap-2">
+              <button type="button" onclick="guardarCuentaContable()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer whitespace-nowrap">Guardar Cuenta Contable</button>
+              <button type="button" id="btnCancelarCuentaContab" onclick="limpiarFormCuentaContable()" class="hidden bg-slate-800 text-slate-300 text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer whitespace-nowrap">Cancelar</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800 max-h-80 overflow-y-auto">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono sticky top-0">
+                <tr><th class="p-2.5">Código</th><th class="p-2.5">Descripción</th><th class="p-2.5">Tipo</th><th class="p-2.5">Naturaleza</th><th class="p-2.5 text-center">Nivel</th><th class="p-2.5 text-center">Acciones</th></tr>
+              </thead>
+              <tbody id="tablaPlanCuentas" class="divide-y divide-slate-800/40"></tbody>
+            </table>
+          </div>
         </div>
       </div>
       </main>
+    </div>
+  </div>
+
+  <!-- MODAL MASTER: CREAR / EDITAR INQUILINO (TENANT) -->
+  <div id="modalInquilinoMaster" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-2xl rounded-2xl p-6 space-y-4 my-4">
+      <div class="flex items-center justify-between">
+        <h3 id="tituloModalInquilinoMaster" class="text-base font-bold text-emerald-400">Administrar Inquilino SaaS</h3>
+        <button type="button" onclick="cerrarModalInquilinoMaster()" class="text-slate-400 hover:text-white text-sm font-bold cursor-pointer">✕</button>
+      </div>
+      <input type="hidden" id="masterEditTenantId">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+        <div><label class="block text-[11px] text-slate-400 mb-1">Razón Social *</label><input type="text" id="masterTenantRazonSocial" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">RIF *</label><input type="text" id="masterTenantRif" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">Correo Electrónico *</label><input type="email" id="masterTenantEmail" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">Contraseña Acceso</label><input type="text" id="masterTenantPassword" placeholder="Dejar igual para no cambiar" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">Teléfono</label><input type="text" id="masterTenantTelefono" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">Rol</label><select id="masterTenantRol" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"><option value="tenant">TENANT (Cliente)</option><option value="master">MASTER (Administrador SaaS)</option></select></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">Plan de Suscripción</label><select id="masterTenantPlan" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"><option value="Freemium">Freemium</option><option value="Pyme">Pyme</option><option value="Enterprise">Enterprise</option><option value="Administración">Administración</option></select></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">Ciclo</label><select id="masterTenantCiclo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"><option value="MENSUAL">MENSUAL</option><option value="ANUAL">ANUAL</option></select></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">Estado</label><select id="masterTenantActivo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"><option value="true">ACTIVO</option><option value="false">SUSPENDIDO</option></select></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">Fecha Vencimiento Plan</label><input type="date" id="masterTenantVencimiento" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
+        <div class="sm:col-span-2"><label class="block text-[11px] text-slate-400 mb-1">Domicilio Fiscal</label><input type="text" id="masterTenantDireccion" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button type="button" onclick="guardarInquilinoMaster()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Guardar Inquilino</button>
+        <button type="button" onclick="cerrarModalInquilinoMaster()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL MASTER: CONFIGURAR MENÚS Y MÓDULOS POR CLIENTE -->
+  <div id="modalPermisosMaster" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-800 text-slate-100 w-full max-w-3xl rounded-2xl p-6 space-y-4 my-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 class="text-base font-bold text-emerald-400">Configurar Menús Habilitados del Cliente</h3>
+          <p id="permisosMasterSubtitulo" class="text-xs text-slate-400"></p>
+        </div>
+        <button type="button" onclick="cerrarModalPermisosMaster()" class="text-slate-400 hover:text-white text-sm font-bold cursor-pointer">✕</button>
+      </div>
+      <input type="hidden" id="permisosMasterTenantId">
+      <div class="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3">
+        <span class="text-[11px] text-slate-400">Plantillas rápidas:</span>
+        <button type="button" onclick="aplicarPresetPermisosModal('Freemium')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer">Preset Freemium</button>
+        <button type="button" onclick="aplicarPresetPermisosModal('Pyme')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer">Preset Pyme</button>
+        <button type="button" onclick="aplicarPresetPermisosModal('Enterprise')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer">Preset Enterprise</button>
+        <button type="button" onclick="aplicarPresetPermisosModal('TODOS')" class="bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/40 px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer">Marcar Todos</button>
+      </div>
+      <div id="listaChecksPermisosMaster" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+      <div class="flex gap-2 pt-2">
+        <button type="button" onclick="guardarPermisosMaster()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Guardar Permisos del Cliente</button>
+        <button type="button" onclick="cerrarModalPermisosMaster()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer text-xs">Cerrar</button>
+      </div>
     </div>
   </div>
 
@@ -1917,6 +2461,8 @@
   <!-- ENLACE A LOS MÓDULOS JAVASCRIPT MODULARIZADOS -->
   <script src="./js/landing.js"></script>
   <script src="./js/auth.js"></script>
+  <script src="./js/suscripciones.js"></script>
+  <script src="./js/contabilidad.js"></script>
   <script src="./js/pos.js"></script>
   <script src="./js/kardex.js"></script>
   <script src="./js/inventarioFisico.js"></script>

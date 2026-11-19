@@ -78,6 +78,23 @@ async function ejecutarGuardarRegistro(tabla, editId, tenantId, payload) {
   return { ok: true, data: res.data[0] };
 }
 
+async function ejecutarGuardarRegistroContable(tabla, editId, tenantId, payloadBase, payloadContable = {}) {
+  if (typeof guardarRegistroConCompatibilidadContable === 'function') {
+    return await guardarRegistroConCompatibilidadContable(tabla, editId, tenantId, payloadBase, payloadContable);
+  }
+  return await ejecutarGuardarRegistro(tabla, editId, tenantId, payloadBase);
+}
+
+async function enriquecerListaContable(tenantId, tabla, lista = []) {
+  if (typeof sincronizarMetaContableNube === 'function') {
+    await sincronizarMetaContableNube(tenantId, tabla);
+  }
+  if (typeof obtenerMetaContableRegistro === 'function') {
+    return (lista || []).map(r => obtenerMetaContableRegistro(tenantId, tabla, r));
+  }
+  return lista || [];
+}
+
 async function ejecutarEliminarRegistro(tabla, id, tenantId) {
   const res = await supabaseClient
     .from(tabla)
@@ -140,7 +157,7 @@ async function cargarProductosGestion() {
     if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-rose-400">${esc(msg)}</td></tr>`;
     return;
   }
-  productosGestionCache = data || [];
+  productosGestionCache = await enriquecerListaContable(tenantId, 'productos', data || []);
 
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -219,6 +236,10 @@ function editarProducto(id) {
     if (ivaRef) btnLimpiarIva.classList.remove('hidden'); else btnLimpiarIva.classList.add('hidden');
   }
   document.getElementById('prodCuentaContable').value = prod.cuenta_contable || '';
+  if (document.getElementById('prodCuentaIngreso')) document.getElementById('prodCuentaIngreso').value = prod.cuenta_ingreso || '';
+  if (document.getElementById('prodCuentaCosto')) document.getElementById('prodCuentaCosto').value = prod.cuenta_costo || '';
+  if (document.getElementById('prodCuentaDevolucion')) document.getElementById('prodCuentaDevolucion').value = prod.cuenta_devolucion || '';
+  if (document.getElementById('prodCentroCosto')) document.getElementById('prodCentroCosto').value = prod.centro_costo_default || '';
 
   const btnCancel = document.getElementById('btnCancelarProd');
   if (btnCancel) btnCancel.classList.remove('hidden');
@@ -256,6 +277,10 @@ function limpiarFormProducto() {
   const listaIva = document.getElementById('listaBusquedaTipoIva');
   if (listaIva) listaIva.classList.add('hidden');
   document.getElementById('prodCuentaContable').value = '';
+  if (document.getElementById('prodCuentaIngreso')) document.getElementById('prodCuentaIngreso').value = '';
+  if (document.getElementById('prodCuentaCosto')) document.getElementById('prodCuentaCosto').value = '';
+  if (document.getElementById('prodCuentaDevolucion')) document.getElementById('prodCuentaDevolucion').value = '';
+  if (document.getElementById('prodCentroCosto')) document.getElementById('prodCentroCosto').value = '';
 
   const btnCancel = document.getElementById('btnCancelarProd');
   if (btnCancel) btnCancel.classList.add('hidden');
@@ -333,6 +358,13 @@ async function guardarProducto() {
     cuenta_contable: document.getElementById('prodCuentaContable').value.trim()
   };
 
+  const payloadContable = {
+    cuenta_ingreso: (document.getElementById('prodCuentaIngreso')?.value || '').trim() || null,
+    cuenta_costo: (document.getElementById('prodCuentaCosto')?.value || '').trim() || null,
+    cuenta_devolucion: (document.getElementById('prodCuentaDevolucion')?.value || '').trim() || null,
+    centro_costo_default: (document.getElementById('prodCentroCosto')?.value || '').trim().toUpperCase() || null
+  };
+
   if (!payload.descripcion) {
     avisarUsuario('Ingrese la descripción del producto.', 'warning');
     return;
@@ -340,7 +372,7 @@ async function guardarProducto() {
 
   setEstadoBotonGuardar('btnGuardarProducto', true);
   try {
-    const res = await ejecutarGuardarRegistro('productos', editId, tenantId, payload);
+    const res = await ejecutarGuardarRegistroContable('productos', editId, tenantId, payload, payloadContable);
     if (!res.ok) { avisarUsuario(res.message, 'error', 9000); return; }
     avisarUsuario(editId ? '¡Artículo actualizado con éxito!' : '¡Artículo guardado con éxito!', 'success');
     limpiarFormProducto();
@@ -373,7 +405,8 @@ async function exportarStockExcel() {
   if (error) { avisarUsuario(explicarErrorSupabase('productos', 'exportar', error), 'error'); return; }
   if (!data || data.length === 0) { avisarUsuario('Sin productos para exportar.', 'warning'); return; }
 
-  const excelData = data.map(p => ({
+  const enriquecidos = await enriquecerListaContable(tenantId, 'productos', data);
+  const excelData = enriquecidos.map(p => ({
     SKU: p.codigo_sku || 'N/A',
     Categoría: p.categoria || '',
     Descripción: p.descripcion,
@@ -386,7 +419,11 @@ async function exportarStockExcel() {
     '% Utilidad': p.margen_utilidad_porcentaje ?? 0,
     'Precio Venta ($)': p.precio_venta_usd ?? p.precio_unitario_usd ?? 0,
     'Estatus Fiscal': p.tipos_iva ? `${p.tipos_iva.nombre} (${p.tipos_iva.porcentaje}%)` : 'GRAVADO (16%)',
-    'Cuenta Contable': p.cuenta_contable || ''
+    'Cta. Inventario': p.cuenta_contable || '',
+    'Cta. Ingreso': p.cuenta_ingreso || '',
+    'Cta. Costo': p.cuenta_costo || '',
+    'Cta. Devolución': p.cuenta_devolucion || '',
+    'Centro de Costo': p.centro_costo_default || ''
   }));
 
   descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Catálogo_Productos', 'Productos');
@@ -413,7 +450,7 @@ async function cargarClientesGestion() {
     if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-rose-400">${esc(msg)}</td></tr>`;
     return;
   }
-  clientesGestionCache = data || [];
+  clientesGestionCache = await enriquecerListaContable(tenantId, 'clientes', data || []);
 
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -454,6 +491,9 @@ function editarCliente(id) {
   document.getElementById('cliContacto').value = c.contacto || '';
   document.getElementById('cliContribuyenteEspecial').value = String(Boolean(c.es_contribuyente_especial));
   document.getElementById('cliCuentaContable').value = c.cuenta_contable || '';
+  if (document.getElementById('cliCuentaAnticipos')) document.getElementById('cliCuentaAnticipos').value = c.cuenta_anticipos || '';
+  if (document.getElementById('cliDiasCredito')) document.getElementById('cliDiasCredito').value = c.condicion_credito_dias ?? 0;
+  if (document.getElementById('cliLimiteCredito')) document.getElementById('cliLimiteCredito').value = c.limite_credito_usd ?? 0;
 
   const btnCancel = document.getElementById('btnCancelarCli');
   if (btnCancel) btnCancel.classList.remove('hidden');
@@ -474,6 +514,9 @@ function limpiarFormCliente() {
   document.getElementById('cliContacto').value = '';
   document.getElementById('cliContribuyenteEspecial').value = 'false';
   document.getElementById('cliCuentaContable').value = '';
+  if (document.getElementById('cliCuentaAnticipos')) document.getElementById('cliCuentaAnticipos').value = '';
+  if (document.getElementById('cliDiasCredito')) document.getElementById('cliDiasCredito').value = '0';
+  if (document.getElementById('cliLimiteCredito')) document.getElementById('cliLimiteCredito').value = '0';
 
   const btnCancel = document.getElementById('btnCancelarCli');
   if (btnCancel) btnCancel.classList.add('hidden');
@@ -499,6 +542,11 @@ async function guardarCliente() {
     es_contribuyente_especial: isContrib,
     cuenta_contable: document.getElementById('cliCuentaContable').value.trim()
   };
+  const payloadContable = {
+    cuenta_anticipos: (document.getElementById('cliCuentaAnticipos')?.value || '').trim() || null,
+    condicion_credito_dias: parseInt(document.getElementById('cliDiasCredito')?.value || '0', 10) || 0,
+    limite_credito_usd: parseFloat(document.getElementById('cliLimiteCredito')?.value || '0') || 0
+  };
 
   if (!payload.rif || !payload.razon_social) {
     avisarUsuario('Ingrese RIF y Razón Social del cliente.', 'warning');
@@ -507,7 +555,7 @@ async function guardarCliente() {
 
   setEstadoBotonGuardar('btnGuardarCliente', true);
   try {
-    const res = await ejecutarGuardarRegistro('clientes', editId, tenantId, payload);
+    const res = await ejecutarGuardarRegistroContable('clientes', editId, tenantId, payload, payloadContable);
     if (!res.ok) { avisarUsuario(res.message, 'error', 9000); return; }
     avisarUsuario(editId ? '¡Cliente actualizado con éxito!' : '¡Cliente guardado con éxito!', 'success');
     limpiarFormCliente();
@@ -540,7 +588,8 @@ async function exportarClientesExcel() {
   if (error) { avisarUsuario(explicarErrorSupabase('clientes', 'exportar', error), 'error'); return; }
   if (!data || data.length === 0) { avisarUsuario('Sin clientes para exportar.', 'warning'); return; }
 
-  const excelData = data.map(c => ({
+  const enriquecidos = await enriquecerListaContable(tenantId, 'clientes', data);
+  const excelData = enriquecidos.map(c => ({
     RIF: c.rif,
     'Razón Social': c.razon_social,
     Dirección: c.direccion || '',
@@ -548,7 +597,10 @@ async function exportarClientesExcel() {
     Correo: c.email || '',
     Contacto: c.contacto || '',
     'Contribuyente Especial': c.es_contribuyente_especial ? 'SÍ' : 'NO',
-    'Cuenta Contable': c.cuenta_contable || ''
+    'Cuenta Contable (CxC)': c.cuenta_contable || '',
+    'Cta. Anticipos': c.cuenta_anticipos || '',
+    'Días Crédito': c.condicion_credito_dias ?? 0,
+    'Límite Crédito ($)': c.limite_credito_usd ?? 0
   }));
 
   descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Directorio_Clientes', 'Clientes');
@@ -575,7 +627,7 @@ async function cargarProveedoresGestion() {
     if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-rose-400">${esc(msg)}</td></tr>`;
     return;
   }
-  proveedoresGestionCache = data || [];
+  proveedoresGestionCache = await enriquecerListaContable(tenantId, 'proveedores', data || []);
 
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -616,6 +668,10 @@ function editarProveedor(id) {
   document.getElementById('provContacto').value = p.contacto || '';
   document.getElementById('provContribuyenteEspecial').value = String(Boolean(p.es_contribuyente_especial ?? true));
   document.getElementById('provCuentaContable').value = p.cuenta_contable || '';
+  if (document.getElementById('provTipoPersona')) document.getElementById('provTipoPersona').value = p.tipo_persona || 'PJD';
+  if (document.getElementById('provRetencionIvaPct')) document.getElementById('provRetencionIvaPct').value = String(p.retencion_iva_pct ?? 75);
+  if (document.getElementById('provDiasCredito')) document.getElementById('provDiasCredito').value = p.condicion_credito_dias ?? 0;
+  if (document.getElementById('provCuentaAnticipos')) document.getElementById('provCuentaAnticipos').value = p.cuenta_anticipos || '';
 
   const btnCancel = document.getElementById('btnCancelarProv');
   if (btnCancel) btnCancel.classList.remove('hidden');
@@ -636,6 +692,10 @@ function limpiarFormProveedor() {
   document.getElementById('provContacto').value = '';
   document.getElementById('provContribuyenteEspecial').value = 'true';
   document.getElementById('provCuentaContable').value = '';
+  if (document.getElementById('provTipoPersona')) document.getElementById('provTipoPersona').value = 'PJD';
+  if (document.getElementById('provRetencionIvaPct')) document.getElementById('provRetencionIvaPct').value = '75';
+  if (document.getElementById('provDiasCredito')) document.getElementById('provDiasCredito').value = '0';
+  if (document.getElementById('provCuentaAnticipos')) document.getElementById('provCuentaAnticipos').value = '';
 
   const btnCancel = document.getElementById('btnCancelarProv');
   if (btnCancel) btnCancel.classList.add('hidden');
@@ -661,6 +721,12 @@ async function guardarProveedor() {
     es_contribuyente_especial: isContrib,
     cuenta_contable: document.getElementById('provCuentaContable').value.trim()
   };
+  const payloadContable = {
+    tipo_persona: document.getElementById('provTipoPersona')?.value || 'PJD',
+    retencion_iva_pct: parseFloat(document.getElementById('provRetencionIvaPct')?.value || '75') || 0,
+    condicion_credito_dias: parseInt(document.getElementById('provDiasCredito')?.value || '0', 10) || 0,
+    cuenta_anticipos: (document.getElementById('provCuentaAnticipos')?.value || '').trim() || null
+  };
 
   if (!payload.rif || !payload.razon_social) {
     avisarUsuario('Ingrese RIF y Razón Social del proveedor.', 'warning');
@@ -669,7 +735,7 @@ async function guardarProveedor() {
 
   setEstadoBotonGuardar('btnGuardarProveedor', true);
   try {
-    const res = await ejecutarGuardarRegistro('proveedores', editId, tenantId, payload);
+    const res = await ejecutarGuardarRegistroContable('proveedores', editId, tenantId, payload, payloadContable);
     if (!res.ok) { avisarUsuario(res.message, 'error', 9000); return; }
     avisarUsuario(editId ? '¡Proveedor actualizado con éxito!' : '¡Proveedor guardado con éxito!', 'success');
     limpiarFormProveedor();
@@ -702,7 +768,8 @@ async function exportarProveedoresExcel() {
   if (error) { avisarUsuario(explicarErrorSupabase('proveedores', 'exportar', error), 'error'); return; }
   if (!data || data.length === 0) { avisarUsuario('Sin proveedores para exportar.', 'warning'); return; }
 
-  const excelData = data.map(p => ({
+  const enriquecidos = await enriquecerListaContable(tenantId, 'proveedores', data);
+  const excelData = enriquecidos.map(p => ({
     RIF: p.rif,
     'Razón Social': p.razon_social,
     Dirección: p.direccion || '',
@@ -710,7 +777,11 @@ async function exportarProveedoresExcel() {
     Correo: p.email || '',
     Contacto: p.contacto || '',
     'Contribuyente Especial': p.es_contribuyente_especial ? 'SÍ' : 'NO',
-    'Cuenta Contable': p.cuenta_contable || ''
+    'Cuenta Contable (CxP)': p.cuenta_contable || '',
+    'Tipo Persona': p.tipo_persona || 'PJD',
+    '% Retención IVA': p.retencion_iva_pct ?? 75,
+    'Días Crédito': p.condicion_credito_dias ?? 0,
+    'Cta. Anticipos': p.cuenta_anticipos || ''
   }));
 
   descargarExcelMatriz([Object.keys(excelData[0]), ...excelData.map(Object.values)], 'Directorio_Proveedores', 'Proveedores');
@@ -1044,7 +1115,7 @@ async function cargarSucursalesGestion() {
     if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-400">${esc(msg)}</td></tr>`;
     return;
   }
-  sucursalesGestionCache = data || [];
+  sucursalesGestionCache = await enriquecerListaContable(tenantId, 'sucursales', data || []);
 
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -1055,9 +1126,10 @@ async function cargarSucursalesGestion() {
   }
 
   sucursalesGestionCache.forEach(s => {
+    const ccBadge = s.centro_costo ? `<span class="ml-1.5 px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-mono text-[10px]">${esc(s.centro_costo)}</span>` : '';
     tbody.innerHTML += `
       <tr class="hover:bg-slate-900 border-b border-slate-800/60">
-        <td class="p-3 font-bold text-emerald-400">${esc(s.nombre)}</td>
+        <td class="p-3 font-bold text-emerald-400">${esc(s.nombre)}${ccBadge}</td>
         <td class="p-3 text-slate-300">${esc(s.direccion || 'N/A')}</td>
         <td class="p-3 font-mono text-slate-400">${formatearFecha8Digitos(s.created_at)}</td>
         <td class="p-3 text-center space-x-2">
@@ -1075,6 +1147,7 @@ function editarSucursal(id) {
   document.getElementById('editSucursalId').value = s.id;
   document.getElementById('sucursalNombre').value = s.nombre || '';
   document.getElementById('sucursalDireccion').value = s.direccion || '';
+  if (document.getElementById('sucursalCentroCosto')) document.getElementById('sucursalCentroCosto').value = s.centro_costo || '';
   const btnCancel = document.getElementById('btnCancelarSucursal');
   if (btnCancel) btnCancel.classList.remove('hidden');
   const titulo = document.getElementById('tituloFormSucursal');
@@ -1088,6 +1161,7 @@ function limpiarFormSucursal() {
   document.getElementById('editSucursalId').value = '';
   document.getElementById('sucursalNombre').value = '';
   document.getElementById('sucursalDireccion').value = '';
+  if (document.getElementById('sucursalCentroCosto')) document.getElementById('sucursalCentroCosto').value = '';
   const btnCancel = document.getElementById('btnCancelarSucursal');
   if (btnCancel) btnCancel.classList.add('hidden');
   const titulo = document.getElementById('tituloFormSucursal');
@@ -1105,6 +1179,9 @@ async function guardarSucursal() {
     nombre: document.getElementById('sucursalNombre').value.trim().toUpperCase(),
     direccion: document.getElementById('sucursalDireccion').value.trim()
   };
+  const payloadContable = {
+    centro_costo: (document.getElementById('sucursalCentroCosto')?.value || '').trim().toUpperCase() || null
+  };
 
   if (!payload.nombre) {
     avisarUsuario('Ingrese el nombre de la sucursal.', 'warning');
@@ -1113,7 +1190,7 @@ async function guardarSucursal() {
 
   setEstadoBotonGuardar('btnGuardarSucursal', true);
   try {
-    const res = await ejecutarGuardarRegistro('sucursales', editId, tenantId, payload);
+    const res = await ejecutarGuardarRegistroContable('sucursales', editId, tenantId, payload, payloadContable);
     if (!res.ok) { avisarUsuario(res.message, 'error', 9000); return; }
     avisarUsuario(editId ? '¡Sucursal actualizada con éxito!' : '¡Sucursal guardada con éxito!', 'success');
     limpiarFormSucursal();
@@ -1148,9 +1225,11 @@ async function exportarSucursalesExcel() {
   if (error) { avisarUsuario(explicarErrorSupabase('sucursales', 'exportar', error), 'error'); return; }
   if (!data || data.length === 0) { avisarUsuario('Sin sucursales para exportar.', 'warning'); return; }
 
-  const excelData = data.map(s => ({
+  const enriquecidos = await enriquecerListaContable(tenantId, 'sucursales', data);
+  const excelData = enriquecidos.map(s => ({
     Sucursal: s.nombre,
     Dirección: s.direccion || '',
+    'Centro de Costo': s.centro_costo || '',
     'Fecha Registro': formatearFecha8Digitos(s.created_at)
   }));
 
@@ -1178,7 +1257,7 @@ async function cargarAlmacenesGestion() {
     if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-rose-400">${esc(msg)}</td></tr>`;
     return;
   }
-  almacenesGestionCache = data || [];
+  almacenesGestionCache = await enriquecerListaContable(tenantId, 'almacenes', data || []);
 
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -1190,9 +1269,10 @@ async function cargarAlmacenesGestion() {
 
   almacenesGestionCache.forEach(a => {
     const sucursalNom = a.sucursales?.nombre || 'General';
+    const ctaBadge = a.cuenta_inventario ? `<span class="ml-1.5 px-1.5 py-0.5 rounded bg-slate-800 text-emerald-300 font-mono text-[10px]">${esc(a.cuenta_inventario)}</span>` : '';
     tbody.innerHTML += `
       <tr class="hover:bg-slate-900 border-b border-slate-800/60">
-        <td class="p-3 font-bold text-white">${esc(a.nombre)}</td>
+        <td class="p-3 font-bold text-white">${esc(a.nombre)}${ctaBadge}</td>
         <td class="p-3 font-mono text-emerald-400 font-bold">${esc(a.tipo || 'PRINCIPAL')}</td>
         <td class="p-3 text-slate-300">${esc(sucursalNom)}</td>
         <td class="p-3 font-mono text-slate-400">${formatearFecha8Digitos(a.created_at)}</td>
@@ -1212,6 +1292,7 @@ function editarAlmacen(id) {
   document.getElementById('almacenNombre').value = a.nombre || '';
   document.getElementById('almacenTipo').value = a.tipo || 'PRINCIPAL';
   document.getElementById('almacenSucursalSelect').value = a.sucursal_id || '';
+  if (document.getElementById('almacenCuentaInventario')) document.getElementById('almacenCuentaInventario').value = a.cuenta_inventario || '';
 
   const btnCancel = document.getElementById('btnCancelarAlmacen');
   if (btnCancel) btnCancel.classList.remove('hidden');
@@ -1227,6 +1308,7 @@ function limpiarFormAlmacen() {
   document.getElementById('almacenNombre').value = '';
   document.getElementById('almacenTipo').value = 'PRINCIPAL';
   document.getElementById('almacenSucursalSelect').value = '';
+  if (document.getElementById('almacenCuentaInventario')) document.getElementById('almacenCuentaInventario').value = '';
   const btnCancel = document.getElementById('btnCancelarAlmacen');
   if (btnCancel) btnCancel.classList.add('hidden');
   const titulo = document.getElementById('tituloFormAlmacen');
@@ -1245,6 +1327,9 @@ async function guardarAlmacen() {
     nombre: document.getElementById('almacenNombre').value.trim().toUpperCase(),
     tipo: document.getElementById('almacenTipo').value.trim().toUpperCase() || 'PRINCIPAL'
   };
+  const payloadContable = {
+    cuenta_inventario: (document.getElementById('almacenCuentaInventario')?.value || '').trim() || null
+  };
 
   if (!payload.nombre) {
     avisarUsuario('Ingrese el nombre del almacén.', 'warning');
@@ -1253,7 +1338,7 @@ async function guardarAlmacen() {
 
   setEstadoBotonGuardar('btnGuardarAlmacen', true);
   try {
-    const res = await ejecutarGuardarRegistro('almacenes', editId, tenantId, payload);
+    const res = await ejecutarGuardarRegistroContable('almacenes', editId, tenantId, payload, payloadContable);
     if (!res.ok) { avisarUsuario(res.message, 'error', 9000); return; }
     avisarUsuario(editId ? '¡Almacén actualizado con éxito!' : '¡Almacén guardado con éxito!', 'success');
     limpiarFormAlmacen();
@@ -1288,10 +1373,12 @@ async function exportarAlmacenesExcel() {
   if (error) { avisarUsuario(explicarErrorSupabase('almacenes', 'exportar', error), 'error'); return; }
   if (!data || data.length === 0) { avisarUsuario('Sin almacenes para exportar.', 'warning'); return; }
 
-  const excelData = data.map(a => ({
+  const enriquecidos = await enriquecerListaContable(tenantId, 'almacenes', data);
+  const excelData = enriquecidos.map(a => ({
     'Nombre Almacén': a.nombre,
     Tipo: a.tipo || 'PRINCIPAL',
     Sucursal: a.sucursales?.nombre || 'General',
+    'Cuenta Inventario': a.cuenta_inventario || '',
     'Fecha Registro': formatearFecha8Digitos(a.created_at)
   }));
 
@@ -1319,7 +1406,7 @@ async function cargarTiposIvaGestion() {
     if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-rose-400">${esc(msg)}</td></tr>`;
     return;
   }
-  tiposIvaGestionCache = data || [];
+  tiposIvaGestionCache = await enriquecerListaContable(tenantId, 'tipos_iva', data || []);
 
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -1330,9 +1417,10 @@ async function cargarTiposIvaGestion() {
   }
 
   tiposIvaGestionCache.forEach(t => {
+    const codSen = t.codigo_seniat ? `<span class="ml-1.5 px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-mono text-[10px]">${esc(t.codigo_seniat)}</span>` : '';
     tbody.innerHTML += `
       <tr class="hover:bg-slate-900 border-b border-slate-800/60">
-        <td class="p-3 font-bold text-emerald-400">${esc(t.nombre)}</td>
+        <td class="p-3 font-bold text-emerald-400">${esc(t.nombre)}${codSen}</td>
         <td class="p-3 font-mono font-bold text-amber-300">${t.porcentaje}%</td>
         <td class="p-3 font-mono text-slate-400">${formatearFecha8Digitos(t.created_at)}</td>
         <td class="p-3 text-center space-x-2">
@@ -1350,6 +1438,9 @@ function editarTipoIva(id) {
   document.getElementById('editTipoIvaId').value = t.id;
   document.getElementById('tipoIvaNombre').value = t.nombre || '';
   document.getElementById('tipoIvaPorcentaje').value = t.porcentaje ?? 16;
+  if (document.getElementById('tipoIvaCodigoSeniat')) document.getElementById('tipoIvaCodigoSeniat').value = t.codigo_seniat || (Number(t.porcentaje) === 0 ? 'E' : (Number(t.porcentaje) === 8 ? 'R' : 'G'));
+  if (document.getElementById('tipoIvaCuentaDebito')) document.getElementById('tipoIvaCuentaDebito').value = t.cuenta_debito_fiscal || '';
+  if (document.getElementById('tipoIvaCuentaCredito')) document.getElementById('tipoIvaCuentaCredito').value = t.cuenta_credito_fiscal || '';
   const btnCancel = document.getElementById('btnCancelarTipoIva');
   if (btnCancel) btnCancel.classList.remove('hidden');
   const titulo = document.getElementById('tituloFormTipoIva');
@@ -1363,6 +1454,9 @@ function limpiarFormTipoIva() {
   document.getElementById('editTipoIvaId').value = '';
   document.getElementById('tipoIvaNombre').value = '';
   document.getElementById('tipoIvaPorcentaje').value = '16';
+  if (document.getElementById('tipoIvaCodigoSeniat')) document.getElementById('tipoIvaCodigoSeniat').value = 'G';
+  if (document.getElementById('tipoIvaCuentaDebito')) document.getElementById('tipoIvaCuentaDebito').value = '';
+  if (document.getElementById('tipoIvaCuentaCredito')) document.getElementById('tipoIvaCuentaCredito').value = '';
   const btnCancel = document.getElementById('btnCancelarTipoIva');
   if (btnCancel) btnCancel.classList.add('hidden');
   const titulo = document.getElementById('tituloFormTipoIva');
@@ -1381,6 +1475,11 @@ async function guardarTipoIva() {
     nombre: document.getElementById('tipoIvaNombre').value.trim().toUpperCase(),
     porcentaje: Number.isFinite(porcentajeParsed) ? porcentajeParsed : 0
   };
+  const payloadContable = {
+    codigo_seniat: (document.getElementById('tipoIvaCodigoSeniat')?.value || 'G').trim().toUpperCase(),
+    cuenta_debito_fiscal: (document.getElementById('tipoIvaCuentaDebito')?.value || '').trim() || null,
+    cuenta_credito_fiscal: (document.getElementById('tipoIvaCuentaCredito')?.value || '').trim() || null
+  };
 
   if (!payload.nombre) {
     avisarUsuario('Ingrese la descripción de la alícuota.', 'warning');
@@ -1389,7 +1488,7 @@ async function guardarTipoIva() {
 
   setEstadoBotonGuardar('btnGuardarTipoIva', true);
   try {
-    const res = await ejecutarGuardarRegistro('tipos_iva', editId, tenantId, payload);
+    const res = await ejecutarGuardarRegistroContable('tipos_iva', editId, tenantId, payload, payloadContable);
     if (!res.ok) { avisarUsuario(res.message, 'error', 9000); return; }
     avisarUsuario(editId ? '¡Alícuota actualizada con éxito!' : '¡Alícuota configurada con éxito!', 'success');
     limpiarFormTipoIva();
@@ -1424,9 +1523,13 @@ async function exportarTiposIvaExcel() {
   if (error) { avisarUsuario(explicarErrorSupabase('tipos_iva', 'exportar', error), 'error'); return; }
   if (!data || data.length === 0) { avisarUsuario('Sin alícuotas para exportar.', 'warning'); return; }
 
-  const excelData = data.map(t => ({
+  const enriquecidos = await enriquecerListaContable(tenantId, 'tipos_iva', data);
+  const excelData = enriquecidos.map(t => ({
     'Descripción / Nombre': t.nombre,
     'Porcentaje (%)': t.porcentaje,
+    'Código SENIAT': t.codigo_seniat || '',
+    'Cta. IVA Débito': t.cuenta_debito_fiscal || '',
+    'Cta. IVA Crédito': t.cuenta_credito_fiscal || '',
     'Fecha Registro': formatearFecha8Digitos(t.created_at)
   }));
 
@@ -1454,7 +1557,7 @@ async function cargarViasPagoGestion() {
     if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-400">${esc(msg)}</td></tr>`;
     return;
   }
-  viasPagoGestionCache = data || [];
+  viasPagoGestionCache = await enriquecerListaContable(tenantId, 'vias_pago', data || []);
 
   if (!tbody) return;
   tbody.innerHTML = '';
@@ -1467,9 +1570,11 @@ async function cargarViasPagoGestion() {
   viasPagoGestionCache.forEach(v => {
     const reqRef = v.requiere_referencia !== false;
     const estaActivo = v.activo !== false;
+    const monTag = v.tipo_moneda ? `<span class="ml-1 px-1.5 py-0.5 rounded bg-slate-800 text-sky-300 font-mono text-[10px]">${esc(v.tipo_moneda)}</span>` : '';
+    const igtfTag = v.es_divisa_igtf ? `<span class="ml-1 px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 font-mono text-[10px]">IGTF 3%</span>` : '';
     tbody.innerHTML += `
       <tr class="hover:bg-slate-900 border-b border-slate-800/60">
-        <td class="p-3 font-bold text-white">${esc(v.nombre)}</td>
+        <td class="p-3 font-bold text-white">${esc(v.nombre)}${monTag}${igtfTag}</td>
         <td class="p-3 font-mono text-emerald-400 font-bold">${esc(v.codigo_interno || 'N/A')}</td>
         <td class="p-3 text-center"><span class="px-2 py-0.5 rounded text-[10px] ${reqRef ? 'bg-amber-950 text-amber-300 font-bold' : 'bg-slate-800 text-slate-400'}">${reqRef ? 'SÍ' : 'NO'}</span></td>
         <td class="p-3 font-mono text-slate-300">${esc(v.cuenta_contable || 'N/A')}</td>
@@ -1495,6 +1600,8 @@ function editarViaPago(id) {
   document.getElementById('viaPagoReqRef').value = String(v.requiere_referencia ?? true);
   document.getElementById('viaPagoActivo').value = String(v.activo ?? true);
   document.getElementById('viaPagoCuentaContable').value = v.cuenta_contable || '';
+  if (document.getElementById('viaPagoMoneda')) document.getElementById('viaPagoMoneda').value = v.tipo_moneda || 'VES';
+  if (document.getElementById('viaPagoCausaIgtf')) document.getElementById('viaPagoCausaIgtf').value = String(Boolean(v.es_divisa_igtf));
 
   const btnCancel = document.getElementById('btnCancelarViaPago');
   if (btnCancel) btnCancel.classList.remove('hidden');
@@ -1512,6 +1619,8 @@ function limpiarFormViaPago() {
   document.getElementById('viaPagoReqRef').value = 'true';
   document.getElementById('viaPagoActivo').value = 'true';
   document.getElementById('viaPagoCuentaContable').value = '';
+  if (document.getElementById('viaPagoMoneda')) document.getElementById('viaPagoMoneda').value = 'VES';
+  if (document.getElementById('viaPagoCausaIgtf')) document.getElementById('viaPagoCausaIgtf').value = 'false';
 
   const btnCancel = document.getElementById('btnCancelarViaPago');
   if (btnCancel) btnCancel.classList.add('hidden');
@@ -1533,6 +1642,10 @@ async function guardarViaPago() {
     activo: document.getElementById('viaPagoActivo').value === 'true',
     cuenta_contable: document.getElementById('viaPagoCuentaContable').value.trim() || null
   };
+  const payloadContable = {
+    tipo_moneda: document.getElementById('viaPagoMoneda')?.value || 'VES',
+    es_divisa_igtf: document.getElementById('viaPagoCausaIgtf')?.value === 'true'
+  };
 
   if (!payload.nombre) {
     avisarUsuario('Ingrese la denominación del método de pago.', 'warning');
@@ -1541,7 +1654,7 @@ async function guardarViaPago() {
 
   setEstadoBotonGuardar('btnGuardarViaPago', true);
   try {
-    const res = await ejecutarGuardarRegistro('vias_pago', editId, tenantId, payload);
+    const res = await ejecutarGuardarRegistroContable('vias_pago', editId, tenantId, payload, payloadContable);
     if (!res.ok) { avisarUsuario(res.message, 'error', 10000); return; }
     avisarUsuario(editId ? '¡Vía de pago actualizada con éxito!' : '¡Vía de pago registrada con éxito!', 'success');
     limpiarFormViaPago();
@@ -1576,9 +1689,12 @@ async function exportarViasPagoExcel() {
   if (error) { avisarUsuario(explicarErrorSupabase('vias_pago', 'exportar', error), 'error'); return; }
   if (!data || data.length === 0) { avisarUsuario('Sin vías de pago para exportar.', 'warning'); return; }
 
-  const excelData = data.map(v => ({
+  const enriquecidos = await enriquecerListaContable(tenantId, 'vias_pago', data);
+  const excelData = enriquecidos.map(v => ({
     'Método de Pago': v.nombre,
     Código: v.codigo_interno || '',
+    'Moneda': v.tipo_moneda || 'VES',
+    'Causa IGTF': v.es_divisa_igtf ? 'SÍ' : 'NO',
     'Requiere Ref': v.requiere_referencia ? 'SÍ' : 'NO',
     Estatus: v.activo ? 'ACTIVO' : 'INACTIVO',
     'Cuenta Contable': v.cuenta_contable || ''
@@ -1964,51 +2080,9 @@ async function copiarCodigoReferido() {
 let inquilinosMasterCache = [];
 
 async function cargarInquilinosMaster() {
-  const tbody = document.getElementById('tablaInquilinosMaster');
-  if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Consultando inquilinos SaaS...</td></tr>`;
-
-  const { data, error } = await supabaseClient
-    .from('tenants')
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-rose-400">${esc(explicarErrorSupabase('tenants', 'consultar', error))}</td></tr>`;
-    return;
+  if (typeof cargarPanelMasterCompleto === 'function') {
+    return await cargarPanelMasterCompleto();
   }
-
-  inquilinosMasterCache = data || [];
-  const totalEl = document.getElementById('masterTotalInquilinos');
-  if (totalEl) totalEl.textContent = String(inquilinosMasterCache.length);
-
-  tbody.innerHTML = '';
-  if (inquilinosMasterCache.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin inquilinos registrados.</td></tr>`;
-    return;
-  }
-
-  inquilinosMasterCache.forEach(t => {
-    const plan = String(t.plan_activo || 'Freemium').toUpperCase();
-    const rol = String(t.rol || 'cliente').toUpperCase();
-    tbody.innerHTML += `
-      <tr class="hover:bg-slate-900 border-b border-slate-800/40">
-        <td class="p-3 font-medium text-white">${esc(t.razon_social || 'Sin Razón Social')}</td>
-        <td class="p-3 font-mono text-slate-300">${esc(t.rif || 'N/A')}</td>
-        <td class="p-3 font-mono text-slate-400">${esc(t.email || '')}</td>
-        <td class="p-3 font-mono text-xs text-slate-300">${esc(rol)}</td>
-        <td class="p-3 font-mono text-xs font-bold text-emerald-400">${esc(plan)}</td>
-        <td class="p-3 text-emerald-400 font-semibold text-xs">Activo</td>
-        <td class="p-3 text-center">
-          <select onchange='cambiarPlanInquilinoMaster("${esc(t.id)}", this.value)' class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200 cursor-pointer">
-            <option value="Freemium" ${plan === 'FREEMIUM' ? 'selected' : ''}>Freemium</option>
-            <option value="Pyme" ${plan === 'PYME' ? 'selected' : ''}>Pyme</option>
-            <option value="Enterprise" ${plan === 'ENTERPRISE' ? 'selected' : ''}>Enterprise</option>
-          </select>
-        </td>
-      </tr>
-    `;
-  });
 }
 
 async function cambiarPlanInquilinoMaster(tenantIdTarget, nuevoPlan) {

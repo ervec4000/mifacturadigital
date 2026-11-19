@@ -1517,7 +1517,7 @@ async function emitirNotaFiscal() {
     const tagTipo = `${tipoNota === 'NOTA CREDITO' ? 'NC' : 'ND'}-${modalidad === 'DEVOLUCION' ? 'DEV' : 'FIN'}`;
     const metodoCompacto = `${tagTipo} | ${facturaAfectada} | MON:${monedaFac}`.slice(0, 50);
 
-    const { data: invData, error: errNota } = await supabaseClient.from('invoices').insert([{
+    const payloadNotaBase = {
       tenant_id: tenantId,
       client_id: notaFacturaSeleccionada.client_id || null,
       factura_nro: nroNota,
@@ -1532,14 +1532,41 @@ async function emitirNotaFiscal() {
       cliente_nombre: notaFacturaSeleccionada.cliente_nombre || 'CLIENTE',
       metodo_pago: metodoCompacto,
       estado: 'EMITIDA'
-    }]).select();
+    };
 
-    if (errNota || !invData || invData.length === 0) {
-      avisarReporte('Error al emitir nota fiscal: ' + (errNota?.message || 'Error en servidor'), 'error', 9000);
-      return;
+    const payloadNotaContable = {
+      tipo_documento: tipoNota === 'NOTA CREDITO' ? 'NOTA_CREDITO' : 'NOTA_DEBITO',
+      modalidad_nota: modalidad,
+      documento_afectado_nro: notaFacturaSeleccionada.factura_nro,
+      sucursal_id: sucId || null,
+      almacen_id: almId || null,
+      centro_costo: metaFac?.centroCosto || null,
+      moneda: monedaFac,
+      condicion_pago: metaFac?.condicionPago || 'CONTADO',
+      fecha_emision: fechaEmision,
+      fecha_vencimiento: fechaEmision,
+      exento_bs: Number(calc.exentoBs.toFixed(2)),
+      base_imponible_bs: Number(calc.baseGravadaBs.toFixed(2)),
+      base_igtf_bs: 0,
+      periodo_contable: fechaEmision.slice(0, 7)
+    };
+
+    let notaDoc = null;
+    if (typeof guardarRegistroConCompatibilidadContable === 'function') {
+      const resNota = await guardarRegistroConCompatibilidadContable('invoices', null, tenantId, payloadNotaBase, payloadNotaContable);
+      if (!resNota.ok) {
+        avisarReporte('Error al emitir nota fiscal: ' + resNota.message, 'error', 9000);
+        return;
+      }
+      notaDoc = resNota.data;
+    } else {
+      const { data: invData, error: errNota } = await supabaseClient.from('invoices').insert([payloadNotaBase]).select();
+      if (errNota || !invData || invData.length === 0) {
+        avisarReporte('Error al emitir nota fiscal: ' + (errNota?.message || 'Error en servidor'), 'error', 9000);
+        return;
+      }
+      notaDoc = invData[0];
     }
-
-    const notaDoc = invData[0];
 
     const metaNotaCompleta = {
       invoiceId: notaDoc.id,
@@ -1624,8 +1651,12 @@ async function emitirNotaFiscal() {
       }
     }
 
+    if (typeof registrarAsientoAutomaticoNota === 'function') {
+      await registrarAsientoAutomaticoNota(notaDoc, tipoNota, modalidad, itemsAProcesar, metaNotaCompleta);
+    }
+
     avisarReporte(
-      `¡${tipoNota === 'NOTA CREDITO' ? 'Nota de Crédito' : 'Nota de Débito'} ${nroNota} (${modalidad === 'DEVOLUCION' ? 'con impacto en Kardex' : 'Financiera'}) emitida con éxito!`,
+      `¡${tipoNota === 'NOTA CREDITO' ? 'Nota de Crédito' : 'Nota de Débito'} ${nroNota} (${modalidad === 'DEVOLUCION' ? 'con impacto en Kardex' : 'Financiera'}) emitida y contabilizada con éxito!`,
       'success',
       7000
     );
@@ -1854,22 +1885,52 @@ async function generarComprobanteRetencion() {
   const ivaRetenidoBs = ivaBs * (porcentaje / 100);
   const nroComp = 'RET-' + new Date().getFullYear() + '-' + Math.floor(10000 + Math.random() * 90000);
 
-  const { error } = await supabaseClient.from('retenciones_iva').insert([{
-    tenant_id: tenantActual.id, nro_comprobante: nroComp, factura_ref: facRef,
-    base_imponible_bs: baseBs, iva_bs: ivaBs, porcentaje_retencion: porcentaje, iva_retenido_bs: ivaRetenidoBs
-  }]).select();
+  const hoyIso = new Date().toISOString().slice(0, 10);
+  const payloadRetBase = {
+    tenant_id: tenantActual.id,
+    nro_comprobante: nroComp,
+    factura_ref: facRef,
+    base_imponible_bs: baseBs,
+    iva_bs: ivaBs,
+    porcentaje_retencion: porcentaje,
+    iva_retenido_bs: ivaRetenidoBs
+  };
+  const payloadRetContable = {
+    tipo_retencion: 'COMPRA',
+    periodo_impositivo: hoyIso.slice(0, 7),
+    fecha_comprobante: hoyIso
+  };
 
-  if (error) {
-    const code = String(error.code || '');
-    if (code === '42501' || /row-level security/i.test(error.message || '')) {
-      avisarReporte('Permiso denegado por Supabase (RLS 42501) en "retenciones_iva". Habilita la política RLS en Supabase para guardar retenciones.', 'error', 9000);
-    } else {
-      avisarReporte('Error al generar retención: ' + error.message, 'error', 8000);
+  if (typeof guardarRegistroConCompatibilidadContable === 'function') {
+    const resRet = await guardarRegistroConCompatibilidadContable('retenciones_iva', null, tenantActual.id, payloadRetBase, payloadRetContable);
+    if (!resRet.ok) {
+      avisarReporte(resRet.message, 'error', 9000);
+      return;
     }
-    return;
+  } else {
+    const { error } = await supabaseClient.from('retenciones_iva').insert([payloadRetBase]).select();
+    if (error) {
+      const code = String(error.code || '');
+      if (code === '42501' || /row-level security/i.test(error.message || '')) {
+        avisarReporte('Permiso denegado por Supabase (RLS 42501) en "retenciones_iva". Habilita la política RLS en Supabase para guardar retenciones.', 'error', 9000);
+      } else {
+        avisarReporte('Error al generar retención: ' + error.message, 'error', 8000);
+      }
+      return;
+    }
   }
 
-  avisarReporte(`¡Comprobante de Retención de IVA ${nroComp} generado con éxito (${porcentaje}%)!`, 'success');
+  if (typeof registrarAsientoAutomaticoRetencion === 'function') {
+    await registrarAsientoAutomaticoRetencion({
+      nroComprobante: nroComp,
+      facturaRef: facRef,
+      ivaRetenidoBs,
+      tasaBcv: tasa,
+      fecha: hoyIso
+    });
+  }
+
+  avisarReporte(`¡Comprobante de Retención de IVA ${nroComp} generado y contabilizado (${porcentaje}%)!`, 'success');
   cargarRetenciones();
 }
 
@@ -2169,7 +2230,19 @@ async function abonarCuentaPorCobrar(invoiceId) {
     detalle: JSON.stringify(abonoObj)
   }]);
 
-  avisarReporte(`Abono de $ ${montoAplicado.toFixed(2)} registrado en factura ${item.factura_nro}.`, 'success');
+  if (typeof registrarAsientoAutomaticoAbonoCxc === 'function') {
+    await registrarAsientoAutomaticoAbonoCxc({
+      invoiceId,
+      facturaNro: item.factura_nro,
+      clienteRif: item.cliente_rif,
+      clienteNombre: item.cliente_nombre,
+      montoUsd: montoAplicado,
+      tasaBcv: item.tasa || 1,
+      fecha: abonoObj.fecha
+    });
+  }
+
+  avisarReporte(`Abono de $ ${montoAplicado.toFixed(2)} registrado y contabilizado en factura ${item.factura_nro}.`, 'success');
   await cargarCuentasPorCobrar();
 }
 

@@ -11,7 +11,23 @@ let clientesCache = [];
 let posSucursalesCache = [];
 let posAlmacenesCache = [];
 let posDocumentosCache = [];
+let posViasPagoCache = [];
 let clienteIdSeleccionado = null;
+
+async function insertarFilaCompatible(tabla, baseRow, extRow = {}) {
+  let res = await supabaseClient.from(tabla).insert([{ ...baseRow, ...extRow }]);
+  if (res.error && typeof esErrorColumnaOTablaFaltante === 'function' && esErrorColumnaOTablaFaltante(res.error)) {
+    res = await supabaseClient.from(tabla).insert([baseRow]);
+  }
+  return res;
+}
+
+function sumarDiasFechaIso(fechaIso, dias = 0) {
+  const d = new Date((fechaIso || new Date().toISOString().slice(0, 10)) + 'T00:00:00');
+  if (isNaN(d)) return fechaIso;
+  d.setDate(d.getDate() + (Number(dias) || 0));
+  return d.toISOString().slice(0, 10);
+}
 
 function avisarPos(mensaje, tipo = 'info', duracion = 5500) {
   if (typeof notificarSistema === 'function') {
@@ -39,11 +55,22 @@ async function inicializarModuloPos() {
     cargarProductosSelect(),
     cargarClientesSelect(),
     typeof cargarViasPagoSelectPos === 'function' ? cargarViasPagoSelectPos() : Promise.resolve(),
+    cargarViasPagoContabPos(),
     cargarSucursalesYAlmacenesPos(),
     calcularProximoDocumentoVenta(),
     cargarDocumentosPos(),
     !editId ? consultarTasaBcvApi(true) : Promise.resolve()
   ]);
+}
+
+async function cargarViasPagoContabPos() {
+  const tenantId = obtenerTenantPos();
+  if (!tenantId) return;
+  try {
+    const { data } = await supabaseClient.from('vias_pago').select('*').eq('tenant_id', tenantId);
+    if (typeof sincronizarMetaContableNube === 'function') await sincronizarMetaContableNube(tenantId, 'vias_pago');
+    posViasPagoCache = (data || []).map(v => typeof obtenerMetaContableRegistro === 'function' ? obtenerMetaContableRegistro(tenantId, 'vias_pago', v) : v);
+  } catch (e) {}
 }
 
 async function consultarTasaBcvApi(silencioso = false) {
@@ -124,8 +151,8 @@ async function cargarSucursalesYAlmacenesPos() {
     supabaseClient.from('almacenes').select('*, sucursales(nombre)').eq('tenant_id', tenantId).order('nombre', { ascending: true })
   ]);
 
-  posSucursalesCache = resSuc.data || [];
-  posAlmacenesCache = resAlm.data || [];
+  posSucursalesCache = (resSuc.data || []).map(s => typeof obtenerMetaContableRegistro === 'function' ? obtenerMetaContableRegistro(tenantId, 'sucursales', s) : s);
+  posAlmacenesCache = (resAlm.data || []).map(a => typeof obtenerMetaContableRegistro === 'function' ? obtenerMetaContableRegistro(tenantId, 'almacenes', a) : a);
 
   const selSuc = document.getElementById('posSucursalSelect');
   if (selSuc) {
@@ -181,7 +208,8 @@ async function cargarProductosSelect() {
   const ivaMap = {};
   (resIvas.data || []).forEach(t => { ivaMap[String(t.id)] = t; });
 
-  productosCache = (resProds.data || []).map(p => {
+  productosCache = (resProds.data || []).map(pRaw => {
+    const p = typeof obtenerMetaContableRegistro === 'function' ? obtenerMetaContableRegistro(tenantId, 'productos', pRaw) : pRaw;
     const ivaInfo = p.tipos_iva || (p.tipo_iva_id ? ivaMap[String(p.tipo_iva_id)] : null);
     const ivaPct = ivaInfo ? Number(ivaInfo.porcentaje ?? 0) : (p.es_exento ? 0 : 16);
     const ivaNombre = ivaInfo ? ivaInfo.nombre : (ivaPct === 0 ? 'EXENTO' : 'GENERAL');
@@ -207,7 +235,7 @@ async function cargarClientesSelect() {
   const tenantId = obtenerTenantPos();
   if (!tenantId) return;
   const { data } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantId).order('razon_social', { ascending: true });
-  clientesCache = data || [];
+  clientesCache = (data || []).map(c => typeof obtenerMetaContableRegistro === 'function' ? obtenerMetaContableRegistro(tenantId, 'clientes', c) : c);
   const select = document.getElementById('clienteSelect');
   if (!select) return;
   select.innerHTML = '<option value="">-- Seleccionar Cliente --</option>';
@@ -270,12 +298,16 @@ function agregarItem() {
       sku,
       descripcion: prod.descripcion,
       precio,
+      costoUnitarioUsd: Number(prod.costo_unitario_usd ?? 0),
       cantidad,
       esExento,
       ivaPorcentaje,
       ivaNombre,
       unidad,
-      manejaInventario
+      manejaInventario,
+      cuentaIngreso: prod.cuenta_ingreso || null,
+      cuentaCosto: prod.cuenta_costo || null,
+      centroCosto: prod.centro_costo_default || null
     });
   }
   document.getElementById('cantidadItem').value = '1';
@@ -351,8 +383,14 @@ function verificarAplicacionIgtf() {
   const metodo = (document.getElementById('metodoPagoSelect')?.value || '').toUpperCase();
   const selectIgtf = document.getElementById('aplicaIgtfSelect');
   if (!selectIgtf) return;
-  if (/DIVISA|USD|ZELLE|BINANCE|USDT|EFECTIVO\s*\$/.test(metodo)) selectIgtf.value = 'SI';
-  else selectIgtf.value = 'NO';
+  const viaObj = posViasPagoCache.find(v => String(v.nombre || '').toUpperCase() === metodo);
+  if (viaObj && viaObj.es_divisa_igtf !== undefined) {
+    selectIgtf.value = viaObj.es_divisa_igtf ? 'SI' : 'NO';
+  } else if (/DIVISA|USD|ZELLE|BINANCE|USDT|EFECTIVO\s*\$/.test(metodo)) {
+    selectIgtf.value = 'SI';
+  } else {
+    selectIgtf.value = 'NO';
+  }
   recalcularTodo();
 }
 
@@ -629,10 +667,24 @@ async function emitirFactura() {
       }
 
       await supabaseClient.from('invoice_items').delete().eq('invoice_id', editId);
+    } else {
+      const corr = await calcularProximoDocumentoVenta();
+      facturaNro = corr.nextFac;
+      nroControl = corr.nextCtrl;
+    }
 
-      const { data: updData, error: updErr } = await supabaseClient
-        .from('invoices')
-        .update({
+    const cliObj = clientesCache.find(c => String(c.id) === String(clienteIdSeleccionado) || String(c.rif).toUpperCase() === rif);
+    const viaObj = posViasPagoCache.find(v => String(v.nombre || '').toUpperCase() === metodoPagoBase.toUpperCase());
+    const centroCostoDoc = sucObj?.centro_costo || carritoItems.find(it => it.centroCosto)?.centroCosto || null;
+    const diasCreditoCli = Number(cliObj?.condicion_credito_dias || 0);
+    const esCredito = String(condicionPago).toUpperCase().includes('CRÉDITO') || String(condicionPago).toUpperCase().includes('CREDITO');
+    const fechaVencimiento = esCredito ? sumarDiasFechaIso(fechaEmision, diasCreditoCli || 15) : fechaEmision;
+    const costoTotalUsd = carritoItems.reduce((acc, it) => acc + (it.manejaInventario ? (Number(it.costoUnitarioUsd || 0) * Number(it.cantidad || 0)) : 0), 0);
+    const costoTotalBs = costoTotalUsd * tasa;
+    const periodoContable = fechaEmision.slice(0, 7);
+
+    const payloadInvBase = editId
+      ? {
           client_id: clienteIdSeleccionado || null,
           tasa_bcv: tasa,
           monto_usd: baseUsd + exentoUsd,
@@ -644,25 +696,8 @@ async function emitirFactura() {
           cliente_nombre: nombre,
           metodo_pago: metodoCompuesto,
           estado: 'EMITIDA'
-        })
-        .eq('id', editId)
-        .eq('tenant_id', tenantId)
-        .select();
-
-      if (updErr || !updData || updData.length === 0) {
-        avisarPos(`Error al actualizar factura: ${updErr?.message || '0 filas actualizadas.'}`, 'error', 9000);
-        return;
-      }
-      invResult = updData[0];
-    } else {
-      // MODO CREACIÓN
-      const corr = await calcularProximoDocumentoVenta();
-      facturaNro = corr.nextFac;
-      nroControl = corr.nextCtrl;
-
-      const { data: invData, error: invError } = await supabaseClient
-        .from('invoices')
-        .insert([{
+        }
+      : {
           tenant_id: tenantId,
           client_id: clienteIdSeleccionado || null,
           factura_nro: facturaNro,
@@ -677,26 +712,56 @@ async function emitirFactura() {
           cliente_nombre: nombre,
           metodo_pago: metodoCompuesto,
           estado: 'EMITIDA'
-        }])
-        .select();
+        };
 
-      if (invError || !invData || invData.length === 0) {
-        avisarPos(`Error al emitir factura en Supabase: ${invError?.message || 'No se pudo insertar el comprobante.'}`, 'error', 9000);
+    const payloadInvContable = {
+      tipo_documento: 'FACTURA',
+      sucursal_id: sucId || null,
+      almacen_id: almId || null,
+      centro_costo: centroCostoDoc,
+      moneda,
+      condicion_pago: condicionPago,
+      fecha_emision: fechaEmision,
+      fecha_vencimiento: fechaVencimiento,
+      exento_bs: Number(exentoBs.toFixed(2)),
+      base_imponible_bs: Number(baseBs.toFixed(2)),
+      base_igtf_bs: Number((baseIgtfUsd * tasa).toFixed(2)),
+      costo_total_usd: Number(costoTotalUsd.toFixed(4)),
+      costo_total_bs: Number(costoTotalBs.toFixed(2)),
+      periodo_contable: periodoContable
+    };
+
+    if (typeof guardarRegistroConCompatibilidadContable === 'function') {
+      const resInv = await guardarRegistroConCompatibilidadContable('invoices', editId || null, tenantId, payloadInvBase, payloadInvContable);
+      if (!resInv.ok) {
+        avisarPos(resInv.message, 'error', 9000);
         return;
       }
-      invResult = invData[0];
+      invResult = resInv.data;
+    } else {
+      const resRaw = editId
+        ? await supabaseClient.from('invoices').update(payloadInvBase).eq('id', editId).eq('tenant_id', tenantId).select()
+        : await supabaseClient.from('invoices').insert([payloadInvBase]).select();
+      if (resRaw.error || !resRaw.data || resRaw.data.length === 0) {
+        avisarPos(`Error al ${editId ? 'actualizar' : 'emitir'} factura: ${resRaw.error?.message || 'Error en servidor'}`, 'error', 9000);
+        return;
+      }
+      invResult = resRaw.data[0];
     }
 
     const invoiceId = invResult.id;
-    const cliObj = clientesCache.find(c => String(c.id) === String(clienteIdSeleccionado) || String(c.rif).toUpperCase() === rif);
     const fechaAsigIso = invResult.created_at || new Date().toISOString();
 
     guardarMetaFacturaSeniatLocal(tenantId, invoiceId, facturaNro, {
       moneda,
       fechaEmision,
+      fechaVencimiento,
+      centroCosto: centroCostoDoc,
       clienteDireccion: direccion,
       clienteTelefono: telefono,
       clienteContribuyenteEspecial: Boolean(cliObj?.es_contribuyente_especial),
+      clienteCuentaContable: cliObj?.cuenta_contable || null,
+      viaPagoCuentaContable: viaObj?.cuenta_contable || null,
       condicionPago,
       metodoPago: metodoPagoBase,
       referenciaPago,
@@ -714,27 +779,43 @@ async function emitirFactura() {
         unidad: it.unidad,
         cantidad: it.cantidad,
         precio: it.precio,
+        costoUnitarioUsd: it.costoUnitarioUsd || 0,
         ivaPorcentaje: it.ivaPorcentaje,
         ivaNombre: it.ivaNombre,
-        esExento: it.esExento
+        esExento: it.esExento,
+        cuentaIngreso: it.cuentaIngreso || null,
+        cuentaCosto: it.cuentaCosto || null
       }))
     });
 
     for (const item of carritoItems) {
-      await supabaseClient.from('invoice_items').insert([{
+      const subItemUsd = item.precio * item.cantidad;
+      const pctItem = Number(item.ivaPorcentaje ?? (item.esExento ? 0 : 16));
+      const ivaItemUsd = pctItem === 0 ? 0 : subItemUsd * (pctItem / 100);
+
+      await insertarFilaCompatible('invoice_items', {
         invoice_id: invoiceId,
         producto_id: item.productoId,
         cantidad: item.cantidad,
         precio_unitario_usd: item.precio,
         es_exento: item.esExento,
-        subtotal_usd: item.precio * item.cantidad,
+        subtotal_usd: subItemUsd,
         descripcion: item.descripcion
-      }]);
+      }, {
+        alicuota_iva: pctItem,
+        iva_usd: Number(ivaItemUsd.toFixed(4)),
+        iva_bs: Number((ivaItemUsd * tasa).toFixed(2)),
+        costo_unitario_usd: Number(item.costoUnitarioUsd || 0),
+        cuenta_ingreso: item.cuentaIngreso || null,
+        cuenta_costo: item.cuentaCosto || null,
+        centro_costo: item.centroCosto || centroCostoDoc
+      });
 
       if (item.manejaInventario) {
         const adj = await ajustarStockProductoYLotes(tenantId, item.productoId, almId, -item.cantidad);
+        item.costoUnitarioUsd = item.costoUnitarioUsd || adj.costo;
         const tagEdit = editId ? ' (EDIT)' : '';
-        const resKardex = await supabaseClient.from('kardex_movimientos').insert([{
+        const resKardex = await insertarFilaCompatible('kardex_movimientos', {
           tenant_id: tenantId,
           producto_id: item.productoId,
           tipo_movimiento: 'SALIDA',
@@ -746,7 +827,16 @@ async function emitirFactura() {
           precio_venta_usd: item.precio,
           tasa_bcv: tasa,
           fecha: fechaEmision
-        }]);
+        }, {
+          sucursal_id: sucId || null,
+          almacen_id: almId || null,
+          costo_total_usd: Number((adj.costo * item.cantidad).toFixed(4)),
+          costo_total_bs: Number((adj.costo * item.cantidad * tasa).toFixed(2)),
+          cuenta_inventario: almObj?.cuenta_inventario || null,
+          cuenta_contrapartida: item.cuentaCosto || null,
+          centro_costo: item.centroCosto || centroCostoDoc,
+          periodo_contable: periodoContable
+        });
 
         if (resKardex.error && String(resKardex.error.code || '') === '42501') {
           kardexBloqueadoRls = true;
@@ -754,10 +844,22 @@ async function emitirFactura() {
       }
     }
 
+    if (typeof registrarAsientoAutomaticoVenta === 'function') {
+      await registrarAsientoAutomaticoVenta(invResult, carritoItems, {
+        fechaEmision,
+        moneda,
+        condicionPago,
+        metodoPago: metodoPagoBase,
+        centroCosto: centroCostoDoc,
+        clienteCuentaContable: cliObj?.cuenta_contable || null,
+        viaPagoCuentaContable: viaObj?.cuenta_contable || null
+      });
+    }
+
     avisarPos(
       editId
-        ? `¡Factura ${facturaNro} actualizada y registrada en Kardex con éxito!`
-        : `¡Factura Fiscal Digital ${facturaNro} (Control ${nroControl}) emitida con éxito!`,
+        ? `¡Factura ${facturaNro} actualizada y contabilizada con éxito!`
+        : `¡Factura Fiscal Digital ${facturaNro} (Control ${nroControl}) emitida y contabilizada con éxito!`,
       'success',
       7000
     );
@@ -977,12 +1079,15 @@ async function editarFacturaPorId(id) {
       sku: metaIt?.sku || prodDb?.codigo_sku || 'S/N',
       descripcion: metaIt?.descripcion || prodDb?.descripcion || it.descripcion || 'Artículo',
       precio: Number(it.precio_unitario_usd ?? 0),
+      costoUnitarioUsd: Number(metaIt?.costoUnitarioUsd ?? it.costo_unitario_usd ?? prodDb?.costo_unitario_usd ?? 0),
       cantidad: Number(it.cantidad ?? 1),
       esExento: pct === 0,
       ivaPorcentaje: pct,
       ivaNombre: metaIt?.ivaNombre || prodDb?.tipos_iva?.nombre || (pct === 0 ? 'EXENTO' : 'GENERAL'),
       unidad: metaIt?.unidad || prodDb?.unidad_medida || 'UND',
-      manejaInventario: prodDb ? Boolean(prodDb.maneja_inventario) : true
+      manejaInventario: prodDb ? Boolean(prodDb.maneja_inventario) : true,
+      cuentaIngreso: metaIt?.cuentaIngreso || it.cuenta_ingreso || prodDb?.cuenta_ingreso || null,
+      cuentaCosto: metaIt?.cuentaCosto || it.cuenta_costo || prodDb?.cuenta_costo || null
     };
   });
 
