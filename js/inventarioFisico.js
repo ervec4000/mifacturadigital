@@ -667,7 +667,7 @@ function pintarGridEtiquetasQr() {
   });
 }
 
-function imprimirEtiquetasQrPdf() {
+function construirEtiquetasQrJsPdf() {
   const q = (document.getElementById('filtroEtiquetasQr')?.value || '').trim().toUpperCase();
   const colsMode = document.getElementById('formatoHojaEtiquetas')?.value || '3';
   const copias = Math.max(1, Math.min(20, parseInt(document.getElementById('copiasPorEtiquetaQr')?.value || '1', 10) || 1));
@@ -681,12 +681,12 @@ function imprimirEtiquetasQrPdf() {
     : etiquetasQrCache;
 
   if (baseList.length === 0) {
-    avisarInvFisico('No hay etiquetas para exportar en PDF.', 'warning');
-    return;
+    avisarInvFisico('No hay etiquetas para imprimir o exportar en PDF.', 'warning');
+    return null;
   }
   if (!window.jspdf || !window.jspdf.jsPDF) {
     avisarInvFisico('La librería jsPDF no está cargada.', 'error');
-    return;
+    return null;
   }
 
   // Expandir copias
@@ -792,17 +792,35 @@ function imprimirEtiquetasQrPdf() {
     pdf.text(`Lote: ${String(p.lote || 'N/A').slice(0, 12)} | Ubi: ${String(p.ubicacion || 'DEP').slice(0, 10)}`, x + 2.5, y + cellH - 2.5);
   });
 
-  pdf.save(`Etiquetas_QR_Carta_${new Date().toISOString().slice(0, 10)}.pdf`);
-  avisarInvFisico(`PDF tamaño Carta generado con ${listaExpandida.length} etiqueta(s) QR.`, 'success');
+  const fileName = `Etiquetas_QR_Carta_${new Date().toISOString().slice(0, 10)}.pdf`;
+  return { pdf, fileName, totalEtiquetas: listaExpandida.length };
+}
+
+function imprimirEtiquetasQrPdf() {
+  const res = construirEtiquetasQrJsPdf();
+  if (!res) return;
+  res.pdf.save(res.fileName);
+  avisarInvFisico(`PDF tamaño Carta generado con ${res.totalEtiquetas} etiqueta(s) QR.`, 'success');
 }
 
 function imprimirEtiquetasQrNavegador() {
+  const fechaTag = new Date().toISOString().slice(0, 10);
+  if (typeof ejecutarImpresionConRespaldo === 'function') {
+    ejecutarImpresionConRespaldo({
+      claseBody: 'imprimiendo-etiquetas',
+      esTicket80mm: false,
+      construirPdfFn: () => {
+        const res = construirEtiquetasQrJsPdf();
+        return res ? res.pdf : null;
+      },
+      nombreArchivo: `Etiquetas_QR_Carta_${fechaTag}.pdf`,
+      tituloVisor: 'Imprimir Etiquetas QR (Tamaño Carta)'
+    });
+    return;
+  }
   try {
     window.print();
   } catch (e) {}
-  if (window.self !== window.top) {
-    avisarInvFisico('Si el visor embebido bloqueó la impresión directa, usa "📥 Descargar PDF (Carta)" para imprimir a escala real.', 'info', 7000);
-  }
 }
 
 function exportarEtiquetasQrExcel() {

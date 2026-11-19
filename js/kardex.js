@@ -669,58 +669,485 @@ async function cargarHistorialCompras() {
   });
 }
 
+let kardexMovimientosCache = [];
+let kardexFiltradosCache = [];
+let kardexProductosMap = {};
+let kardexSucursalesCache = [];
+let kardexAlmacenesCache = [];
+
+function formatearFechaDdMmYyyyKardex(val) {
+  if (!val) return 'S/F';
+  const mIso = String(val).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (mIso) return `${mIso[3]}-${mIso[2]}-${mIso[1]}`;
+  const d = new Date(val);
+  if (isNaN(d)) return String(val);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}-${mm}-${d.getFullYear()}`;
+}
+
+function normalizarMovimientoKardex(m) {
+  const refStr = String(m.documento_ref || '');
+  const partes = refStr.split('|').map(s => s.trim());
+  const getCampo = (pref) => {
+    const f = partes.find(p => p.toUpperCase().startsWith(pref.toUpperCase()));
+    return f ? f.slice(pref.length).trim() : '';
+  };
+
+  let sucursalNombre = getCampo('SUC:');
+  let almacenNombre = getCampo('ALM:');
+  const lote = getCampo('LOTE:');
+
+  // Detectar ruta en transferencias: "TRANSF-XXXX | SucA/AlmA -> SucB/AlmB | ..."
+  if (/^TRANSF-/i.test(refStr) && partes[1] && partes[1].includes('->')) {
+    const lados = partes[1].split('->').map(s => s.trim());
+    const lado = m.tipo_movimiento === 'SALIDA' ? lados[0] : (lados[1] || lados[0]);
+    if (lado) {
+      if (lado.includes('/')) {
+        const seg = lado.split('/').map(s => s.trim());
+        if (!sucursalNombre) sucursalNombre = seg[0] || '';
+        if (!almacenNombre) almacenNombre = seg.slice(1).join('/') || '';
+      } else if (!almacenNombre) {
+        almacenNombre = lado;
+      }
+    }
+  }
+
+  let sucursalId = '';
+  let almacenId = '';
+
+  if (almacenNombre) {
+    const almMatch = kardexAlmacenesCache.find(a =>
+      String(a.nombre || '').trim().toLowerCase() === almacenNombre.toLowerCase() &&
+      (!sucursalNombre || String(a.sucursales?.nombre || '').trim().toLowerCase() === sucursalNombre.toLowerCase())
+    ) || kardexAlmacenesCache.find(a => String(a.nombre || '').trim().toLowerCase() === almacenNombre.toLowerCase());
+
+    if (almMatch) {
+      almacenId = String(almMatch.id);
+      if (almMatch.sucursal_id) sucursalId = String(almMatch.sucursal_id);
+      if (!sucursalNombre && almMatch.sucursales?.nombre) sucursalNombre = almMatch.sucursales.nombre;
+    }
+  }
+
+  if (!sucursalId && sucursalNombre) {
+    const sucMatch = kardexSucursalesCache.find(s =>
+      String(s.nombre || '').trim().toLowerCase() === sucursalNombre.toLowerCase()
+    );
+    if (sucMatch) sucursalId = String(sucMatch.id);
+  }
+
+  const refUpper = refStr.toUpperCase();
+  let tipoSemantico = m.tipo_movimiento === 'ENTRADA' ? 'ENTRADA' : 'SALIDA';
+  if (refUpper.includes('NC DEVOLUCION') || refUpper.includes('NC-DEV')) {
+    tipoSemantico = 'NC_DEVOLUCION';
+  } else if (refUpper.includes('ND REPOSICION') || refUpper.includes('ND DEVOLUCION') || refUpper.includes('ND-DEV')) {
+    tipoSemantico = 'ND_DEVOLUCION';
+  } else if (/^REV-/i.test(refStr) || refUpper.includes('REVERSO')) {
+    tipoSemantico = 'REVERSO';
+  } else if (/^TRANSF-/i.test(refStr)) {
+    tipoSemantico = 'TRANSFERENCIA';
+  } else if (/^INV-FIS/i.test(refStr) || refUpper.includes('CONTEO FÍSICO') || refUpper.includes('CONTEO FISICO')) {
+    tipoSemantico = 'INV_FISICO';
+  }
+
+  const rawDate = m.fecha || (m.created_at ? String(m.created_at).slice(0, 10) : '');
+  const mIso = String(rawDate).match(/^(\d{4}-\d{2}-\d{2})/);
+  const fechaIso = mIso ? mIso[1] : '';
+
+  const prod = kardexProductosMap[m.producto_id] || null;
+  const sku = prod?.codigo_sku || 'S/N';
+  const descripcion = prod?.descripcion || 'Artículo no encontrado';
+
+  return {
+    ...m,
+    sku,
+    descripcion,
+    sucursalId,
+    almacenId,
+    sucursalNombre: sucursalNombre || 'Sede Principal',
+    almacenNombre: almacenNombre || 'General',
+    lote,
+    tipoSemantico,
+    fechaIso,
+    fechaDisplay: formatearFechaDdMmYyyyKardex(rawDate || m.created_at)
+  };
+}
+
+function poblarSelectsFiltroKardex() {
+  const selMat = document.getElementById('kardexFiltroMaterial');
+  if (selMat) {
+    const prevMat = selMat.value;
+    selMat.innerHTML = '<option value="">Todos los materiales</option>';
+    Object.values(kardexProductosMap)
+      .sort((a, b) => String(a.descripcion || '').localeCompare(String(b.descripcion || '')))
+      .forEach(p => {
+        selMat.innerHTML += `<option value="${esc(p.id)}">[${esc(p.codigo_sku || 'S/N')}] ${esc(p.descripcion)}</option>`;
+      });
+    if (prevMat && kardexProductosMap[prevMat]) selMat.value = prevMat;
+  }
+
+  const selSuc = document.getElementById('kardexFiltroSucursal');
+  if (selSuc) {
+    const prevSuc = selSuc.value;
+    selSuc.innerHTML = '<option value="">Todas las sucursales</option>';
+    kardexSucursalesCache.forEach(s => {
+      selSuc.innerHTML += `<option value="${esc(s.id)}">${esc(s.nombre)}</option>`;
+    });
+    if (prevSuc && kardexSucursalesCache.some(s => String(s.id) === String(prevSuc))) {
+      selSuc.value = prevSuc;
+    }
+  }
+
+  poblarSelectAlmacenKardex();
+}
+
+function poblarSelectAlmacenKardex() {
+  const selSuc = document.getElementById('kardexFiltroSucursal');
+  const selAlm = document.getElementById('kardexFiltroAlmacen');
+  if (!selAlm) return;
+
+  const sucId = selSuc ? selSuc.value : '';
+  const prevAlm = selAlm.value;
+
+  const listaAlm = sucId
+    ? kardexAlmacenesCache.filter(a => String(a.sucursal_id || '') === String(sucId))
+    : kardexAlmacenesCache;
+
+  selAlm.innerHTML = '<option value="">Todos los almacenes</option>';
+  listaAlm.forEach(a => {
+    const sucTag = !sucId && a.sucursales?.nombre ? `[${a.sucursales.nombre}] ` : '';
+    selAlm.innerHTML += `<option value="${esc(a.id)}">${esc(sucTag)}${esc(a.nombre)}</option>`;
+  });
+
+  if (prevAlm && listaAlm.some(a => String(a.id) === String(prevAlm))) {
+    selAlm.value = prevAlm;
+  }
+}
+
+function onCambioSucursalKardex() {
+  poblarSelectAlmacenKardex();
+  filtrarKardexMovimientos();
+}
+
+function limpiarFiltrosKardex() {
+  const reset = (id) => { const el = document.getElementById(id); if (el) el.value = ''; };
+  reset('kardexFiltroMaterial');
+  reset('kardexFiltroSucursal');
+  poblarSelectAlmacenKardex();
+  reset('kardexFiltroAlmacen');
+  reset('kardexFiltroTipo');
+  reset('kardexFiltroFechaDesde');
+  reset('kardexFiltroFechaHasta');
+  reset('kardexFiltroLoteDoc');
+  filtrarKardexMovimientos();
+}
+
 async function cargarKardexMovimientos() {
   const tenantId = obtenerTenantKardex();
   if (!tenantId) return;
 
-  const [resMovs, resProds] = await Promise.all([
+  const tbody = document.getElementById('tablaKardexMovimientos');
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400">Cargando trazabilidad del Kardex...</td></tr>`;
+  }
+
+  const [resMovs, resProds, resSuc, resAlm] = await Promise.all([
     supabaseClient.from('kardex_movimientos').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false }),
-    supabaseClient.from('productos').select('id, codigo_sku, descripcion').eq('tenant_id', tenantId)
+    supabaseClient.from('productos').select('id, codigo_sku, descripcion, unidad_medida').eq('tenant_id', tenantId),
+    supabaseClient.from('sucursales').select('*').eq('tenant_id', tenantId).order('nombre', { ascending: true }),
+    supabaseClient.from('almacenes').select('*, sucursales(nombre)').eq('tenant_id', tenantId).order('nombre', { ascending: true })
   ]);
+
+  if (resMovs.error) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-rose-400">Error al consultar Kardex: ${esc(resMovs.error.message)}</td></tr>`;
+    return;
+  }
+
+  kardexProductosMap = {};
+  (resProds.data || []).forEach(p => { kardexProductosMap[p.id] = p; });
+  kardexSucursalesCache = resSuc.data || [];
+  kardexAlmacenesCache = resAlm.data || [];
+
+  poblarSelectsFiltroKardex();
+
+  kardexMovimientosCache = (resMovs.data || []).map(normalizarMovimientoKardex);
+  filtrarKardexMovimientos();
+}
+
+function filtrarKardexMovimientos() {
+  const matId = document.getElementById('kardexFiltroMaterial')?.value || '';
+  const sucId = document.getElementById('kardexFiltroSucursal')?.value || '';
+  const almId = document.getElementById('kardexFiltroAlmacen')?.value || '';
+  const tipoSel = document.getElementById('kardexFiltroTipo')?.value || '';
+  const fDesde = document.getElementById('kardexFiltroFechaDesde')?.value || '';
+  const fHasta = document.getElementById('kardexFiltroFechaHasta')?.value || '';
+  const qTexto = (document.getElementById('kardexFiltroLoteDoc')?.value || '').trim().toLowerCase();
+
+  const sucSelObj = sucId ? kardexSucursalesCache.find(s => String(s.id) === String(sucId)) : null;
+  const almSelObj = almId ? kardexAlmacenesCache.find(a => String(a.id) === String(almId)) : null;
+
+  const filtrados = kardexMovimientosCache.filter(m => {
+    if (matId && String(m.producto_id) !== String(matId)) return false;
+
+    if (sucId) {
+      const matchId = m.sucursalId && String(m.sucursalId) === String(sucId);
+      const matchNom = sucSelObj && m.sucursalNombre.toLowerCase() === String(sucSelObj.nombre || '').trim().toLowerCase();
+      if (!matchId && !matchNom) return false;
+    }
+
+    if (almId) {
+      const matchId = m.almacenId && String(m.almacenId) === String(almId);
+      const matchNom = almSelObj && m.almacenNombre.toLowerCase() === String(almSelObj.nombre || '').trim().toLowerCase();
+      if (!matchId && !matchNom) return false;
+    }
+
+    if (tipoSel) {
+      if (tipoSel === 'ENTRADA') {
+        if (m.tipo_movimiento !== 'ENTRADA') return false;
+      } else if (tipoSel === 'SALIDA') {
+        if (m.tipo_movimiento !== 'SALIDA') return false;
+      } else if (m.tipoSemantico !== tipoSel) {
+        return false;
+      }
+    }
+
+    if (fDesde && m.fechaIso && m.fechaIso < fDesde) return false;
+    if (fHasta && m.fechaIso && m.fechaIso > fHasta) return false;
+
+    if (qTexto) {
+      const haystack = `${m.documento_ref || ''} ${m.lote || ''} ${m.sku || ''} ${m.descripcion || ''} ${m.sucursalNombre || ''} ${m.almacenNombre || ''}`.toLowerCase();
+      if (!haystack.includes(qTexto)) return false;
+    }
+
+    return true;
+  });
+
+  kardexFiltradosCache = filtrados;
+  renderizarKardexMovimientos(filtrados);
+}
+
+function renderizarKardexMovimientos(lista) {
+  let totIn = 0;
+  let totOut = 0;
+  lista.forEach(m => {
+    totIn += Number(m.cantidad_in || 0);
+    totOut += Number(m.cantidad_out || 0);
+  });
+  const neto = totIn - totOut;
+
+  const setKpi = (id, txt, cls) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = txt;
+    if (cls) el.className = cls;
+  };
+  setKpi('kardexKpiMovs', String(lista.length));
+  setKpi('kardexKpiEntradas', `+${Number(totIn.toFixed(2))}`);
+  setKpi('kardexKpiSalidas', `-${Number(totOut.toFixed(2))}`);
+  setKpi(
+    'kardexKpiNeto',
+    `${neto >= 0 ? '+' : ''}${Number(neto.toFixed(2))} uds`,
+    `text-lg font-bold font-mono tabular-nums mt-1 ${neto > 0 ? 'text-emerald-400' : (neto < 0 ? 'text-rose-400' : 'text-slate-200')}`
+  );
 
   const tbody = document.getElementById('tablaKardexMovimientos');
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  if (resMovs.error) {
-    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-rose-400">Error al consultar Kardex: ${esc(resMovs.error.message)}</td></tr>`;
+  if (lista.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-500">Sin movimientos que coincidan con los filtros seleccionados. <button type="button" onclick="limpiarFiltrosKardex()" class="text-emerald-400 hover:underline font-semibold ml-1 cursor-pointer">Restablecer filtros</button></td></tr>`;
     return;
   }
 
-  const movimientos = resMovs.data || [];
-  if (movimientos.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">Sin movimientos en el Kardex.</td></tr>`;
-    return;
-  }
-
-  const productosMap = {};
-  if (resProds.data) { resProds.data.forEach(p => { productosMap[p.id] = p; }); }
-
-  movimientos.forEach(m => {
-    const prod = productosMap[m.producto_id];
-    const nombreArticulo = prod ? `${esc(prod.codigo_sku || 'S/N')} - ${esc(prod.descripcion)}` : 'Artículo no encontrado';
-    const refStr = String(m.documento_ref || '');
-    const esReverso = /^REV-/i.test(refStr) || /REVERSO/i.test(refStr);
-    let badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-rose-950 text-rose-300">${esc(m.tipo_movimiento)}</span>`;
-    if (esReverso) {
-      badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300 font-bold">REVERSO (ENTRADA)</span>`;
+  lista.forEach(m => {
+    let badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-rose-950 text-rose-300 font-semibold">SALIDA</span>`;
+    if (m.tipoSemantico === 'NC_DEVOLUCION') {
+      badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 font-semibold">NC DEVOLUCIÓN</span>`;
+    } else if (m.tipoSemantico === 'ND_DEVOLUCION') {
+      badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300 font-semibold">ND REPOSICIÓN</span>`;
+    } else if (m.tipoSemantico === 'REVERSO') {
+      badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-amber-950 text-amber-300 font-semibold">REVERSO (ENTRADA)</span>`;
+    } else if (m.tipoSemantico === 'TRANSFERENCIA') {
+      badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-sky-950 text-sky-300 font-semibold">TRANSF. (${esc(m.tipo_movimiento)})</span>`;
+    } else if (m.tipoSemantico === 'INV_FISICO') {
+      badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-200 font-semibold">CONTEO (${esc(m.tipo_movimiento)})</span>`;
     } else if (m.tipo_movimiento === 'ENTRADA') {
-      badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300">ENTRADA</span>`;
+      badgeHtml = `<span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950 text-emerald-300 font-semibold">ENTRADA</span>`;
     }
+
+    const nombreArticulo = `${esc(m.sku)} - ${esc(m.descripcion)}`;
+    const loteTag = m.lote ? `<div class="text-[10px] text-sky-300">Lote: ${esc(m.lote)}</div>` : '';
 
     tbody.innerHTML += `
       <tr class="hover:bg-slate-900 border-b border-slate-800/40">
-        <td class="p-3 text-slate-400">${esc(m.fecha || formatearFecha8Digitos(m.created_at))}</td>
+        <td class="p-3 font-mono text-slate-400 whitespace-nowrap">${esc(m.fechaDisplay)}</td>
         <td class="p-3 font-mono text-emerald-400">${nombreArticulo}</td>
-        <td class="p-3">${badgeHtml}</td>
-        <td class="p-3 font-mono text-[11px]">${esc(m.documento_ref || 'S/REF')}</td>
-        <td class="p-3 text-center text-emerald-400 font-bold">+${m.cantidad_in || 0}</td>
-        <td class="p-3 text-center text-rose-400 font-bold">-${m.cantidad_out || 0}</td>
-        <td class="p-3 text-center font-bold text-white">${m.saldo_cantidad}</td>
-        <td class="p-3 font-mono text-emerald-300">$ ${(m.costo_promedio_usd || 0).toFixed(2)}</td>
+        <td class="p-3 text-slate-300">
+          <div class="font-medium text-white">${esc(m.sucursalNombre)}</div>
+          <div class="text-[11px] text-slate-400">${esc(m.almacenNombre)}</div>
+        </td>
+        <td class="p-3 whitespace-nowrap">${badgeHtml}</td>
+        <td class="p-3 font-mono text-[11px] text-slate-300">${esc(m.documento_ref || 'S/REF')}${loteTag}</td>
+        <td class="p-3 text-center font-mono text-emerald-400 font-bold">+${Number(m.cantidad_in || 0)}</td>
+        <td class="p-3 text-center font-mono text-rose-400 font-bold">-${Number(m.cantidad_out || 0)}</td>
+        <td class="p-3 text-center font-mono font-bold text-white">${m.saldo_cantidad ?? 0}</td>
+        <td class="p-3 text-right font-mono text-emerald-300">$ ${(Number(m.costo_promedio_usd || 0)).toFixed(2)}</td>
       </tr>
     `;
   });
+}
+
+function exportarKardexExcel() {
+  if (!tenantActual) return;
+  if (!kardexFiltradosCache || kardexFiltradosCache.length === 0) {
+    avisarKardex('No hay movimientos filtrados en el Kardex para exportar.', 'warning');
+    return;
+  }
+  if (typeof XLSX === 'undefined') {
+    avisarKardex('La librería Excel (XLSX) no está disponible.', 'error');
+    return;
+  }
+
+  let sumIn = 0;
+  let sumOut = 0;
+  kardexFiltradosCache.forEach(m => {
+    sumIn += Number(m.cantidad_in || 0);
+    sumOut += Number(m.cantidad_out || 0);
+  });
+
+  const matriz = [
+    ['EMPRESA:', tenantActual.razon_social || '', 'RIF:', tenantActual.rif || ''],
+    ['REPORTE:', 'KARDEX PPM MULTIFILTRO', 'FECHA EMISIÓN:', formatearFechaDdMmYyyyKardex(new Date().toISOString())],
+    [],
+    ['Fecha', 'SKU', 'Material', 'Sucursal', 'Almacén', 'Lote', 'Tipo Movimiento', 'Documento / Referencia', 'Entradas', 'Salidas', 'Saldo', 'Costo Prom. (USD)', 'Tasa BCV']
+  ];
+
+  kardexFiltradosCache.forEach(m => {
+    matriz.push([
+      m.fechaDisplay,
+      m.sku,
+      m.descripcion,
+      m.sucursalNombre,
+      m.almacenNombre,
+      m.lote || '-',
+      m.tipoSemantico,
+      m.documento_ref || 'S/REF',
+      Number(m.cantidad_in || 0),
+      Number(m.cantidad_out || 0),
+      Number(m.saldo_cantidad || 0),
+      Number(Number(m.costo_promedio_usd || 0).toFixed(2)),
+      Number(Number(m.tasa_bcv || 1).toFixed(4))
+    ]);
+  });
+
+  matriz.push([]);
+  matriz.push(['TOTALES FILTRADOS', '', '', '', '', '', '', `${kardexFiltradosCache.length} mov.`, sumIn, sumOut, sumIn - sumOut, '', '']);
+
+  const ws = XLSX.utils.aoa_to_sheet(matriz);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'KardexPPM');
+  XLSX.writeFile(wb, `Kardex_PPM_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  avisarKardex(`Kardex exportado a Excel (${kardexFiltradosCache.length} movimientos).`, 'success');
+}
+
+function exportarKardexPdf() {
+  if (!tenantActual) return;
+  if (!kardexFiltradosCache || kardexFiltradosCache.length === 0) {
+    avisarKardex('No hay movimientos filtrados en el Kardex para exportar en PDF.', 'warning');
+    return;
+  }
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    avisarKardex('La librería jsPDF no está disponible.', 'error');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'landscape' });
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const margin = 12;
+
+  const drawHeader = (pageNum) => {
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(12);
+    pdf.setTextColor(15, 23, 42);
+    pdf.text(`${tenantActual.razon_social || 'EMPRESA'} — KARDEX DE INVENTARIO PPM`, margin, 14);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8.5);
+    pdf.setTextColor(71, 85, 105);
+    pdf.text(`RIF: ${tenantActual.rif || 'N/A'} | Emisión: ${formatearFechaDdMmYyyyKardex(new Date().toISOString())} | Registros: ${kardexFiltradosCache.length} | Pág. ${pageNum}`, margin, 19);
+
+    pdf.setFillColor(15, 23, 42);
+    pdf.rect(margin, 23, pageW - margin * 2, 7, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(7.5);
+    pdf.text('Fecha', margin + 2, 27.7);
+    pdf.text('Artículo', margin + 24, 27.7);
+    pdf.text('Sucursal / Almacén', margin + 88, 27.7);
+    pdf.text('Tipo', margin + 132, 27.7);
+    pdf.text('Documento / Lote', margin + 162, 27.7);
+    pdf.text('Ent.', margin + 218, 27.7, { align: 'right' });
+    pdf.text('Sal.', margin + 230, 27.7, { align: 'right' });
+    pdf.text('Saldo', margin + 243, 27.7, { align: 'right' });
+    pdf.text('Costo $', pageW - margin - 2, 27.7, { align: 'right' });
+    return 32;
+  };
+
+  let pageNum = 1;
+  let y = drawHeader(pageNum);
+  let sumIn = 0;
+  let sumOut = 0;
+
+  kardexFiltradosCache.forEach(m => {
+    sumIn += Number(m.cantidad_in || 0);
+    sumOut += Number(m.cantidad_out || 0);
+
+    if (y > pageH - 18) {
+      pdf.addPage();
+      pageNum += 1;
+      y = drawHeader(pageNum);
+    }
+
+    pdf.setTextColor(15, 23, 42);
+    pdf.setFont('courier', 'normal');
+    pdf.setFontSize(7);
+    pdf.text(m.fechaDisplay, margin + 2, y + 3.5);
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`${m.sku} ${m.descripcion}`.slice(0, 36), margin + 24, y + 3.5);
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`${m.sucursalNombre} / ${m.almacenNombre}`.slice(0, 26), margin + 88, y + 3.5);
+    pdf.text(String(m.tipoSemantico).replace('_', ' ').slice(0, 16), margin + 132, y + 3.5);
+
+    pdf.setFont('courier', 'normal');
+    const docTxt = `${m.documento_ref || 'S/REF'}${m.lote ? ' [' + m.lote + ']' : ''}`;
+    pdf.text(docTxt.slice(0, 32), margin + 162, y + 3.5);
+
+    pdf.text(`+${Number(m.cantidad_in || 0)}`, margin + 218, y + 3.5, { align: 'right' });
+    pdf.text(`-${Number(m.cantidad_out || 0)}`, margin + 230, y + 3.5, { align: 'right' });
+    pdf.setFont('courier', 'bold');
+    pdf.text(`${m.saldo_cantidad ?? 0}`, margin + 243, y + 3.5, { align: 'right' });
+    pdf.text(`$${Number(m.costo_promedio_usd || 0).toFixed(2)}`, pageW - margin - 2, y + 3.5, { align: 'right' });
+
+    pdf.setDrawColor(226, 232, 240);
+    pdf.line(margin, y + 5.5, pageW - margin, y + 5.5);
+    y += 6;
+  });
+
+  y += 3;
+  if (y > pageH - 14) {
+    pdf.addPage();
+    y = drawHeader(pageNum + 1) + 2;
+  }
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8.5);
+  pdf.setTextColor(4, 120, 87);
+  pdf.text(`Totales Filtrados: Entradas +${sumIn} | Salidas -${sumOut} | Variación Neta: ${sumIn - sumOut >= 0 ? '+' : ''}${sumIn - sumOut} uds`, margin, y + 4);
+
+  pdf.save(`Kardex_PPM_${new Date().toISOString().slice(0, 10)}.pdf`);
+  avisarKardex('Reporte Kardex PPM descargado en PDF Carta.', 'success');
 }
 
 // ==========================================

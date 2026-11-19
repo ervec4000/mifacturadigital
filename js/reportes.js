@@ -16,8 +16,44 @@ function avisarReporte(mensaje, tipo = 'info', duracion = 6000) {
   }
 }
 
+async function sincronizarMetasNotasNube(tenantId) {
+  if (!tenantId) return;
+  try {
+    const { data, error } = await supabaseClient
+      .from('audit_logs')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('accion', 'NOTA_FISCAL_META')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error || !Array.isArray(data)) return;
+    const raw = localStorage.getItem(`facturas_seniat_meta_${tenantId}`);
+    const store = raw ? JSON.parse(raw) : {};
+    data.forEach(log => {
+      try {
+        const meta = JSON.parse(log.detalle || '{}');
+        if (meta.invoiceId) store[String(meta.invoiceId)] = { ...(store[String(meta.invoiceId)] || {}), ...meta };
+        if (meta.notaNro) store[String(meta.notaNro)] = { ...(store[String(meta.notaNro)] || {}), ...meta };
+      } catch (e) {}
+    });
+    localStorage.setItem(`facturas_seniat_meta_${tenantId}`, JSON.stringify(store));
+  } catch (e) {}
+}
+
+function guardarMetaFacturaLocalYNota(tenantId, invoiceId, facturaNro, metaObj) {
+  try {
+    const key = `facturas_seniat_meta_${tenantId}`;
+    const raw = localStorage.getItem(key);
+    const store = raw ? JSON.parse(raw) : {};
+    if (invoiceId) store[String(invoiceId)] = metaObj;
+    if (facturaNro) store[String(facturaNro)] = metaObj;
+    localStorage.setItem(key, JSON.stringify(store));
+  } catch (e) {}
+}
+
 async function cargarHistorial() {
   if (!tenantActual) return;
+  await sincronizarMetasNotasNube(tenantActual.id);
   const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
   documentosHistorialCache = (data || []).map(f => {
     const numUpper = (f.factura_nro || '').toUpperCase();
@@ -63,11 +99,22 @@ function renderizarHistorial(lista) {
     if (esReverso) badgeColor = 'bg-amber-950 text-amber-300';
     if (esAnulada) badgeColor = 'bg-rose-950 text-rose-300';
 
-    const labelBadge = esAnulada ? 'ANULADA' : doc.tipoDoc;
+    let labelBadge = doc.tipoDoc;
+    if (doc.tipoDoc === 'NOTA CREDITO') labelBadge = 'NOTA DE CRÉDITO';
+    if (doc.tipoDoc === 'NOTA DEBITO') labelBadge = 'NOTA DE DÉBITO';
+    if (esAnulada) labelBadge = 'ANULADA';
+
     const accionesExtra = (!esAnulada && !esReverso && !esNota)
       ? `<button type="button" onclick='editarFacturaPorId("${esc(doc.id)}")' class="text-sky-400 hover:underline font-semibold cursor-pointer">Editar</button>
          <button type="button" onclick='eliminarFacturaPorId("${esc(doc.id)}")' class="text-rose-400 hover:underline font-semibold cursor-pointer">Eliminar</button>`
       : '';
+
+    const montoDisplay = doc.tipoDoc === 'NOTA CREDITO'
+      ? `-Bs. ${Math.abs(Number(doc.total_bs) || 0).toFixed(2)}`
+      : `Bs. ${(Number(doc.total_bs) || 0).toFixed(2)}`;
+    const colorMonto = doc.tipoDoc === 'NOTA CREDITO'
+      ? 'text-sky-400'
+      : (Number(doc.total_bs) < 0 ? 'text-amber-400' : 'text-emerald-400');
 
     tbody.innerHTML += `
       <tr class="hover:bg-slate-900 border-b border-slate-800/40 ${esAnulada ? 'opacity-65' : ''}">
@@ -75,8 +122,8 @@ function renderizarHistorial(lista) {
         <td class="p-3 font-mono">${esc(doc.nro_control || 'N/A')}</td>
         <td class="p-3">${esc(doc.cliente_nombre)}</td>
         <td class="p-3 text-slate-300">${esc(doc.metodo_pago)}</td>
-        <td class="p-3 text-slate-400">${formatearFecha8Digitos(doc.created_at)}</td>
-        <td class="p-3 font-mono ${Number(doc.total_bs) < 0 ? 'text-amber-400' : 'text-emerald-400'} font-bold">Bs. ${(Number(doc.total_bs) || 0).toFixed(2)}</td>
+        <td class="p-3 text-slate-400 font-mono">${formatearDdMmYyyyNota(doc.created_at)}</td>
+        <td class="p-3 font-mono ${colorMonto} font-bold">${montoDisplay}</td>
         <td class="p-3 text-center space-x-2 whitespace-nowrap">
           <button type="button" onclick='verComprobantePorId("${esc(doc.id)}")' class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded cursor-pointer text-xs text-slate-200">Ver / PDF</button>
           ${accionesExtra}
@@ -238,11 +285,29 @@ async function verComprobante(doc) {
   document.getElementById('ticketClienteDir').innerText = `Domicilio Fiscal: ${cliDir}`;
   document.getElementById('ticketClienteTel').innerText = `Teléfono: ${cliTel}`;
 
+  const refNotaCompleta = (() => {
+    if (metaLocal?.facturaAfectadaNro) {
+      const modTxt = metaLocal.modalidad === 'DEVOLUCION'
+        ? 'POR DEVOLUCIÓN / REPOSICIÓN (Afecta Stock/Kardex)'
+        : 'FINANCIERA (No afecta Inventario)';
+      return [
+        `Modalidad: ${modTxt}`,
+        `Factura Afectada: ${metaLocal.facturaAfectadaNro}`,
+        `Control Fac.: ${metaLocal.facturaAfectadaControl || 'N/A'}`,
+        `Fecha Fac.: ${metaLocal.facturaAfectadaFecha || 'S/F'}`,
+        `Monto Fac.: Bs. ${Number(metaLocal.facturaAfectadaTotalBs || 0).toFixed(2)}`,
+        metaLocal.sucursalNombre ? `Depósito: ${metaLocal.sucursalNombre} / ${metaLocal.almacenNombre || ''}` : null,
+        metaLocal.motivoCompleto ? `Motivo: ${metaLocal.motivoCompleto}` : null
+      ].filter(Boolean).join(' | ');
+    }
+    return metodoStr;
+  })();
+
   const notaBox = document.getElementById('ticketReferenciaNotaBox');
   if (notaBox) {
     if (numUpper.startsWith('NC') || numUpper.startsWith('ND') || numUpper.startsWith('REV-')) {
       notaBox.classList.remove('hidden');
-      notaBox.innerText = `REFERENCIA FISCAL: ${metodoStr}`;
+      notaBox.innerText = `REFERENCIA FISCAL SENIAT: ${refNotaCompleta}`;
     } else {
       notaBox.classList.add('hidden');
       notaBox.innerText = '';
@@ -466,7 +531,7 @@ async function verComprobante(doc) {
     cliDir,
     cliTel,
     esNota: numUpper.startsWith('NC') || numUpper.startsWith('ND') || numUpper.startsWith('REV-'),
-    notaRef: metodoStr,
+    notaRef: refNotaCompleta,
     items: itemsPdf,
     montoExentoBs,
     montoExentoUsd,
@@ -485,13 +550,32 @@ async function verComprobante(doc) {
 function cerrarTicket() { document.getElementById('modalTicket').classList.add('hidden'); }
 
 function imprimirComprobante() {
+  const d = comprobanteRenderCache;
+  if (!d) {
+    avisarReporte('Abre primero un comprobante para imprimirlo.', 'warning');
+    return;
+  }
+  const esTicket = formatoComprobanteActual === 'ticket';
+  const nombreArch = esTicket ? `${d.numDoc}_Ticket.pdf` : `${d.numDoc}.pdf`;
+
+  if (typeof ejecutarImpresionConRespaldo === 'function') {
+    ejecutarImpresionConRespaldo({
+      claseBody: 'imprimiendo-comprobante',
+      esTicket80mm: esTicket,
+      construirPdfFn: () => {
+        const res = construirComprobanteJsPdf();
+        return res ? res.pdf : null;
+      },
+      nombreArchivo: nombreArch,
+      tituloVisor: `Imprimir ${d.tituloDoc} · ${d.numDoc}`
+    });
+    return;
+  }
+
   try {
     window.print();
   } catch (e) {
     console.warn('window.print falló:', e);
-  }
-  if (window.self !== window.top) {
-    avisarReporte('Si el visor embebido bloqueó el diálogo de impresión, pulsa "📥 Descargar PDF" para abrir e imprimir el documento.', 'info', 7000);
   }
 }
 
@@ -507,15 +591,15 @@ function obtenerQrDataUrl() {
   return null;
 }
 
-function descargarComprobantePdf() {
+function construirComprobanteJsPdf() {
   const d = comprobanteRenderCache;
   if (!d) {
-    avisarReporte('Abre primero un comprobante para descargarlo en PDF.', 'warning');
-    return;
+    avisarReporte('Abre primero un comprobante para descargarlo o imprimirlo en PDF.', 'warning');
+    return null;
   }
   if (!window.jspdf || !window.jspdf.jsPDF) {
     avisarReporte('La librería jsPDF no está cargada. Recarga la página e intenta de nuevo.', 'error');
-    return;
+    return null;
   }
 
   const { jsPDF } = window.jspdf;
@@ -565,6 +649,13 @@ function descargarComprobantePdf() {
     const cliDirL = pdf.splitTextToSize(`Dir: ${d.cliDir}`, 72);
     pdf.text(cliDirL, xL, y); y += cliDirL.length * 3.2;
     pdf.text(`Tel: ${d.cliTel}`, xL, y); y += 4;
+    if (d.esNota) {
+      pdf.setFont('courier', 'bold');
+      pdf.setFontSize(6.5);
+      const refTicketL = pdf.splitTextToSize(`REF. FISCAL: ${d.notaRef}`, 72);
+      pdf.text(refTicketL, xL, y);
+      y += refTicketL.length * 3 + 1;
+    }
 
     pdf.line(xL, y, xR, y); y += 3.5;
     pdf.setFont('helvetica', 'bold');
@@ -611,9 +702,7 @@ function descargarComprobantePdf() {
     const impL = pdf.splitTextToSize(`${d.imprenta.nombre} | RIF: ${d.imprenta.rif} | ${d.imprenta.providencia} | Ctrl: ${d.imprenta.rango}`, 72);
     pdf.text(impL, 40, y, { align: 'center' });
 
-    pdf.save(`${d.numDoc}_Ticket.pdf`);
-    avisarReporte(`PDF ${d.numDoc}_Ticket.pdf descargado con éxito.`, 'success');
-    return;
+    return { pdf, fileName: `${d.numDoc}_Ticket.pdf`, esTicket: true };
   }
 
   // Formato Carta / Digital SENIAT (A4 / Letter)
@@ -689,7 +778,11 @@ function descargarComprobantePdf() {
   pdf.setDrawColor(203, 213, 225);
   pdf.setFillColor(248, 250, 252);
   const cliDirLines = pdf.splitTextToSize(`Domicilio Fiscal: ${d.cliDir}`, 88);
-  const cliBoxH = Math.max(20, 12 + cliDirLines.length * 4 + (d.esNota ? 7 : 0));
+  pdf.setFont('courier', 'bold');
+  pdf.setFontSize(7);
+  const notaRefLines = d.esNota ? pdf.splitTextToSize(`REF. FISCAL SENIAT: ${d.notaRef}`, contentW - 6) : [];
+  const baseCliH = Math.max(20, 12 + cliDirLines.length * 4);
+  const cliBoxH = baseCliH + (d.esNota ? notaRefLines.length * 3.5 + 3 : 0);
   pdf.roundedRect(margin, y, contentW, cliBoxH, 2, 2, 'FD');
 
   pdf.setFont('helvetica', 'bold');
@@ -710,11 +803,11 @@ function descargarComprobantePdf() {
   const yCol2 = y + 9.5 + cliDirLines.length * 3.8;
   pdf.text(`Teléfono: ${d.cliTel}`, col2X, yCol2);
 
-  if (d.esNota) {
+  if (d.esNota && notaRefLines.length > 0) {
     pdf.setFont('courier', 'bold');
     pdf.setFontSize(7);
     pdf.setTextColor(146, 64, 14);
-    pdf.text(`REF. FISCAL: ${d.notaRef}`, margin + 3, y + cliBoxH - 2.5, { maxWidth: contentW - 6 });
+    pdf.text(notaRefLines, margin + 3, y + baseCliH + 1.5);
   }
 
   y += cliBoxH + 5;
@@ -865,69 +958,762 @@ function descargarComprobantePdf() {
   pdf.setFont('helvetica', 'normal');
   pdf.text('Documento emitido digitalmente conforme a las Providencias Administrativas SNAT/2011/00071 y SNAT/2024/000102.', margin, fy + 8.5);
 
-  pdf.save(`${d.numDoc}.pdf`);
-  avisarReporte(`Factura Digital ${d.numDoc}.pdf descargada con éxito.`, 'success');
+  return { pdf, fileName: `${d.numDoc}.pdf`, esTicket: false };
+}
+
+function descargarComprobantePdf() {
+  const res = construirComprobanteJsPdf();
+  if (!res) return;
+  res.pdf.save(res.fileName);
+  avisarReporte(`${res.esTicket ? 'PDF' : 'Factura Digital'} ${res.fileName} descargado con éxito.`, 'success');
+}
+
+let notasFacturasCache = [];
+let notaFacturaSeleccionada = null;
+let notaItemsDevolucion = [];
+let notaProductosCatalogoCache = [];
+let notaSucursalesCache = [];
+let notaAlmacenesCache = [];
+
+function formatearDdMmYyyyNota(val) {
+  if (!val) return 'S/F';
+  const mIso = String(val).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (mIso) return `${mIso[3]}-${mIso[2]}-${mIso[1]}`;
+  const d = new Date(val);
+  if (isNaN(d)) return String(val);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}-${mm}-${d.getFullYear()}`;
+}
+
+async function inicializarModuloNotasFiscales() {
+  if (!tenantActual) return;
+  const tenantId = tenantActual.id;
+
+  const elFecha = document.getElementById('notaFechaEmision');
+  if (elFecha && !elFecha.value) elFecha.value = new Date().toISOString().slice(0, 10);
+
+  await Promise.all([
+    sincronizarMetasNotasNube(tenantId),
+    cargarCatalogosParaNotas(tenantId),
+    cargarFacturasAfectadasSelect(),
+    cargarTablaNotasFiscalesRecientes()
+  ]);
+
+  onCambioTipoOModalidadNota();
+  await sincronizarTasaNotaBcv(true);
+  await cargarDetalleFacturaAfectadaNota();
+}
+
+async function cargarCatalogosParaNotas(tenantId) {
+  const [resSuc, resAlm, resProd] = await Promise.all([
+    supabaseClient.from('sucursales').select('*').eq('tenant_id', tenantId).order('nombre', { ascending: true }),
+    supabaseClient.from('almacenes').select('*, sucursales(nombre)').eq('tenant_id', tenantId).order('nombre', { ascending: true }),
+    supabaseClient.from('productos').select('*, tipos_iva(nombre, porcentaje)').eq('tenant_id', tenantId).order('descripcion', { ascending: true })
+  ]);
+
+  notaSucursalesCache = resSuc.data || [];
+  notaAlmacenesCache = resAlm.data || [];
+  notaProductosCatalogoCache = resProd.data || [];
+
+  const selSuc = document.getElementById('notaSucursalSelect');
+  if (selSuc) {
+    selSuc.innerHTML = '<option value="">-- Seleccionar Sucursal --</option>';
+    notaSucursalesCache.forEach(s => {
+      selSuc.innerHTML += `<option value="${esc(s.id)}">${esc(s.nombre)}</option>`;
+    });
+    if (notaSucursalesCache.length === 1) selSuc.value = notaSucursalesCache[0].id;
+  }
+  filtrarAlmacenesNota();
+
+  const selExtra = document.getElementById('notaNdExtraProdSelect');
+  if (selExtra) {
+    selExtra.innerHTML = '<option value="">-- Seleccionar Material --</option>';
+    notaProductosCatalogoCache.forEach(p => {
+      const precio = Number(p.precio_venta_usd || 0).toFixed(2);
+      selExtra.innerHTML += `<option value="${esc(p.id)}">[${esc(p.codigo_sku || 'S/N')}] ${esc(p.descripcion)} ($ ${precio})</option>`;
+    });
+  }
+}
+
+function filtrarAlmacenesNota(almacenPreferidoId = '') {
+  const sucId = document.getElementById('notaSucursalSelect')?.value || '';
+  const selAlm = document.getElementById('notaAlmacenSelect');
+  if (!selAlm) return;
+
+  const prev = almacenPreferidoId || selAlm.value;
+  const lista = sucId
+    ? notaAlmacenesCache.filter(a => String(a.sucursal_id || '') === String(sucId))
+    : notaAlmacenesCache;
+
+  selAlm.innerHTML = '<option value="">-- Seleccionar Almacén --</option>';
+  lista.forEach(a => {
+    const tag = !sucId && a.sucursales?.nombre ? `[${a.sucursales.nombre}] ` : '';
+    selAlm.innerHTML += `<option value="${esc(a.id)}">${esc(tag)}${esc(a.nombre)}</option>`;
+  });
+
+  if (prev && lista.some(a => String(a.id) === String(prev))) {
+    selAlm.value = prev;
+  } else if (lista.length === 1) {
+    selAlm.value = lista[0].id;
+  }
+}
+
+async function sincronizarTasaNotaBcv(silencioso = false) {
+  const modo = document.getElementById('notaTasaModoSelect')?.value || 'DIA';
+  if (modo === 'ORIGINAL' && notaFacturaSeleccionada) {
+    const el = document.getElementById('notaTasaBcv');
+    if (el) el.value = Number(notaFacturaSeleccionada.tasa_bcv || 1).toFixed(4);
+    recalcularResumenNotaFiscal();
+    return;
+  }
+
+  let tasa = parseFloat(document.getElementById('tasaBcv')?.value) || 0;
+  try {
+    const res = await fetch(silencioso ? '/api/tasa-bcv' : '/api/tasa-bcv?force=1');
+    const json = await res.json();
+    if (json?.ok && Number(json.usd) > 0) {
+      tasa = Number(json.usd);
+      const inputPos = document.getElementById('tasaBcv');
+      if (inputPos) inputPos.value = tasa.toFixed(4);
+    }
+  } catch (e) {}
+
+  const elNotaTasa = document.getElementById('notaTasaBcv');
+  if (elNotaTasa && tasa > 0) elNotaTasa.value = tasa.toFixed(4);
+  recalcularResumenNotaFiscal();
+  if (!silencioso && tasa > 0) {
+    avisarReporte(`Tasa BCV en Nota actualizada a Bs. ${tasa.toFixed(4)}.`, 'success', 4000);
+  }
+}
+
+function onCambioModoTasaNota() {
+  const modo = document.getElementById('notaTasaModoSelect')?.value || 'DIA';
+  const el = document.getElementById('notaTasaBcv');
+  if (modo === 'ORIGINAL' && notaFacturaSeleccionada) {
+    if (el) el.value = Number(notaFacturaSeleccionada.tasa_bcv || 1).toFixed(4);
+  } else {
+    const tasaDia = parseFloat(document.getElementById('tasaBcv')?.value) || 0;
+    if (el && tasaDia > 0) el.value = tasaDia.toFixed(4);
+  }
+  recalcularResumenNotaFiscal();
+}
+
+function obtenerMotivoPorDefectoNota(tipo, modalidad) {
+  if (modalidad === 'DEVOLUCION') {
+    return tipo === 'NOTA CREDITO'
+      ? 'Devolución de mercancía'
+      : 'Reposición / entrega adicional de mercancía';
+  }
+  return tipo === 'NOTA CREDITO'
+    ? 'Descuento / ajuste financiero'
+    : 'Cargo financiero / diferencia de precio';
+}
+
+function onCambioTipoOModalidadNota() {
+  const tipo = document.getElementById('tipoNotaSelect')?.value || 'NOTA CREDITO';
+  const modalidad = document.getElementById('modalidadNotaSelect')?.value || 'FINANCIERA';
+  const esDev = modalidad === 'DEVOLUCION';
+
+  const panelFin = document.getElementById('notaModoFinancieroPanel');
+  const panelDev = document.getElementById('notaModoDevolucionPanel');
+  const depWrap = document.getElementById('notaDepositoWrap');
+  const ndExtraWrap = document.getElementById('notaNdAgregarWrap');
+  const hint = document.getElementById('notaEfectoKardexHint');
+
+  if (panelFin) panelFin.classList.toggle('hidden', esDev);
+  if (panelDev) panelDev.classList.toggle('hidden', !esDev);
+  if (depWrap) depWrap.classList.toggle('hidden', !esDev);
+  if (ndExtraWrap) ndExtraWrap.classList.toggle('hidden', !(esDev && tipo === 'NOTA DEBITO'));
+
+  if (hint) {
+    if (tipo === 'NOTA CREDITO') {
+      hint.textContent = 'Movimiento Kardex: ENTRADA (Devolución reingresa unidades al stock)';
+      hint.className = 'text-xs text-emerald-400 font-medium py-2.5';
+    } else {
+      hint.textContent = 'Movimiento Kardex: SALIDA (Reposición o entrega adicional descuenta stock)';
+      hint.className = 'text-xs text-amber-400 font-medium py-2.5';
+    }
+  }
+
+  const motivoEl = document.getElementById('motivoNota');
+  if (motivoEl) {
+    const val = (motivoEl.value || '').trim();
+    if (!val || motivoEl.dataset.autoMotivo === '1') {
+      motivoEl.value = obtenerMotivoPorDefectoNota(tipo, modalidad);
+      motivoEl.dataset.autoMotivo = '1';
+      if (!motivoEl.dataset.listenerBound) {
+        motivoEl.addEventListener('input', () => { motivoEl.dataset.autoMotivo = '0'; });
+        motivoEl.dataset.listenerBound = '1';
+      }
+    }
+  }
+
+  renderizarTablaItemsNotaDevolucion();
+  recalcularResumenNotaFiscal();
 }
 
 async function cargarFacturasAfectadasSelect() {
   if (!tenantActual) return;
   const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
+  notasFacturasCache = data || [];
   const select = document.getElementById('facturaAfectadaSelect');
   if (!select) return;
+  const prev = select.value;
   select.innerHTML = '';
-  if (!data || data.length === 0) { select.innerHTML = '<option value="">Sin facturas emitidas</option>'; return; }
-  data.forEach(f => {
+
+  const validas = notasFacturasCache.filter(f => {
     const numUpper = (f.factura_nro || '').toUpperCase();
     const estUpper = (f.estado || '').toUpperCase();
-    if (!numUpper.startsWith('NC') && !numUpper.startsWith('ND') && !numUpper.startsWith('REV-') && estUpper !== 'ANULADA' && estUpper !== 'REVERSO') {
-      select.innerHTML += `<option value="${esc(f.factura_nro)}">Factura: ${esc(f.factura_nro)} | Ctrl: ${esc(f.nro_control || 'N/A')} | ${esc(f.cliente_nombre)} | Bs. ${Number(f.total_bs || 0).toFixed(2)}</option>`;
+    return !numUpper.startsWith('NC') && !numUpper.startsWith('ND') && !numUpper.startsWith('REV-') && estUpper !== 'ANULADA' && estUpper !== 'REVERSO';
+  });
+
+  if (validas.length === 0) {
+    select.innerHTML = '<option value="">Sin facturas emitidas disponibles</option>';
+    notaFacturaSeleccionada = null;
+    return;
+  }
+
+  validas.forEach(f => {
+    const fechaF = formatearDdMmYyyyNota(f.created_at);
+    select.innerHTML += `<option value="${esc(f.factura_nro)}">${esc(f.factura_nro)} | Ctrl: ${esc(f.nro_control || 'N/A')} | ${fechaF} | ${esc(f.cliente_nombre)} | Bs. ${Number(f.total_bs || 0).toFixed(2)}</option>`;
+  });
+
+  if (prev && validas.some(v => v.factura_nro === prev)) {
+    select.value = prev;
+  }
+}
+
+async function cargarDetalleFacturaAfectadaNota() {
+  if (!tenantActual) return;
+  const tenantId = tenantActual.id;
+  const facNro = document.getElementById('facturaAfectadaSelect')?.value || '';
+  notaFacturaSeleccionada = notasFacturasCache.find(f => f.factura_nro === facNro) || null;
+  notaItemsDevolucion = [];
+
+  const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  if (!notaFacturaSeleccionada) {
+    setText('notaResFacCtrl', 'Sin seleccionar');
+    setText('notaResFacFecha', '-');
+    setText('notaResFacCliente', '-');
+    setText('notaResFacTasa', '-');
+    setText('notaResFacTotal', 'Bs. 0.00');
+    renderizarTablaItemsNotaDevolucion();
+    recalcularResumenNotaFiscal();
+    return;
+  }
+
+  const metaFac = obtenerMetaFacturaLocal(tenantId, notaFacturaSeleccionada);
+  const fechaFac = formatearDdMmYyyyNota(metaFac?.fechaEmision || notaFacturaSeleccionada.created_at);
+
+  setText('notaResFacCtrl', `${notaFacturaSeleccionada.factura_nro} / ${notaFacturaSeleccionada.nro_control || 'N/A'}`);
+  setText('notaResFacFecha', fechaFac);
+  setText('notaResFacCliente', `${notaFacturaSeleccionada.cliente_nombre} (${notaFacturaSeleccionada.cliente_rif})`);
+  setText('notaResFacTasa', `Bs. ${Number(notaFacturaSeleccionada.tasa_bcv || 1).toFixed(4)}`);
+  setText('notaResFacTotal', `Bs. ${Number(notaFacturaSeleccionada.total_bs || 0).toFixed(2)}`);
+
+  if (metaFac?.sucursalId && document.getElementById('notaSucursalSelect')) {
+    document.getElementById('notaSucursalSelect').value = metaFac.sucursalId;
+    filtrarAlmacenesNota(metaFac.almacenId || '');
+  }
+
+  if (document.getElementById('notaTasaModoSelect')?.value === 'ORIGINAL') {
+    onCambioModoTasaNota();
+  }
+
+  // Consultar renglones de la factura y notas de crédito previas vinculadas a esta factura
+  const { data: itemsFac } = await supabaseClient
+    .from('invoice_items')
+    .select('*, productos(codigo_sku, descripcion, unidad_medida, maneja_inventario, tipos_iva(porcentaje))')
+    .eq('invoice_id', notaFacturaSeleccionada.id);
+
+  const yaDevueltoPorProd = {};
+  try {
+    const storeRaw = localStorage.getItem(`facturas_seniat_meta_${tenantId}`);
+    const store = storeRaw ? JSON.parse(storeRaw) : {};
+    const ncsPrevias = notasFacturasCache.filter(inv => {
+      if (!String(inv.factura_nro || '').toUpperCase().startsWith('NC')) return false;
+      const mInv = store[String(inv.id)] || store[String(inv.factura_nro)] || null;
+      return mInv && mInv.facturaAfectadaNro === facNro && mInv.modalidad === 'DEVOLUCION';
+    });
+    if (ncsPrevias.length > 0) {
+      const idsNc = ncsPrevias.map(n => n.id);
+      const { data: itemsNcPrev } = await supabaseClient.from('invoice_items').select('producto_id, cantidad').in('invoice_id', idsNc);
+      (itemsNcPrev || []).forEach(ni => {
+        if (!ni.producto_id) return;
+        yaDevueltoPorProd[String(ni.producto_id)] = (yaDevueltoPorProd[String(ni.producto_id)] || 0) + Number(ni.cantidad || 0);
+      });
     }
+  } catch (e) {}
+
+  notaItemsDevolucion = (itemsFac || []).map((it, idx) => {
+    const metaIt = metaFac?.itemsMeta?.[idx] || null;
+    const prod = it.productos || null;
+    const cantFacturada = Number(it.cantidad || 0);
+    const yaDevuelta = Number(yaDevueltoPorProd[String(it.producto_id)] || 0);
+    const ivaPct = metaIt?.ivaPorcentaje !== undefined
+      ? Number(metaIt.ivaPorcentaje)
+      : (prod?.tipos_iva?.porcentaje !== undefined ? Number(prod.tipos_iva.porcentaje) : (it.es_exento ? 0 : 16));
+
+    return {
+      productoId: it.producto_id,
+      sku: metaIt?.sku || prod?.codigo_sku || 'S/N',
+      descripcion: metaIt?.descripcion || prod?.descripcion || it.descripcion || 'Artículo',
+      unidad: metaIt?.unidad || prod?.unidad_medida || 'UND',
+      cantFacturada,
+      yaDevuelta,
+      cantNota: 0,
+      precioUnitUsd: Number(it.precio_unitario_usd || 0),
+      ivaPorcentaje: ivaPct,
+      manejaInventario: prod ? Boolean(prod.maneja_inventario) : true,
+      esExtraNd: false
+    };
+  });
+
+  renderizarTablaItemsNotaDevolucion();
+  recalcularResumenNotaFiscal();
+}
+
+function renderizarTablaItemsNotaDevolucion() {
+  const tbody = document.getElementById('tablaItemsNotaDevolucion');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  const tipo = document.getElementById('tipoNotaSelect')?.value || 'NOTA CREDITO';
+  if (notaItemsDevolucion.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">La factura seleccionada no contiene renglones de artículos.</td></tr>`;
+    return;
+  }
+
+  notaItemsDevolucion.forEach((it, idx) => {
+    const maxNc = Math.max(0, Number((it.cantFacturada - it.yaDevuelta).toFixed(4)));
+    const maxAttr = tipo === 'NOTA CREDITO' && !it.esExtraNd ? `max="${maxNc}"` : '';
+    const subUsd = Number(it.cantNota || 0) * Number(it.precioUnitUsd || 0);
+
+    tbody.innerHTML += `
+      <tr class="hover:bg-slate-900 border-b border-slate-800/40">
+        <td class="p-2.5">
+          <div class="font-semibold text-white">[${esc(it.sku)}] ${esc(it.descripcion)}</div>
+          <div class="text-[10px] text-slate-400">Unidad: ${esc(it.unidad)}${it.esExtraNd ? ' · Adicional ND' : ''}</div>
+        </td>
+        <td class="p-2.5 text-center font-mono">${it.cantFacturada}</td>
+        <td class="p-2.5 text-center font-mono text-amber-300">${it.yaDevuelta}</td>
+        <td class="p-2.5 text-center">
+          <input id="notaItemInput_${idx}" type="number" step="0.01" min="0" ${maxAttr} value="${it.cantNota}" onchange="actualizarCantidadItemNota(${idx}, this.value)" oninput="actualizarCantidadItemNota(${idx}, this.value)" class="w-24 bg-slate-950 border border-slate-700 rounded-lg px-2 py-1 text-center font-mono text-white tabular-nums">
+        </td>
+        <td class="p-2.5 text-right font-mono">$ ${it.precioUnitUsd.toFixed(2)}</td>
+        <td class="p-2.5 text-center font-mono">${it.ivaPorcentaje === 0 ? 'E (0%)' : it.ivaPorcentaje + '%'}</td>
+        <td id="notaItemSub_${idx}" class="p-2.5 text-right font-mono font-bold text-emerald-400">$ ${subUsd.toFixed(2)}</td>
+      </tr>
+    `;
   });
 }
 
+function actualizarCantidadItemNota(idx, val) {
+  const it = notaItemsDevolucion[idx];
+  if (!it) return;
+  const tipo = document.getElementById('tipoNotaSelect')?.value || 'NOTA CREDITO';
+  let q = parseFloat(val) || 0;
+  if (q < 0) q = 0;
+  if (tipo === 'NOTA CREDITO' && !it.esExtraNd) {
+    const maxDisp = Math.max(0, it.cantFacturada - it.yaDevuelta);
+    if (q > maxDisp) {
+      q = maxDisp;
+      const inpEl = document.getElementById(`notaItemInput_${idx}`);
+      if (inpEl) inpEl.value = q;
+      avisarReporte(`Máximo devolvible para ${it.descripcion}: ${maxDisp} uds (Facturado: ${it.cantFacturada}, Ya devuelto: ${it.yaDevuelta}).`, 'warning', 5000);
+    }
+  }
+  it.cantNota = q;
+  const subUsd = q * Number(it.precioUnitUsd || 0);
+  const subEl = document.getElementById(`notaItemSub_${idx}`);
+  if (subEl) subEl.textContent = `$ ${subUsd.toFixed(2)}`;
+  recalcularResumenNotaFiscal();
+}
+
+function seleccionarTodoDevolucionNota() {
+  const tipo = document.getElementById('tipoNotaSelect')?.value || 'NOTA CREDITO';
+  notaItemsDevolucion.forEach(it => {
+    if (tipo === 'NOTA CREDITO') {
+      it.cantNota = Math.max(0, Number((it.cantFacturada - it.yaDevuelta).toFixed(4)));
+    } else {
+      it.cantNota = it.cantFacturada;
+    }
+  });
+  renderizarTablaItemsNotaDevolucion();
+  recalcularResumenNotaFiscal();
+}
+
+function agregarProductoExtraNd() {
+  const prodId = document.getElementById('notaNdExtraProdSelect')?.value || '';
+  const cant = parseFloat(document.getElementById('notaNdExtraCant')?.value) || 0;
+  if (!prodId || cant <= 0) {
+    avisarReporte('Selecciona un material y una cantidad válida mayor a 0.', 'warning');
+    return;
+  }
+  const prod = notaProductosCatalogoCache.find(p => String(p.id) === String(prodId));
+  if (!prod) return;
+
+  const existente = notaItemsDevolucion.find(i => String(i.productoId) === String(prodId) && i.esExtraNd);
+  if (existente) {
+    existente.cantNota += cant;
+  } else {
+    notaItemsDevolucion.push({
+      productoId: prod.id,
+      sku: prod.codigo_sku || 'S/N',
+      descripcion: prod.descripcion,
+      unidad: prod.unidad_medida || 'UND',
+      cantFacturada: 0,
+      yaDevuelta: 0,
+      cantNota: cant,
+      precioUnitUsd: Number(prod.precio_venta_usd || 0),
+      ivaPorcentaje: Number(prod.tipos_iva?.porcentaje ?? 16),
+      manejaInventario: Boolean(prod.maneja_inventario),
+      esExtraNd: true
+    });
+  }
+
+  renderizarTablaItemsNotaDevolucion();
+  recalcularResumenNotaFiscal();
+}
+
+function calcularTotalesNotaEnVivo() {
+  const modalidad = document.getElementById('modalidadNotaSelect')?.value || 'FINANCIERA';
+  const tasa = parseFloat(document.getElementById('notaTasaBcv')?.value) || parseFloat(document.getElementById('tasaBcv')?.value) || 1;
+  let exentoUsd = 0;
+  let baseGravadaUsd = 0;
+  let ivaUsd = 0;
+
+  if (modalidad === 'FINANCIERA') {
+    const montoUsd = parseFloat(document.getElementById('montoNotaUsd')?.value) || 0;
+    const alic = Number(document.getElementById('notaAlicuotaFinancieraSelect')?.value ?? 16);
+    if (alic === 0) exentoUsd = montoUsd;
+    else {
+      baseGravadaUsd = montoUsd;
+      ivaUsd = montoUsd * (alic / 100);
+    }
+  } else {
+    notaItemsDevolucion.forEach(it => {
+      const q = Number(it.cantNota || 0);
+      if (q <= 0) return;
+      const sub = q * Number(it.precioUnitUsd || 0);
+      const pct = Number(it.ivaPorcentaje ?? 16);
+      if (pct === 0) exentoUsd += sub;
+      else {
+        baseGravadaUsd += sub;
+        ivaUsd += sub * (pct / 100);
+      }
+    });
+  }
+
+  const totalUsd = exentoUsd + baseGravadaUsd + ivaUsd;
+  return {
+    tasa,
+    exentoUsd,
+    baseGravadaUsd,
+    ivaUsd,
+    totalUsd,
+    exentoBs: exentoUsd * tasa,
+    baseGravadaBs: baseGravadaUsd * tasa,
+    subtotalBs: (exentoUsd + baseGravadaUsd) * tasa,
+    ivaBs: ivaUsd * tasa,
+    totalBs: totalUsd * tasa
+  };
+}
+
+function recalcularResumenNotaFiscal() {
+  const t = calcularTotalesNotaEnVivo();
+  const setTxt = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  setTxt('notaPrevExento', `Bs. ${t.exentoBs.toFixed(2)}`);
+  setTxt('notaPrevBase', `Bs. ${t.baseGravadaBs.toFixed(2)}`);
+  setTxt('notaPrevIva', `Bs. ${t.ivaBs.toFixed(2)}`);
+  setTxt('notaPrevTotal', `Bs. ${t.totalBs.toFixed(2)} ($ ${t.totalUsd.toFixed(2)})`);
+}
+
 async function emitirNotaFiscal() {
-  const tipoNota = document.getElementById('tipoNotaSelect').value;
-  const facturaAfectada = document.getElementById('facturaAfectadaSelect').value;
-  const montoUsd = parseFloat(document.getElementById('montoNotaUsd')?.value) || 0;
-  const motivo = document.getElementById('motivoNota')?.value.trim() || 'Ajuste fiscal';
-  if (!facturaAfectada) { avisarReporte('Seleccione la factura afectada.', 'warning'); return; }
-  if (montoUsd <= 0) { avisarReporte('Ingresa el monto base de la nota mayor a 0.', 'warning'); return; }
+  if (!tenantActual) return;
+  const tenantId = tenantActual.id;
 
-  const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
-  const nroNota = (tipoNota === 'NOTA CREDITO' ? 'NC-' : 'ND-') + String(Math.floor(100000 + Math.random() * 900000));
-  const nroControl = '00-' + String(Math.floor(10000000 + Math.random() * 89999999));
-  const montoBs = montoUsd * tasa;
+  const tipoNota = document.getElementById('tipoNotaSelect')?.value || 'NOTA CREDITO';
+  const modalidad = document.getElementById('modalidadNotaSelect')?.value || 'FINANCIERA';
+  const facturaAfectada = document.getElementById('facturaAfectadaSelect')?.value || '';
+  const fechaEmision = document.getElementById('notaFechaEmision')?.value || new Date().toISOString().slice(0, 10);
+  const motivoInput = document.getElementById('motivoNota');
+  let motivo = (motivoInput?.value || '').trim();
 
-  const { data: invOriginal } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).eq('factura_nro', facturaAfectada).maybeSingle();
+  if (!facturaAfectada || !notaFacturaSeleccionada) {
+    avisarReporte('Selecciona la Factura de Venta afectada.', 'warning');
+    return;
+  }
+  if (!motivo) {
+    motivo = `${obtenerMotivoPorDefectoNota(tipoNota, modalidad)} (${facturaAfectada})`;
+    if (motivoInput) motivoInput.value = motivo;
+  }
 
-  const refAfectada = `AFECTA FAC: ${facturaAfectada} | CTRL: ${invOriginal?.nro_control || 'N/A'} | FECHA: ${formatearFecha8Digitos(invOriginal?.created_at)} | MOTIVO: ${motivo}`;
+  const calc = calcularTotalesNotaEnVivo();
+  if (calc.tasa <= 0) {
+    avisarReporte('Ingresa una Tasa BCV válida mayor a 0.', 'warning');
+    return;
+  }
 
-  const { error: errNota } = await supabaseClient.from('invoices').insert([{
-    tenant_id: tenantActual.id,
-    client_id: invOriginal?.client_id || null,
-    factura_nro: nroNota,
-    nro_control: nroControl,
-    tasa_bcv: tasa,
-    monto_usd: montoUsd,
-    subtotal_bs: montoBs,
-    iva_bs: montoBs * 0.16,
-    total_bs: montoBs * 1.16,
-    cliente_rif: invOriginal?.cliente_rif || 'V-0',
-    cliente_nombre: invOriginal?.cliente_nombre || 'CLIENTE',
-    metodo_pago: `${tipoNota} | ${refAfectada}`.slice(0, 50)
-  }]).select();
-  if (errNota) { avisarReporte('Error al emitir nota fiscal: ' + errNota.message, 'error'); return; }
+  let itemsAProcesar = [];
+  let sucId = '';
+  let almId = '';
+  let sucNombre = '';
+  let almNombre = '';
 
-  avisarReporte(`¡${tipoNota} emitida con éxito (${nroNota}) conforme a Providencia SENIAT!`, 'success');
-  cambiarPestana('historial');
+  if (modalidad === 'FINANCIERA') {
+    if (calc.exentoUsd + calc.baseGravadaUsd <= 0) {
+      avisarReporte('Ingresa un Monto Base ($ USD) mayor a 0 para la Nota Financiera.', 'warning');
+      return;
+    }
+    const alic = Number(document.getElementById('notaAlicuotaFinancieraSelect')?.value ?? 16);
+    const concepto = (document.getElementById('notaConceptoFinanciero')?.value || '').trim() || motivo;
+    itemsAProcesar = [{
+      productoId: null,
+      sku: tipoNota === 'NOTA CREDITO' ? 'NC-FIN' : 'ND-FIN',
+      descripcion: concepto,
+      unidad: 'SER',
+      cantNota: 1,
+      precioUnitUsd: calc.exentoUsd + calc.baseGravadaUsd,
+      ivaPorcentaje: alic,
+      manejaInventario: false
+    }];
+  } else {
+    itemsAProcesar = notaItemsDevolucion.filter(it => Number(it.cantNota || 0) > 0);
+    if (itemsAProcesar.length === 0) {
+      avisarReporte('Indica al menos un artículo con cantidad mayor a 0 para la Nota por Devolución/Reposición.', 'warning');
+      return;
+    }
+    if (tipoNota === 'NOTA CREDITO') {
+      const exceso = itemsAProcesar.find(it => !it.esExtraNd && Number(it.cantNota) > (it.cantFacturada - it.yaDevuelta + 0.0001));
+      if (exceso) {
+        avisarReporte(`Cantidad a devolver de ${exceso.descripcion} excede lo pendiente de la factura.`, 'warning');
+        return;
+      }
+    }
+    sucId = document.getElementById('notaSucursalSelect')?.value || '';
+    almId = document.getElementById('notaAlmacenSelect')?.value || '';
+    if (!sucId || !almId) {
+      avisarReporte('Selecciona la Sucursal y Almacén para registrar el movimiento de inventario.', 'warning');
+      return;
+    }
+    sucNombre = notaSucursalesCache.find(s => String(s.id) === String(sucId))?.nombre || 'Sede Principal';
+    almNombre = notaAlmacenesCache.find(a => String(a.id) === String(almId))?.nombre || 'Almacén';
+  }
+
+  const btn = document.getElementById('btnEmitirNotaFiscal');
+  if (btn) { btn.disabled = true; btn.classList.add('opacity-60', 'cursor-not-allowed'); }
+
+  try {
+    const nroNota = (tipoNota === 'NOTA CREDITO' ? 'NC-' : 'ND-') + String(Math.floor(100000 + Math.random() * 900000));
+    const nroControl = '00-' + String(Math.floor(10000000 + Math.random() * 89999999));
+
+    const metaFac = obtenerMetaFacturaLocal(tenantId, notaFacturaSeleccionada);
+    const monedaFac = metaFac?.moneda || 'USD';
+    const fechaFacForm = formatearDdMmYyyyNota(metaFac?.fechaEmision || notaFacturaSeleccionada.created_at);
+
+    const tagTipo = `${tipoNota === 'NOTA CREDITO' ? 'NC' : 'ND'}-${modalidad === 'DEVOLUCION' ? 'DEV' : 'FIN'}`;
+    const metodoCompacto = `${tagTipo} | ${facturaAfectada} | MON:${monedaFac}`.slice(0, 50);
+
+    const { data: invData, error: errNota } = await supabaseClient.from('invoices').insert([{
+      tenant_id: tenantId,
+      client_id: notaFacturaSeleccionada.client_id || null,
+      factura_nro: nroNota,
+      nro_control: nroControl,
+      tasa_bcv: calc.tasa,
+      monto_usd: Number((calc.exentoUsd + calc.baseGravadaUsd).toFixed(4)),
+      subtotal_bs: Number(calc.subtotalBs.toFixed(2)),
+      iva_bs: Number(calc.ivaBs.toFixed(2)),
+      igtf_bs: 0,
+      total_bs: Number(calc.totalBs.toFixed(2)),
+      cliente_rif: notaFacturaSeleccionada.cliente_rif || 'V-0',
+      cliente_nombre: notaFacturaSeleccionada.cliente_nombre || 'CLIENTE',
+      metodo_pago: metodoCompacto,
+      estado: 'EMITIDA'
+    }]).select();
+
+    if (errNota || !invData || invData.length === 0) {
+      avisarReporte('Error al emitir nota fiscal: ' + (errNota?.message || 'Error en servidor'), 'error', 9000);
+      return;
+    }
+
+    const notaDoc = invData[0];
+
+    const metaNotaCompleta = {
+      invoiceId: notaDoc.id,
+      notaNro: nroNota,
+      tipoNota,
+      modalidad,
+      moneda: monedaFac,
+      fechaEmision,
+      fechaAsignacionControl: notaDoc.created_at || new Date().toISOString(),
+      condicionPago: metaFac?.condicionPago || 'CONTADO',
+      clienteDireccion: metaFac?.clienteDireccion || '',
+      clienteTelefono: metaFac?.clienteTelefono || '',
+      facturaAfectadaNro: notaFacturaSeleccionada.factura_nro,
+      facturaAfectadaControl: notaFacturaSeleccionada.nro_control || 'N/A',
+      facturaAfectadaFecha: fechaFacForm,
+      facturaAfectadaTotalBs: Number(notaFacturaSeleccionada.total_bs || 0),
+      motivoCompleto: motivo,
+      sucursalId: sucId,
+      almacenId: almId,
+      sucursalNombre: sucNombre,
+      almacenNombre: almNombre,
+      itemsMeta: itemsAProcesar.map(it => ({
+        productoId: it.productoId,
+        sku: it.sku,
+        descripcion: it.descripcion,
+        unidad: it.unidad,
+        cantidad: Number(it.cantNota),
+        precio: Number(it.precioUnitUsd),
+        ivaPorcentaje: Number(it.ivaPorcentaje),
+        esExento: Number(it.ivaPorcentaje) === 0
+      }))
+    };
+
+    guardarMetaFacturaLocalYNota(tenantId, notaDoc.id, nroNota, metaNotaCompleta);
+    await supabaseClient.from('audit_logs').insert([{
+      tenant_id: tenantId,
+      accion: 'NOTA_FISCAL_META',
+      detalle: JSON.stringify(metaNotaCompleta)
+    }]);
+
+    let kardexBloqueadoRls = false;
+
+    for (const it of itemsAProcesar) {
+      await supabaseClient.from('invoice_items').insert([{
+        invoice_id: notaDoc.id,
+        producto_id: it.productoId || null,
+        cantidad: Number(it.cantNota),
+        precio_unitario_usd: Number(it.precioUnitUsd),
+        es_exento: Number(it.ivaPorcentaje) === 0,
+        subtotal_usd: Number((it.cantNota * it.precioUnitUsd).toFixed(4)),
+        descripcion: `[${it.sku}] ${it.descripcion}`
+      }]);
+
+      // Solo modalidad DEVOLUCION afecta stock y Kardex PPM
+      if (modalidad === 'DEVOLUCION' && it.productoId && typeof ajustarStockProductoYLotes === 'function') {
+        const delta = tipoNota === 'NOTA CREDITO' ? Number(it.cantNota) : -Number(it.cantNota);
+        const adj = await ajustarStockProductoYLotes(tenantId, it.productoId, almId, delta);
+
+        if (adj.manejaInventario) {
+          const esEntrada = tipoNota === 'NOTA CREDITO';
+          const tagDoc = esEntrada ? 'NC DEVOLUCION' : 'ND REPOSICION';
+          const docRefKardex = `${nroNota} | ${tagDoc} | FAC:${notaFacturaSeleccionada.factura_nro} | SUC:${sucNombre} | ALM:${almNombre} | CTRL:${nroControl}`;
+
+          const resK = await supabaseClient.from('kardex_movimientos').insert([{
+            tenant_id: tenantId,
+            producto_id: it.productoId,
+            tipo_movimiento: esEntrada ? 'ENTRADA' : 'SALIDA',
+            documento_ref: docRefKardex,
+            cantidad_in: esEntrada ? Number(it.cantNota) : 0,
+            cantidad_out: esEntrada ? 0 : Number(it.cantNota),
+            saldo_cantidad: adj.stock,
+            costo_promedio_usd: adj.costo,
+            precio_venta_usd: Number(it.precioUnitUsd || 0),
+            tasa_bcv: calc.tasa,
+            fecha: fechaEmision
+          }]);
+
+          if (resK.error && String(resK.error.code || '') === '42501') {
+            kardexBloqueadoRls = true;
+          }
+        }
+      }
+    }
+
+    avisarReporte(
+      `¡${tipoNota === 'NOTA CREDITO' ? 'Nota de Crédito' : 'Nota de Débito'} ${nroNota} (${modalidad === 'DEVOLUCION' ? 'con impacto en Kardex' : 'Financiera'}) emitida con éxito!`,
+      'success',
+      7000
+    );
+    if (kardexBloqueadoRls) {
+      avisarReporte('Nota emitida, pero Supabase RLS (42501) bloqueó el asiento en Kardex.', 'warning', 8000);
+    }
+
+    if (document.getElementById('montoNotaUsd')) document.getElementById('montoNotaUsd').value = '';
+    if (document.getElementById('motivoNota')) document.getElementById('motivoNota').value = '';
+    if (document.getElementById('notaConceptoFinanciero')) document.getElementById('notaConceptoFinanciero').value = '';
+
+    await Promise.all([
+      cargarFacturasAfectadasSelect(),
+      cargarDetalleFacturaAfectadaNota(),
+      cargarTablaNotasFiscalesRecientes(),
+      cargarHistorial(),
+      typeof cargarKardexMovimientos === 'function' ? cargarKardexMovimientos() : Promise.resolve(),
+      typeof cargarProductosSelect === 'function' ? cargarProductosSelect() : Promise.resolve()
+    ]);
+
+    verComprobante({ ...notaDoc, tipoDoc: tipoNota, numero: notaDoc.factura_nro });
+  } finally {
+    if (btn) { btn.disabled = false; btn.classList.remove('opacity-60', 'cursor-not-allowed'); }
+  }
+}
+
+async function cargarTablaNotasFiscalesRecientes() {
+  if (!tenantActual) return;
+  const tbody = document.getElementById('tablaNotasFiscalesRecientes');
+  if (!tbody) return;
+
+  const { data } = await supabaseClient
+    .from('invoices')
+    .select('*')
+    .eq('tenant_id', tenantActual.id)
+    .order('created_at', { ascending: false })
+    .limit(120);
+
+  const notas = (data || []).filter(f => {
+    const n = String(f.factura_nro || '').toUpperCase();
+    return n.startsWith('NC') || n.startsWith('ND');
+  });
+
+  tbody.innerHTML = '';
+  if (notas.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin Notas de Crédito o Débito emitidas aún.</td></tr>`;
+    return;
+  }
+
+  notas.forEach(n => {
+    const meta = obtenerMetaFacturaLocal(tenantActual.id, n);
+    const esNc = String(n.factura_nro || '').toUpperCase().startsWith('NC');
+    const tipoLabel = esNc ? 'NOTA DE CRÉDITO' : 'NOTA DE DÉBITO';
+    const badgeCls = esNc ? 'bg-sky-950 text-sky-300' : 'bg-amber-950 text-amber-300';
+    const modalidadTxt = meta?.modalidad === 'DEVOLUCION'
+      ? '<span class="text-emerald-400 font-semibold">Devolución / Kardex</span>'
+      : '<span class="text-slate-300">Financiera</span>';
+    const facRef = meta?.facturaAfectadaNro || String(n.metodo_pago || '').split('|')[1]?.trim() || 'N/A';
+
+    tbody.innerHTML += `
+      <tr class="hover:bg-slate-900 border-b border-slate-800/40">
+        <td class="p-3 font-mono font-bold text-white"><span class="px-2 py-0.5 rounded text-[10px] ${badgeCls} mr-1">${tipoLabel}</span> ${esc(n.factura_nro)}</td>
+        <td class="p-3 text-xs">${modalidadTxt}</td>
+        <td class="p-3 font-mono text-slate-300">${esc(facRef)}</td>
+        <td class="p-3 text-slate-200">${esc(n.cliente_nombre)}</td>
+        <td class="p-3 font-mono text-slate-400">${formatearDdMmYyyyNota(meta?.fechaEmision || n.created_at)}</td>
+        <td class="p-3 text-right font-mono font-bold ${esNc ? 'text-sky-300' : 'text-amber-300'}">${esNc ? '-' : '+'}Bs. ${Math.abs(Number(n.total_bs || 0)).toFixed(2)}</td>
+        <td class="p-3 text-center"><button type="button" onclick='verComprobantePorId("${esc(n.id)}")' class="bg-slate-800 hover:bg-slate-700 px-3 py-1 rounded text-xs text-slate-200 cursor-pointer">Ver / PDF</button></td>
+      </tr>
+    `;
+  });
 }
 
 async function generarReporteZ() {
   if (!tenantActual) return;
+  const fDesde = document.getElementById('filtroFechaDesde')?.value || '';
+  const fHasta = document.getElementById('filtroFechaHasta')?.value || '';
+
   const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
-  const filtradas = data || [];
+  const filtradas = (data || []).filter(f => {
+    const fIso = f.created_at ? String(f.created_at).slice(0, 10) : '';
+    if (fDesde && fIso && fIso < fDesde) return false;
+    if (fHasta && fIso && fIso > fHasta) return false;
+    return true;
+  });
+
   document.getElementById('zTotalFacturas').innerText = filtradas.length;
-  let total = 0; filtradas.forEach(f => {
+  let total = 0;
+  filtradas.forEach(f => {
     const numUpper = (f.factura_nro || '').toUpperCase();
     const val = Number(f.total_bs || 0);
     if (numUpper.startsWith('NC')) total -= Math.abs(val);
@@ -945,14 +1731,73 @@ function descargarExcelMatriz(matrizDatos, nombreArchivo, nombreHoja) {
 
 async function descargarLibroVentasOficialExcel() {
   if (!tenantActual) return;
-  const { data: invoices } = await supabaseClient.from('invoices').select('*, invoice_items(*)').eq('tenant_id', tenantActual.id).order('created_at', { ascending: true });
-  if (!invoices || invoices.length === 0) { avisarReporte('Sin ventas registradas.', 'warning'); return; }
-  const matriz = [[null, 'COMPAÑÍA:', tenantActual.razon_social], [], [null, null, null, null, 'LIBRO DE VENTAS SENIAT']];
-  matriz.push([null, 'Oper', 'Fecha', 'RIF', 'Cliente', 'Documento', 'Nro Control', 'Total', 'IVA', 'Base Imponible']);
-  invoices.forEach((inv, i) => {
-    matriz.push([null, i+1, new Date(inv.created_at), inv.cliente_rif, inv.cliente_nombre, inv.factura_nro, inv.nro_control, inv.total_bs, inv.iva_bs, inv.subtotal_bs]);
+  await sincronizarMetasNotasNube(tenantActual.id);
+
+  const fDesde = document.getElementById('filtroFechaDesde')?.value || '';
+  const fHasta = document.getElementById('filtroFechaHasta')?.value || '';
+
+  const { data: invoices } = await supabaseClient
+    .from('invoices')
+    .select('*, invoice_items(*)')
+    .eq('tenant_id', tenantActual.id)
+    .order('created_at', { ascending: true });
+
+  const filtradas = (invoices || []).filter(inv => {
+    const fIso = inv.created_at ? String(inv.created_at).slice(0, 10) : '';
+    if (fDesde && fIso && fIso < fDesde) return false;
+    if (fHasta && fIso && fIso > fHasta) return false;
+    return true;
   });
-  descargarExcelMatriz(matriz, 'Libro_de_Ventas', 'LibroVentas');
+
+  if (filtradas.length === 0) { avisarReporte('Sin ventas o notas en el rango seleccionado.', 'warning'); return; }
+
+  const matriz = [
+    [null, 'CONTRIBUYENTE:', tenantActual.razon_social, 'RIF:', tenantActual.rif || ''],
+    [null, 'LIBRO DE VENTAS SENIAT', fDesde && fHasta ? `Período: ${formatearDdMmYyyyNota(fDesde)} al ${formatearDdMmYyyyNota(fHasta)}` : 'Todos los registros'],
+    [],
+    [null, 'Oper', 'Fecha', 'Tipo Doc.', 'Modalidad', 'RIF / C.I.', 'Nombre / Razón Social', 'N° Documento', 'N° Control', 'Factura Afectada', 'Total Ventas (Bs.)', 'Base Imponible (Bs.)', 'IVA (Bs.)', 'IGTF (Bs.)', 'Estado']
+  ];
+
+  filtradas.forEach((inv, i) => {
+    const numUpper = String(inv.factura_nro || '').toUpperCase();
+    const estUpper = String(inv.estado || 'EMITIDA').toUpperCase();
+    const meta = obtenerMetaFacturaLocal(tenantActual.id, inv);
+
+    let tipoDoc = 'FACTURA';
+    let signo = 1;
+    if (numUpper.startsWith('NC')) { tipoDoc = 'NOTA DE CRÉDITO'; signo = -1; }
+    else if (numUpper.startsWith('ND')) { tipoDoc = 'NOTA DE DÉBITO'; signo = 1; }
+    else if (numUpper.startsWith('REV-') || estUpper === 'REVERSO') { tipoDoc = 'REVERSO'; signo = -1; }
+
+    const modalidad = meta?.modalidad || (tipoDoc === 'FACTURA' ? 'VENTA' : '-');
+    const facAfectada = meta?.facturaAfectadaNro || meta?.documentoOrigen || '-';
+
+    const totalBs = signo * Math.abs(Number(inv.total_bs || 0));
+    const baseBs = signo * Math.abs(Number(inv.subtotal_bs || 0));
+    const ivaBs = signo * Math.abs(Number(inv.iva_bs || 0));
+    const igtfBs = signo * Math.abs(Number(inv.igtf_bs || 0));
+
+    matriz.push([
+      null,
+      i + 1,
+      formatearDdMmYyyyNota(meta?.fechaEmision || inv.created_at),
+      tipoDoc,
+      modalidad,
+      inv.cliente_rif || '',
+      inv.cliente_nombre || '',
+      inv.factura_nro || '',
+      inv.nro_control || 'N/A',
+      facAfectada,
+      Number(totalBs.toFixed(2)),
+      Number(baseBs.toFixed(2)),
+      Number(ivaBs.toFixed(2)),
+      Number(igtfBs.toFixed(2)),
+      estUpper
+    ]);
+  });
+
+  descargarExcelMatriz(matriz, 'Libro_de_Ventas_SENIAT', 'LibroVentas');
+  avisarReporte('Libro de Ventas oficial SENIAT descargado.', 'success');
 }
 
 async function descargarLibroComprasOficialExcel() {
@@ -1199,6 +2044,20 @@ async function cargarCuentasPorCobrar() {
     });
   }
 
+  await sincronizarMetasNotasNube(tenantId);
+
+  const ajusteNotasPorFactura = {};
+  (resInv.data || []).forEach(doc => {
+    const nro = String(doc.factura_nro || '').toUpperCase();
+    if (!nro.startsWith('NC') && !nro.startsWith('ND')) return;
+    const metaDoc = obtenerMetaFacturaLocal(tenantId, doc);
+    const facRef = metaDoc?.facturaAfectadaNro || '';
+    if (!facRef) return;
+    const tasaN = Number(doc.tasa_bcv || 1);
+    const totUsdN = Number(doc.total_bs || 0) / tasaN;
+    ajusteNotasPorFactura[facRef] = (ajusteNotasPorFactura[facRef] || 0) + (nro.startsWith('NC') ? -totUsdN : totUsdN);
+  });
+
   const creditoList = (resInv.data || []).filter(inv => {
     const nro = String(inv.factura_nro || '').toUpperCase();
     const est = String(inv.estado || '').toUpperCase();
@@ -1216,7 +2075,9 @@ async function cargarCuentasPorCobrar() {
 
   cuentasPorCobrarCache = creditoList.map(inv => {
     const tasa = Number(inv.tasa_bcv || 1);
-    const totalUsd = Number(inv.monto_usd || (Number(inv.total_bs || 0) / tasa));
+    const baseUsd = Number(inv.total_bs ? (Number(inv.total_bs) / tasa) : (inv.monto_usd || 0));
+    const ajusteNotaUsd = ajusteNotasPorFactura[inv.factura_nro] || 0;
+    const totalUsd = Math.max(0, baseUsd + ajusteNotaUsd);
     const abonadoUsd = Math.min(totalUsd, abonosPorFactura[String(inv.id)] || 0);
     const saldoUsd = Math.max(0, totalUsd - abonadoUsd);
     const diasTranscurridos = Math.max(0, Math.floor((hoyMs - new Date(inv.created_at).getTime()) / 86400000));

@@ -210,7 +210,10 @@ function cambiarPestana(pestana) {
   toggleSidebarMovil(true);
 
   if (pestana === 'historial') cargarHistorial();
-  if (pestana === 'notasFiscales') cargarFacturasAfectadasSelect();
+  if (pestana === 'notasFiscales') {
+    if (typeof inicializarModuloNotasFiscales === 'function') inicializarModuloNotasFiscales();
+    else if (typeof cargarFacturasAfectadasSelect === 'function') cargarFacturasAfectadasSelect();
+  }
   if (pestana === 'cierrez') {
     const hoy = new Date().toISOString().slice(0,10);
     const dDesde = document.getElementById('filtroFechaDesde');

@@ -27,22 +27,37 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
+  <style id="estiloPaginaImpresion"></style>
   <style>
     @media print {
-      @page { size: letter portrait; margin: 10mm; }
-      body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; }
-      body * { visibility: hidden; }
-      #seccionFisico, #seccionFisico *,
-      #seccionEtiquetas, #seccionEtiquetas *,
-      #modalTicket, #modalTicket * { visibility: visible; }
-      #seccionFisico, #seccionEtiquetas {
-        position: absolute; left: 0; top: 0; width: 100%; background: white !important; color: black !important;
+      @page { size: letter portrait; margin: 8mm; }
+      html, body { background: white !important; color: black !important; margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; }
+      body.imprimiendo-comprobante > *:not(#modalTicket) { display: none !important; }
+      body.imprimiendo-etiquetas > *:not(#vistaPrincipal),
+      body.imprimiendo-fisico > *:not(#vistaPrincipal) { display: none !important; }
+      body.imprimiendo-etiquetas #sidebarErp,
+      body.imprimiendo-etiquetas #sidebarBackdrop,
+      body.imprimiendo-etiquetas header,
+      body.imprimiendo-etiquetas main > *:not(#seccionEtiquetas) { display: none !important; }
+      body.imprimiendo-fisico #sidebarErp,
+      body.imprimiendo-fisico #sidebarBackdrop,
+      body.imprimiendo-fisico header,
+      body.imprimiendo-fisico main > *:not(#seccionFisico) { display: none !important; }
+      body.imprimiendo-etiquetas #vistaPrincipal,
+      body.imprimiendo-etiquetas #vistaPrincipal > div,
+      body.imprimiendo-etiquetas main,
+      body.imprimiendo-fisico #vistaPrincipal,
+      body.imprimiendo-fisico #vistaPrincipal > div,
+      body.imprimiendo-fisico main {
+        display: block !important; width: 100% !important; height: auto !important; min-height: 0 !important;
+        overflow: visible !important; padding: 0 !important; margin: 0 !important; background: white !important; color: black !important;
       }
       #modalTicket {
         position: static !important;
         inset: auto !important;
         background: white !important;
         padding: 0 !important;
+        margin: 0 !important;
         display: block !important;
         width: 100% !important;
         height: auto !important;
@@ -56,7 +71,11 @@
         width: 100% !important;
         max-width: 100% !important;
         margin: 0 !important;
-        padding: 12px !important;
+        padding: 6mm !important;
+      }
+      body.imprimiendo-comprobante.formato-ticket #ticketContenedor {
+        max-width: 76mm !important;
+        padding: 2mm !important;
       }
       .no-print { display: none !important; }
     }
@@ -497,32 +516,179 @@
         <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Doc</th><th class="p-3">Control</th><th class="p-3">Cliente</th><th class="p-3">Método</th><th class="p-3">Fecha</th><th class="p-3">Total</th><th class="p-3 text-center">Acción</th></tr></thead><tbody id="tablaHistorial" class="divide-y divide-slate-800/60 tabular-nums"></tbody></table></div>
       </div>
 
-      <!-- Notas Fiscales -->
+      <!-- Notas Fiscales SENIAT (Financieras vs. Devolución / Reposición) -->
       <div id="seccionNotasFiscales" class="hidden space-y-6">
-        <h3 class="text-base font-bold text-white tracking-tight">Emisión de Notas de Débito / Crédito Fiscal</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
+        <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tipo de Nota</label>
-            <select id="tipoNotaSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm">
-              <option value="NOTA CREDITO">Nota de Crédito (NC)</option>
-              <option value="NOTA DEBITO">Nota de Débito (ND)</option>
-            </select>
+            <h3 class="text-base font-bold text-white tracking-tight">Emisión de Notas de Crédito y Débito Fiscal</h3>
+            <p class="text-xs text-slate-400">Cumplimiento Providencia SNAT/2011/00071 y Art. 58 Ley del IVA · Modalidad Financiera (sin stock) o por Devolución / Reposición (con Kardex).</p>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Factura Afectada</label>
-            <select id="facturaAfectadaSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm"></select>
+          <button type="button" onclick="inicializarModuloNotasFiscales()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Actualizar Facturas</button>
+        </div>
+
+        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-5">
+          <!-- Fila 1: Tipo, Modalidad y Factura Afectada -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tipo de Documento Fiscal</label>
+              <select id="tipoNotaSelect" onchange="onCambioTipoOModalidadNota()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+                <option value="NOTA CREDITO">Nota de Crédito</option>
+                <option value="NOTA DEBITO">Nota de Débito</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Modalidad de Operación</label>
+              <select id="modalidadNotaSelect" onchange="onCambioTipoOModalidadNota()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+                <option value="FINANCIERA">Financiera (No afecta inventario ni Kardex)</option>
+                <option value="DEVOLUCION">Por Devolución / Reposición (Afecta Stock y Kardex)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Factura de Venta Afectada *</label>
+              <select id="facturaAfectadaSelect" onchange="cargarDetalleFacturaAfectadaNota()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></select>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Monto Base ($ USD)</label>
-            <input type="number" step="0.01" id="montoNotaUsd" placeholder="0.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono tabular-nums">
+
+          <!-- Resumen de Factura Afectada -->
+          <div id="notaFacturaAfectadaResumen" class="grid grid-cols-2 sm:grid-cols-5 gap-3 border border-slate-800 bg-slate-950/70 rounded-xl p-3 text-xs">
+            <div><span class="text-slate-500 block">Factura / Control</span><span id="notaResFacCtrl" class="font-mono font-semibold text-white">Sin seleccionar</span></div>
+            <div><span class="text-slate-500 block">Fecha Factura</span><span id="notaResFacFecha" class="font-mono text-slate-300">-</span></div>
+            <div><span class="text-slate-500 block">Cliente / RIF</span><span id="notaResFacCliente" class="text-slate-200 truncate block">-</span></div>
+            <div><span class="text-slate-500 block">Tasa Original</span><span id="notaResFacTasa" class="font-mono text-slate-300 tabular-nums">-</span></div>
+            <div><span class="text-slate-500 block">Total Factura</span><span id="notaResFacTotal" class="font-mono font-bold text-emerald-400 tabular-nums">Bs. 0.00</span></div>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Motivo / Descripción</label>
-            <input type="text" id="motivoNota" placeholder="Devolución o ajuste fiscal" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm">
+
+          <!-- Fila 2: Fecha, Tasa BCV, Motivo y Almacén (si aplica) -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Fecha de Emisión</label>
+              <input type="date" id="notaFechaEmision" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Criterio Tasa BCV</label>
+              <select id="notaTasaModoSelect" onchange="onCambioModoTasaNota()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+                <option value="DIA">Tasa BCV vigente del día</option>
+                <option value="ORIGINAL">Tasa de la factura afectada</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tasa BCV Aplicada (Bs./$)</label>
+              <div class="flex gap-2">
+                <input type="number" step="0.0001" id="notaTasaBcv" oninput="recalcularResumenNotaFiscal()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums">
+                <button type="button" onclick="sincronizarTasaNotaBcv()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap" title="Consultar BCV oficial">BCV</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Motivo / Razón Fiscal *</label>
+              <input type="text" id="motivoNota" placeholder="Ej: Descuento por pronto pago / Devolución mercancía" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+            </div>
           </div>
-          <div class="md:col-span-2">
-            <button onclick="emitirNotaFiscal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-3 rounded-xl text-sm cursor-pointer whitespace-nowrap">Emitir Nota Fiscal</button>
+
+          <!-- Selector Sucursal y Almacén (solo para Devolución / Reposición) -->
+          <div id="notaDepositoWrap" class="hidden grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-800 pt-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Sucursal de Inventario *</label>
+              <select id="notaSucursalSelect" onchange="filtrarAlmacenesNota()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Almacén / Depósito *</label>
+              <select id="notaAlmacenSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
+            </div>
+            <div class="flex items-end">
+              <p id="notaEfectoKardexHint" class="text-xs text-emerald-400 font-medium py-2.5">Movimiento Kardex: ENTRADA (Reingreso al stock)</p>
+            </div>
           </div>
+
+          <!-- Panel Modo Financiero -->
+          <div id="notaModoFinancieroPanel" class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-800 pt-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Monto Base del Ajuste ($ USD) *</label>
+              <input type="number" step="0.01" min="0.01" id="montoNotaUsd" oninput="recalcularResumenNotaFiscal()" placeholder="0.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Alícuota IVA Aplicable</label>
+              <select id="notaAlicuotaFinancieraSelect" onchange="recalcularResumenNotaFiscal()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+                <option value="16">IVA General (16%)</option>
+                <option value="8">IVA Alícuota Reducida (8%)</option>
+                <option value="0">Exento / Exonerado (0%)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Concepto del Renglón en Comprobante</label>
+              <input type="text" id="notaConceptoFinanciero" placeholder="Ej: Bonificación comercial / Intereses de mora" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+            </div>
+          </div>
+
+          <!-- Panel Modo Devolución / Reposición -->
+          <div id="notaModoDevolucionPanel" class="hidden space-y-4 border-t border-slate-800 pt-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-xs font-semibold text-slate-300">Renglones de la Factura Afectada (indica las cantidades a devolver o reponer)</p>
+              <button type="button" onclick="seleccionarTodoDevolucionNota()" class="text-xs text-sky-400 hover:underline font-semibold cursor-pointer">Devolver cantidades completas</button>
+            </div>
+            <div class="overflow-x-auto border border-slate-800 rounded-xl">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                  <tr>
+                    <th class="p-2.5">SKU / Material</th>
+                    <th class="p-2.5 text-center">Facturado</th>
+                    <th class="p-2.5 text-center">Ya Devuelto</th>
+                    <th class="p-2.5 text-center">Cant. Nota</th>
+                    <th class="p-2.5 text-right">P. Unit ($)</th>
+                    <th class="p-2.5 text-center">Alíc.</th>
+                    <th class="p-2.5 text-right">Subtotal ($)</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaItemsNotaDevolucion" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+              </table>
+            </div>
+
+            <!-- Solo ND Reposición: agregar otro material adicional -->
+            <div id="notaNdAgregarWrap" class="hidden grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+              <div class="md:col-span-2">
+                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Agregar Material Adicional (Reposición ND)</label>
+                <select id="notaNdExtraProdSelect" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white text-xs"></select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Cantidad</label>
+                <input type="number" step="0.01" min="0.01" id="notaNdExtraCant" value="1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white text-xs font-mono tabular-nums">
+              </div>
+              <div class="flex items-end">
+                <button type="button" onclick="agregarProductoExtraNd()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer">Agregar Renglón</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Totales Precalculados y Botón Emitir -->
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-t border-slate-800 pt-4">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono tabular-nums">
+              <div><span class="text-slate-500 block font-sans">Exento (E)</span><span id="notaPrevExento" class="text-slate-200 font-semibold">Bs. 0.00</span></div>
+              <div><span class="text-slate-500 block font-sans">Base Imponible</span><span id="notaPrevBase" class="text-slate-200 font-semibold">Bs. 0.00</span></div>
+              <div><span class="text-slate-500 block font-sans">IVA Discriminado</span><span id="notaPrevIva" class="text-slate-200 font-semibold">Bs. 0.00</span></div>
+              <div><span class="text-slate-500 block font-sans">Total Nota Fiscal</span><span id="notaPrevTotal" class="text-emerald-400 font-bold text-sm">Bs. 0.00 ($ 0.00)</span></div>
+            </div>
+            <button type="button" id="btnEmitirNotaFiscal" onclick="emitirNotaFiscal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-3 rounded-xl text-sm cursor-pointer whitespace-nowrap shrink-0">Emitir Nota Fiscal</button>
+          </div>
+        </div>
+
+        <!-- Historial Reciente de Notas Fiscales -->
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+          <div class="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+            <h4 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Notas de Crédito y Débito Emitidas</h4>
+          </div>
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+              <tr>
+                <th class="p-3">Documento</th>
+                <th class="p-3">Modalidad</th>
+                <th class="p-3">Factura Afectada</th>
+                <th class="p-3">Cliente</th>
+                <th class="p-3">Fecha</th>
+                <th class="p-3 text-right">Total Bs.</th>
+                <th class="p-3 text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tablaNotasFiscalesRecientes" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+          </table>
         </div>
       </div>
 
@@ -790,13 +956,108 @@
         <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Comprobante</th><th class="p-3">Factura Ref.</th><th class="p-3">Base Imponible</th><th class="p-3">IVA</th><th class="p-3">IVA Retenido</th><th class="p-3 text-center">Acción</th></tr></thead><tbody id="tablaRetenciones" class="divide-y divide-slate-800/60 tabular-nums"></tbody></table></div>
       </div>
 
-      <!-- Kardex PPM -->
-      <div id="seccionKardex" class="hidden space-y-6">
-        <div class="flex items-center justify-between">
-          <h3 class="text-base font-bold text-white tracking-tight">Kardex PPM y Trazabilidad de SKU</h3>
-          <button type="button" onclick="cargarKardexMovimientos()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Actualizar</button>
+      <!-- Kardex PPM Multi-Filtro -->
+      <div id="seccionKardex" class="hidden space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Kardex PPM y Trazabilidad de SKU</h3>
+            <p class="text-xs text-slate-400">Consulta filtrada por material, sucursal, almacén, tipo de movimiento, lote/documento y rango de fechas.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="cargarKardexMovimientos()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Actualizar</button>
+            <button type="button" onclick="exportarKardexExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Exportar Excel (.xlsx)</button>
+            <button type="button" onclick="exportarKardexPdf()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Exportar PDF</button>
+          </div>
         </div>
-        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Fecha</th><th class="p-3">Artículo</th><th class="p-3">Movimiento</th><th class="p-3">Documento</th><th class="p-3 text-center">Entradas</th><th class="p-3 text-center">Salidas</th><th class="p-3 text-center">Saldo</th><th class="p-3">Costo Prom.</th></tr></thead><tbody id="tablaKardexMovimientos" class="divide-y divide-slate-800/60 tabular-nums"></tbody></table></div>
+
+        <!-- Resumen Dinámico del Filtro -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Movimientos</p>
+            <p id="kardexKpiMovs" class="text-lg font-bold font-mono text-white tabular-nums mt-1">0</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Total Entradas</p>
+            <p id="kardexKpiEntradas" class="text-lg font-bold font-mono text-emerald-400 tabular-nums mt-1">+0</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Total Salidas</p>
+            <p id="kardexKpiSalidas" class="text-lg font-bold font-mono text-rose-400 tabular-nums mt-1">-0</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Variación Neta</p>
+            <p id="kardexKpiNeto" class="text-lg font-bold font-mono text-slate-200 tabular-nums mt-1">0 uds</p>
+          </div>
+        </div>
+
+        <!-- Barra de Filtros Avanzados -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 bg-slate-900 p-4 rounded-2xl border border-slate-800">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Material / SKU</label>
+            <select id="kardexFiltroMaterial" onchange="filtrarKardexMovimientos()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white">
+              <option value="">Todos los materiales</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Sucursal</label>
+            <select id="kardexFiltroSucursal" onchange="onCambioSucursalKardex()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white">
+              <option value="">Todas las sucursales</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Almacén / Depósito</label>
+            <select id="kardexFiltroAlmacen" onchange="filtrarKardexMovimientos()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white">
+              <option value="">Todos los almacenes</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Tipo de Movimiento</label>
+            <select id="kardexFiltroTipo" onchange="filtrarKardexMovimientos()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white">
+              <option value="">Todos los movimientos</option>
+              <option value="ENTRADA">Entradas (Compras / Ingresos)</option>
+              <option value="SALIDA">Salidas (Ventas / Consumos)</option>
+              <option value="NC_DEVOLUCION">Nota de Crédito (Devolución)</option>
+              <option value="ND_DEVOLUCION">Nota de Débito (Reposición)</option>
+              <option value="REVERSO">Reversos / Anulaciones</option>
+              <option value="TRANSFERENCIA">Transferencias entre Depósitos</option>
+              <option value="INV_FISICO">Ajustes Conteo Físico</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Fecha Desde</label>
+            <input type="date" id="kardexFiltroFechaDesde" onchange="filtrarKardexMovimientos()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Fecha Hasta</label>
+            <input type="date" id="kardexFiltroFechaHasta" onchange="filtrarKardexMovimientos()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Lote / Documento / Factura</label>
+            <input type="text" id="kardexFiltroLoteDoc" oninput="filtrarKardexMovimientos()" placeholder="Ej: LOTE-01, FAC-0005, NC-..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white">
+          </div>
+          <div class="flex items-end">
+            <button type="button" onclick="limpiarFiltrosKardex()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold py-2 px-3 rounded-xl cursor-pointer whitespace-nowrap">Limpiar Filtros</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+              <tr>
+                <th class="p-3">Fecha</th>
+                <th class="p-3">Artículo</th>
+                <th class="p-3">Sucursal / Almacén</th>
+                <th class="p-3">Movimiento</th>
+                <th class="p-3">Documento / Lote</th>
+                <th class="p-3 text-center">Entradas</th>
+                <th class="p-3 text-center">Salidas</th>
+                <th class="p-3 text-center">Saldo</th>
+                <th class="p-3 text-right">Costo Prom.</th>
+              </tr>
+            </thead>
+            <tbody id="tablaKardexMovimientos" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Inventario Físico, Conciliación, Histórico Nube, Acta PDF & Excel (INV-002..008) -->
@@ -1379,10 +1640,132 @@
     </div>
   </div>
 
+  <!-- MODAL VISOR DE IMPRESIÓN DIRECTA PDF (IMPRESORA PREDETERMINADA / IFRAME SANDBOX) -->
+  <div id="modalVisorImpresionPdf" class="hidden fixed inset-0 bg-black/85 flex items-center justify-center p-2 sm:p-4 z-[120] no-print">
+    <div class="bg-slate-900 border border-slate-700 text-slate-100 w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl flex flex-col h-[90vh]">
+      <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-slate-800 bg-slate-950">
+        <div>
+          <h4 id="visorPdfTitulo" class="text-sm font-bold text-white">Vista de Impresión Fiscal</h4>
+          <p class="text-[11px] text-slate-400">Usa el ícono de impresora del visor o abre en pestaña nativa para enviar a tu impresora predeterminada.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+          <a id="visorPdfAbrirBtn" href="#" target="_blank" rel="noopener noreferrer" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap">Imprimir en Pestaña (Predeterminada)</a>
+          <button type="button" onclick="descargarPdfDesdeVisor()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap">Descargar PDF</button>
+          <button type="button" onclick="cerrarVisorImpresionPdf()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">Cerrar</button>
+        </div>
+      </div>
+      <iframe id="visorPdfFrame" title="Documento listo para imprimir" class="w-full flex-1 bg-white"></iframe>
+    </div>
+  </div>
+
   <!-- INICIALIZADOR SUPABASE GLOBAL -->
   <script>
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    let visorPdfActualObj = null;
+    let visorPdfNombreArchivo = 'Documento_Fiscal.pdf';
+    let visorPdfBlobUrl = null;
+
+    function abrirVisorImpresionPdf(pdf, nombreArchivo = 'Documento_Fiscal.pdf', titulo = 'Vista de Impresión Directa') {
+      if (!pdf) return;
+      try {
+        if (typeof pdf.autoPrint === 'function') {
+          pdf.autoPrint({ variant: 'non-conform' });
+        }
+      } catch (e) {}
+
+      if (visorPdfBlobUrl) {
+        try { URL.revokeObjectURL(visorPdfBlobUrl); } catch (e) {}
+      }
+      const blob = pdf.output('blob');
+      visorPdfBlobUrl = URL.createObjectURL(blob);
+      visorPdfActualObj = pdf;
+      visorPdfNombreArchivo = nombreArchivo;
+
+      const modal = document.getElementById('modalVisorImpresionPdf');
+      const frame = document.getElementById('visorPdfFrame');
+      const linkAbrir = document.getElementById('visorPdfAbrirBtn');
+      const elTit = document.getElementById('visorPdfTitulo');
+      if (elTit) elTit.textContent = titulo;
+      if (linkAbrir) linkAbrir.href = visorPdfBlobUrl;
+      if (frame) {
+        frame.onload = () => {
+          try {
+            if (frame.contentWindow) {
+              frame.contentWindow.focus();
+              frame.contentWindow.print();
+            }
+          } catch (e) {}
+        };
+        frame.src = visorPdfBlobUrl;
+      }
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function descargarPdfDesdeVisor() {
+      if (visorPdfActualObj) {
+        visorPdfActualObj.save(visorPdfNombreArchivo);
+      }
+    }
+
+    function cerrarVisorImpresionPdf() {
+      const modal = document.getElementById('modalVisorImpresionPdf');
+      const frame = document.getElementById('visorPdfFrame');
+      if (modal) modal.classList.add('hidden');
+      if (frame) frame.src = 'about:blank';
+    }
+
+    function ejecutarImpresionConRespaldo({ claseBody, esTicket80mm = false, construirPdfFn, nombreArchivo = 'Documento.pdf', tituloVisor = 'Vista de Impresión Directa' }) {
+      const stylePage = document.getElementById('estiloPaginaImpresion');
+      if (stylePage) {
+        stylePage.textContent = esTicket80mm
+          ? '@media print { @page { size: 80mm auto; margin: 2mm; } }'
+          : '@media print { @page { size: letter portrait; margin: 8mm; } }';
+      }
+
+      if (claseBody) document.body.classList.add(claseBody);
+      if (esTicket80mm) document.body.classList.add('formato-ticket');
+
+      let beforePrintFired = false;
+      const limpiarClases = () => {
+        if (claseBody) document.body.classList.remove(claseBody);
+        document.body.classList.remove('formato-ticket');
+      };
+      const onBefore = () => { beforePrintFired = true; };
+      const onAfter = () => {
+        limpiarClases();
+        window.removeEventListener('beforeprint', onBefore);
+        window.removeEventListener('afterprint', onAfter);
+      };
+
+      window.addEventListener('beforeprint', onBefore);
+      window.addEventListener('afterprint', onAfter);
+
+      try {
+        window.focus();
+        window.print();
+      } catch (e) {
+        console.warn('window.print error:', e);
+      }
+
+      setTimeout(() => {
+        if (!beforePrintFired) {
+          limpiarClases();
+          window.removeEventListener('beforeprint', onBefore);
+          window.removeEventListener('afterprint', onAfter);
+          if (typeof construirPdfFn === 'function') {
+            const pdf = construirPdfFn();
+            if (pdf) {
+              abrirVisorImpresionPdf(pdf, nombreArchivo, tituloVisor);
+              notificarSistema('El visor embebido restringe el diálogo directo; abrimos el documento listo para enviar a tu impresora predeterminada.', 'info', 6500);
+            }
+          }
+        } else {
+          setTimeout(limpiarClases, 1200);
+        }
+      }, 300);
+    }
 
     function notificarSistema(mensaje, tipo = 'info', duracion = 5000) {
       const contenedor = document.getElementById('toastSistema');
