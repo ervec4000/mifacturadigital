@@ -390,13 +390,14 @@ async function verComprobante(doc) {
   }
 
   // Totales fiscales en Bs. (moneda principal) + Ref. $ USD
-  const montoExentoBs = montoExentoUsd * tasa;
-  const ivaBsFinal = Number(doc.iva_bs ?? (ivaTotalUsd * tasa));
-  const baseGravadaBsFinal = baseGravadaTotalUsd * tasa;
-  const subtotalGeneralBs = baseGravadaBsFinal + montoExentoBs + ivaBsFinal;
-  const igtfBs = Number(doc.igtf_bs || 0);
-  const baseIgtfBs = igtfBs > 0 ? (igtfBs / 0.03) : 0;
-  const totalBs = Number(doc.total_bs ?? (subtotalGeneralBs + igtfBs));
+  const montoExentoBs = Number((montoExentoUsd * tasa).toFixed(2));
+  const ivaBsFinal = Number((doc.iva_bs ?? (ivaTotalUsd * tasa)).toFixed(2));
+  const baseGravadaBsFinal = Number((baseGravadaTotalUsd * tasa).toFixed(2));
+  const igtfBs = Number(Number(doc.igtf_bs || 0).toFixed(2));
+  const baseIgtfBs = igtfBs > 0 ? Number((igtfBs / 0.03).toFixed(2)) : 0;
+  const totalBsCalculado = Number((baseGravadaBsFinal + montoExentoBs + ivaBsFinal + igtfBs).toFixed(2));
+  const totalBs = Number((doc.total_bs ?? totalBsCalculado).toFixed(2));
+  const subtotalGeneralBs = Number((totalBs - igtfBs).toFixed(2));
 
   document.getElementById('ticketExento').innerText = `Bs. ${montoExentoBs.toFixed(2)} ($ ${montoExentoUsd.toFixed(2)})`;
 

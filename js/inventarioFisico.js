@@ -623,8 +623,8 @@ function pintarGridEtiquetasQr() {
     : etiquetasQrCache;
 
   container.className = cols === '2'
-    ? 'grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-6 rounded-xl border border-slate-300 shadow-xl'
-    : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-white p-6 rounded-xl border border-slate-300 shadow-xl';
+    ? 'etiquetas-cols-2 grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-6 rounded-xl border border-slate-300 shadow-xl'
+    : 'etiquetas-cols-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 bg-white p-6 rounded-xl border border-slate-300 shadow-xl';
 
   container.innerHTML = '';
   if (filtrados.length === 0) {
