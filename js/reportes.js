@@ -1007,6 +1007,9 @@ async function inicializarModuloNotasFiscales() {
 }
 
 async function cargarCatalogosParaNotas(tenantId) {
+  if (typeof sincronizarMetaContableNube === 'function') {
+    await sincronizarMetaContableNube(tenantId, 'productos');
+  }
   const [resSuc, resAlm, resProd] = await Promise.all([
     supabaseClient.from('sucursales').select('*').eq('tenant_id', tenantId).order('nombre', { ascending: true }),
     supabaseClient.from('almacenes').select('*, sucursales(nombre)').eq('tenant_id', tenantId).order('nombre', { ascending: true }),
@@ -1015,7 +1018,9 @@ async function cargarCatalogosParaNotas(tenantId) {
 
   notaSucursalesCache = resSuc.data || [];
   notaAlmacenesCache = resAlm.data || [];
-  notaProductosCatalogoCache = resProd.data || [];
+  notaProductosCatalogoCache = (resProd.data || []).map(p =>
+    typeof obtenerMetaContableRegistro === 'function' ? obtenerMetaContableRegistro(tenantId, 'productos', p) : p
+  );
 
   const selSuc = document.getElementById('notaSucursalSelect');
   if (selSuc) {
@@ -1376,6 +1381,33 @@ function agregarProductoExtraNd() {
 
   renderizarTablaItemsNotaDevolucion();
   recalcularResumenNotaFiscal();
+}
+
+function procesarCodigoBarrasNotaNd(rawInput) {
+  const inputEl = document.getElementById('notaNdBarcodeInput');
+  const valor = String(rawInput !== undefined ? rawInput : (inputEl?.value || '')).trim();
+  if (!valor) return false;
+
+  const { producto } = typeof buscarProductoPorCodigoEscaneado === 'function'
+    ? buscarProductoPorCodigoEscaneado(notaProductosCatalogoCache, valor)
+    : { producto: null };
+
+  if (!producto) {
+    if (typeof reproducirBeepEscaner === 'function') reproducirBeepEscaner('error');
+    avisarReporte(`Código "${valor}" no encontrado en el catálogo de materiales.`, 'warning');
+    if (inputEl) inputEl.select();
+    return false;
+  }
+
+  const sel = document.getElementById('notaNdExtraProdSelect');
+  if (sel) sel.value = String(producto.id);
+  agregarProductoExtraNd();
+  if (typeof reproducirBeepEscaner === 'function') reproducirBeepEscaner('ok');
+  if (inputEl) {
+    inputEl.value = '';
+    inputEl.focus();
+  }
+  return true;
 }
 
 function calcularTotalesNotaEnVivo() {
@@ -2271,5 +2303,115 @@ function exportarCuentasPorCobrarExcel() {
     ]);
   });
   descargarExcelMatriz(matriz, 'Cuentas_Por_Cobrar', 'CxC');
+}
+
+// ==========================================
+// POS-011: ENVIAR COMPROBANTE POR WHATSAPP
+// ==========================================
+
+function enviarWhatsApp() {
+  const d = comprobanteRenderCache;
+  if (!d) {
+    avisarReporte('Abre primero un comprobante fiscal para enviarlo por WhatsApp.', 'warning');
+    return;
+  }
+  const totalUsd = Number(d.tasa) > 0 ? Number(d.totalBs || 0) / Number(d.tasa) : 0;
+  const msg = [
+    `*${String(d.emisorNombre || 'MiFacturaDigital').toUpperCase()}* (${d.emisorRif || ''})`,
+    `${d.tituloDoc || 'FACTURA'}: *${d.numDoc || ''}*`,
+    `Nro. Control: ${d.nroControl || 'N/A'}`,
+    `Fecha: ${d.fechaMostrar || ''}`,
+    `Cliente: ${d.cliNombre || ''} (${d.cliRif || ''})`,
+    `Exento: Bs. ${Number(d.montoExentoBs || 0).toFixed(2)}`,
+    `IGTF 3%: Bs. ${Number(d.igtfBs || 0).toFixed(2)}`,
+    `*TOTAL: Bs. ${Number(d.totalBs || 0).toFixed(2)}* ($ ${totalUsd.toFixed(2)} @ Tasa BCV ${Number(d.tasa || 1).toFixed(2)})`
+  ].join('\n');
+
+  let tel = String(d.cliTel || document.getElementById('clienteTelefono')?.value || '').replace(/\D/g, '');
+  if (tel.startsWith('0')) tel = `58${tel.slice(1)}`;
+  const url = tel.length >= 10
+    ? `https://api.whatsapp.com/send?phone=${encodeURIComponent(tel)}&text=${encodeURIComponent(msg)}`
+    : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+
+  try {
+    navigator.clipboard?.writeText(msg);
+  } catch (e) {}
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  avisarReporte(`Resumen fiscal ${d.numDoc} preparado para WhatsApp (copiado también al portapapeles).`, 'success');
+}
+
+// ==========================================
+// CIE-004: IMPRESIÓN TÉRMICA BLUETOOTH ESC/POS REAL
+// ==========================================
+
+async function imprimirBluetoothReal() {
+  const d = comprobanteRenderCache;
+  if (!d) {
+    avisarReporte('Abre primero un comprobante fiscal para enviarlo a impresora Bluetooth.', 'warning');
+    return;
+  }
+  if (!navigator.bluetooth) {
+    avisarReporte('Web Bluetooth no está habilitado en este navegador o visor embebido. Usa Chrome/Android en HTTPS o el visor de impresión térmica 80mm.', 'warning', 7000);
+    return;
+  }
+
+  try {
+    const device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [
+        '000018f0-0000-1000-8000-00805f9b34fb',
+        'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+        '49535343-fe7d-4ae5-8fa9-9fafd205e455'
+      ]
+    });
+    const server = await device.gatt.connect();
+    const services = await server.getPrimaryServices();
+    let writableChar = null;
+
+    for (const svc of services) {
+      const chars = await svc.getCharacteristics();
+      writableChar = chars.find(c => c.properties.write || c.properties.writeWithoutResponse) || null;
+      if (writableChar) break;
+    }
+
+    if (!writableChar) {
+      avisarReporte('No se encontró un canal de escritura ESC/POS compatible en el dispositivo Bluetooth.', 'error');
+      return;
+    }
+
+    const totalUsd = Number(d.tasa) > 0 ? Number(d.totalBs || 0) / Number(d.tasa) : 0;
+    const texto = [
+      '\x1B@',
+      `${String(d.emisorNombre || '').toUpperCase()}\n`,
+      `RIF: ${d.emisorRif || ''}\n`,
+      `--------------------------------\n`,
+      `${d.tituloDoc || 'FACTURA'}: ${d.numDoc || ''}\n`,
+      `CTRL: ${d.nroControl || ''} | ${d.fechaMostrar || ''}\n`,
+      `CLI: ${d.cliNombre || ''} (${d.cliRif || ''})\n`,
+      `--------------------------------\n`,
+      ...(d.items || []).map(it => `${Number(it.cant)} x ${String(it.desc).slice(0, 18)}  Bs.${Number(it.totBs).toFixed(2)}\n`),
+      `--------------------------------\n`,
+      `TOTAL: Bs. ${Number(d.totalBs || 0).toFixed(2)}\n`,
+      `REF:   $ ${totalUsd.toFixed(2)}\n\n\n\x1DV\x00`
+    ].join('');
+
+    const bytes = new TextEncoder().encode(texto);
+    const chunkSize = 20;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      await writableChar.writeValue(bytes.slice(i, i + chunkSize));
+    }
+    avisarReporte(`Ticket ${d.numDoc} impreso vía Bluetooth ESC/POS en ${device.name || 'Impresora Térmica'}.`, 'success');
+  } catch (e) {
+    if (e?.name !== 'NotFoundError') {
+      avisarReporte(`Error de impresión Bluetooth: ${e?.message || e}`, 'error');
+    }
+  }
 }
 

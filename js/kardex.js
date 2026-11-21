@@ -119,20 +119,65 @@ async function calcularProximoDocumentoCompra() {
 async function cargarProductosSelectCompra() {
   const tenantId = obtenerTenantKardex();
   if (!tenantId) return;
+  if (typeof sincronizarMetaContableNube === 'function') {
+    await sincronizarMetaContableNube(tenantId, 'productos');
+  }
   const { data } = await supabaseClient
     .from('productos')
     .select('*, tipos_iva(id, nombre, porcentaje)')
     .eq('tenant_id', tenantId)
     .order('descripcion', { ascending: true });
 
-  compraProductosCache = data || [];
+  compraProductosCache = (data || []).map(p =>
+    typeof obtenerMetaContableRegistro === 'function' ? obtenerMetaContableRegistro(tenantId, 'productos', p) : p
+  );
   const sel = document.getElementById('compraProductoSelect');
   if (!sel) return;
   sel.innerHTML = '<option value="">-- Seleccionar Material --</option>';
   compraProductosCache.forEach(p => {
     const uni = p.unidad_medida ? ` ${p.unidad_medida}` : '';
-    sel.innerHTML += `<option value="${esc(p.id)}">[${esc(p.codigo_sku || 'S/N')}] ${esc(p.descripcion)} (Stock: ${p.stock ?? 0}${esc(uni)})</option>`;
+    const barTag = p.codigo_barras ? ` | ${p.codigo_barras}` : '';
+    sel.innerHTML += `<option value="${esc(p.id)}">[${esc(p.codigo_sku || 'S/N')}${esc(barTag)}] ${esc(p.descripcion)} (Stock: ${p.stock ?? 0}${esc(uni)})</option>`;
   });
+}
+
+function procesarCodigoBarrasCompra(rawInput) {
+  const inputEl = document.getElementById('compraBarcodeInput');
+  const valor = String(rawInput !== undefined ? rawInput : (inputEl?.value || '')).trim();
+  if (!valor) return false;
+
+  const { producto, parsed } = typeof buscarProductoPorCodigoEscaneado === 'function'
+    ? buscarProductoPorCodigoEscaneado(compraProductosCache, valor)
+    : { producto: null, parsed: {} };
+
+  if (!producto) {
+    if (typeof reproducirBeepEscaner === 'function') reproducirBeepEscaner('error');
+    avisarKardex(`Código "${valor}" no encontrado en el catálogo de materiales.`, 'warning', 5000);
+    if (inputEl) inputEl.select();
+    return false;
+  }
+
+  const sel = document.getElementById('compraProductoSelect');
+  if (sel) sel.value = String(producto.id);
+  onSeleccionarProductoCompra();
+
+  if (parsed?.lote) {
+    const inpLote = document.getElementById('compraLote');
+    if (inpLote) {
+      inpLote.value = parsed.lote;
+      autocompletarVencimientoLoteCompra();
+    }
+  }
+
+  if (typeof reproducirBeepEscaner === 'function') reproducirBeepEscaner('ok');
+  avisarKardex(`Material seleccionado para compra: ${producto.descripcion}`, 'success', 3500);
+  if (inputEl) inputEl.value = '';
+  const inpCant = document.getElementById('compraCantidad');
+  if (inpCant) {
+    inpCant.focus();
+    inpCant.select();
+  }
+  return true;
 }
 
 async function cargarProveedoresSelectCompra() {
@@ -1208,13 +1253,18 @@ async function inicializarTransferenciasDeposito() {
   const tenantId = obtenerTenantKardex();
   if (!tenantId) return;
 
+  if (typeof sincronizarMetaContableNube === 'function') {
+    await sincronizarMetaContableNube(tenantId, 'productos');
+  }
   const [resProd, resAlm, resLotes] = await Promise.all([
     supabaseClient.from('productos').select('*').eq('tenant_id', tenantId).order('descripcion', { ascending: true }),
     supabaseClient.from('almacenes').select('*, sucursales(nombre)').eq('tenant_id', tenantId).order('nombre', { ascending: true }),
     supabaseClient.from('inventario_lotes').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false })
   ]);
 
-  compraProductosCache = resProd.data || [];
+  compraProductosCache = (resProd.data || []).map(p =>
+    typeof obtenerMetaContableRegistro === 'function' ? obtenerMetaContableRegistro(tenantId, 'productos', p) : p
+  );
   compraAlmacenesCache = resAlm.data || [];
   compraLotesCache = resLotes.data || [];
 
@@ -1222,7 +1272,8 @@ async function inicializarTransferenciasDeposito() {
   if (selProd) {
     selProd.innerHTML = '<option value="">-- Seleccionar Artículo --</option>';
     compraProductosCache.forEach(p => {
-      selProd.innerHTML += `<option value="${esc(p.id)}">[${esc(p.codigo_sku || 'S/N')}] ${esc(p.descripcion)} (Stock Global: ${p.stock ?? 0})</option>`;
+      const barTag = p.codigo_barras ? ` | ${p.codigo_barras}` : '';
+      selProd.innerHTML += `<option value="${esc(p.id)}">[${esc(p.codigo_sku || 'S/N')}${esc(barTag)}] ${esc(p.descripcion)} (Stock Global: ${p.stock ?? 0})</option>`;
     });
   }
 
@@ -1260,6 +1311,46 @@ function cargarLotesOrigenTransferencia() {
     const almTxt = alm ? `${alm.nombre} | ` : '';
     selLote.innerHTML += `<option value="${esc(l.id)}">${esc(almTxt)}Lote: ${esc(l.numero_lote)} (Disp: ${l.stock ?? 0})</option>`;
   });
+}
+
+function procesarCodigoBarrasTransferencia(rawInput) {
+  const inputEl = document.getElementById('transfBarcodeInput');
+  const valor = String(rawInput !== undefined ? rawInput : (inputEl?.value || '')).trim();
+  if (!valor) return false;
+
+  const { producto, parsed } = typeof buscarProductoPorCodigoEscaneado === 'function'
+    ? buscarProductoPorCodigoEscaneado(compraProductosCache, valor)
+    : { producto: null, parsed: {} };
+
+  if (!producto) {
+    if (typeof reproducirBeepEscaner === 'function') reproducirBeepEscaner('error');
+    avisarKardex(`Código "${valor}" no encontrado en el catálogo.`, 'warning');
+    if (inputEl) inputEl.select();
+    return false;
+  }
+
+  const selProd = document.getElementById('transfProductoSelect');
+  if (selProd) selProd.value = String(producto.id);
+  cargarLotesOrigenTransferencia();
+
+  if (parsed?.lote) {
+    const selLote = document.getElementById('transfLoteSelect');
+    const loteMatch = compraLotesCache.find(l =>
+      String(l.producto_id) === String(producto.id) &&
+      String(l.numero_lote || '').toUpperCase() === String(parsed.lote).toUpperCase()
+    );
+    if (selLote && loteMatch) selLote.value = String(loteMatch.id);
+  }
+
+  if (typeof reproducirBeepEscaner === 'function') reproducirBeepEscaner('ok');
+  avisarKardex(`Artículo seleccionado para traslado: ${producto.descripcion}`, 'success', 3500);
+  if (inputEl) inputEl.value = '';
+  const inpCant = document.getElementById('transfCantidad');
+  if (inpCant) {
+    inpCant.focus();
+    inpCant.select();
+  }
+  return true;
 }
 
 async function registrarTransferenciaDeposito() {

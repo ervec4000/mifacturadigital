@@ -1,0 +1,112 @@
+,,,MiFacturaDigital • Checklist y Estado de Funcionalidades,,,,,,
+,,,"Control de desarrollo, módulos fiscales SENIAT, Contabilidad, SaaS y Referidos",,,,,,
+,,,TOTAL FUNCIONES,FUNCIONES COMPLETADAS,,AVANCE GENERAL,AVANCE VALIDACION,,
+,,,105,105,,"100,0%","0,0%",,
+Nro,Mod Js,Código ID,Módulo Principal,Sub-módulo,Funciones,Estado,Validación Edison,Que observaciones tienes,Estatus
+1,auth.js,SEC-001,Seguridad y RBAC,Autenticación Tenant,iniciarSesionTenant(),HECHO,PENDIENTE,,Listo
+2,auth.js,SEC-002,Seguridad y RBAC,Persistencia Local,verificarSesionGuardada(),HECHO,PENDIENTE,,Listo
+3,auth.js,SEC-003,Seguridad y RBAC,Control de Interfaz,activarVistaPrincipal(),HECHO,PENDIENTE,,Listo
+4,auth.js,SEC-004,Seguridad y RBAC,Sesión Segura,cerrarSesion(),HECHO,PENDIENTE,,Listo
+5,auth.js,SEC-005,Seguridad y RBAC,Perfil Fiscal,abrirModalPerfil() / cerrarModalPerfil(),HECHO,PENDIENTE,,Listo
+6,auth.js,SEC-006,Seguridad y RBAC,Auditoría e Inmutabilidad,audit_logs y Bitácora de cambios,HECHO,PENDIENTE,,Listo
+7,pos.js,POS-001,POS y Cálculo Fiscal,Sincronización BCV,consultarTasaBcvApi(),HECHO,PENDIENTE,,Listo
+8,pos.js,POS-002,POS y Cálculo Fiscal,Maestro de Artículos,cargarProductosSelect(),HECHO,PENDIENTE,modifica y elimina,Listo
+9,pos.js,POS-003,POS y Cálculo Fiscal,Maestro de Clientes,cargarClientesSelect(),HECHO,PENDIENTE,"Implementado CRUD completo (crear, modificar y eliminar cliente rápido desde POS)",Listo
+10,pos.js,POS-004,POS y Cálculo Fiscal,Carrito de Ventas,agregarItem(),HECHO,PENDIENTE,,Listo
+11,pos.js,POS-005,POS y Cálculo Fiscal,Gestión de Carrito,eliminarItemCarrito(),HECHO,PENDIENTE,,Listo
+12,pos.js,POS-006,POS y Cálculo Fiscal,Motor Matemático,"actualizarTablaYCalculos() (Base, Exento, IVA 16%)",HECHO,PENDIENTE,,Listo
+13,pos.js,POS-007,POS y Cálculo Fiscal,Impuesto Divisas,verificarAplicacionIgtf() (Cálculo automático 3%),HECHO,PENDIENTE,,Listo
+14,pos.js,POS-008,POS y Cálculo Fiscal,Vuelto Multidivisa,calcularVuelto() (Dólares y Bolívares),HECHO,PENDIENTE,,Listo
+15,pos.js,POS-009,POS y Cálculo Fiscal,Emisión Fiscal,emitirFactura() (Correlativos SENIAT),HECHO,PENDIENTE,,Listo
+16,pos.js,POS-010,POS y Cálculo Fiscal,Hardware POS,conectarImpresoraFiscalWebSerial(),HECHO,PENDIENTE,,Listo
+17,pos.js,POS-011,POS y Cálculo Fiscal,Mensajería Digital,enviarWhatsApp(),HECHO,PENDIENTE,,Listo
+18,reportes.js,SEN-001,Historial y Notas,Consulta Masiva,cargarHistorial(),HECHO,PENDIENTE,,Listo
+19,reportes.js,SEN-002,Historial y Notas,Filtros Avanzados,filtrarHistorial(),HECHO,PENDIENTE,,Listo
+20,reportes.js,SEN-003,Historial y Notas,Comprobante Visual,verComprobante(),HECHO,PENDIENTE,"Actualizado: Impresión directa PDF (Carta/Ticket), actas inventario físico con conciliación teórico vs físico, Excel e histórico en Supabase",Listo
+21,reportes.js,SEN-004,Historial y Notas,Enlace Legal,cargarFacturasAfectadasSelect(),HECHO,PENDIENTE,,Listo
+22,reportes.js,SEN-005,Historial y Notas,Notas SENIAT,emitirNotaFiscal() (Notas de Crédito y Débito),HECHO,PENDIENTE,,Listo
+23,reportes.js,SEN-006,Historial y Notas,Reportes Históricos,exportarHistorialExcel(),HECHO,PENDIENTE,,Listo
+24,reportes.js,CIE-001,Cierres y Libros,Cuadre de Caja,generarReporteZ() (Gaveta y efectivo),HECHO,PENDIENTE,,Listo
+25,reportes.js,CIE-002,Cierres y Libros,Libro Legal,descargarLibroVentasOficialExcel(),HECHO,PENDIENTE,,Listo
+26,reportes.js,CIE-003,Cierres y Libros,Libro Legal,descargarLibroComprasOficialExcel(),HECHO,PENDIENTE,,Listo
+27,reportes.js,CIE-004,Cierres y Libros,Impresión Térmica,imprimirBluetoothReal(),HECHO,PENDIENTE,,Listo
+28,reportes.js,CIE-005,Cierres y Libros,Cuentas por Cobrar,abonarCuentaPorCobrar(),HECHO,PENDIENTE,,Listo
+29,kardex.js,COM-001,Compras y Retenciones,Selección Proveedor,cargarProductosSelectCompra(),HECHO,PENDIENTE,,Listo
+30,kardex.js,COM-002,Compras y Retenciones,Costos y PPM,registrarCompraInventario(),HECHO,PENDIENTE,,Listo
+31,reportes.js,IMP-001,Compras y Retenciones,Tributario SENIAT,generarComprobanteRetencion() (75% / 100%),HECHO,PENDIENTE,,Listo
+32,reportes.js,IMP-002,Compras y Retenciones,Historial Fiscal,cargarRetenciones(),HECHO,PENDIENTE,,Listo
+33,reportes.js,COM-003,Compras y Retenciones,Reportes Compras,exportarComprasExcel(),HECHO,PENDIENTE,,Listo
+34,kardex.js,INV-001,Kardex e Inventario,Trazabilidad SKU,cargarKardexMovimientos(),HECHO,PENDIENTE,,Listo
+35,inventarioFisico.js,INV-002,Kardex e Inventario,Conteo Físico,cargarInventarioFisico(),HECHO,PENDIENTE,,Listo
+36,inventarioFisico.js,INV-003,Kardex e Inventario,Control de Mermas,calcularDiferenciaFisica(),HECHO,PENDIENTE,,Listo
+37,inventarioFisico.js,INV-004,Kardex e Inventario,Actualización Stock,aplicarConteoUnico(),HECHO,PENDIENTE,,Listo
+38,inventarioFisico.js,INV-005,Kardex e Inventario,Conciliación Global,guardarTodoInventarioFisico(),HECHO,PENDIENTE,,
+39,inventarioFisico.js,INV-006,Kardex e Inventario,Histórico Nube,cargarHistoricoInventarioFisico(),HECHO,PENDIENTE,,
+40,inventarioFisico.js,INV-007,Kardex e Inventario,Plantillas Excel,exportarInventarioFisicoExcel(),HECHO,PENDIENTE,,
+41,inventarioFisico.js,INV-008,Kardex e Inventario,Carga Masiva,importarInventarioFisicoExcel(),HECHO,PENDIENTE,,
+42,kardex.js,INV-009,Kardex e Inventario,Sucursales,registrarTransferenciaDeposito(),HECHO,PENDIENTE,,
+43,catalogos.js (o integrado en UI),CAT-001,Catálogo y Clientes,Márgenes de Utilidad,calcularPrecioPorcentaje() (Markup),HECHO,PENDIENTE,,
+44,catalogos.js (o integrado en UI),CAT-002,Catálogo y Clientes,CRUD de Artículos,guardarProducto() / editarProducto() / eliminarProducto(),HECHO,PENDIENTE,,
+45,catalogos.js (o integrado en UI),CAT-003,Catálogo y Clientes,Limpieza UI,limpiarFormProducto(),HECHO,PENDIENTE,,
+46,catalogos.js (o integrado en UI),CAT-004,Catálogo y Clientes,Marcaje Depósito,renderizarEtiquetasQr() / imprimirEtiquetasQr(),HECHO,PENDIENTE,,
+47,catalogos.js (o integrado en UI),CAT-005,Catálogo y Clientes,Unidades de Medida,cargarUnidadesMedidaGestion(),HECHO,PENDIENTE,,
+48,catalogos.js (o integrado en UI),CAT-006,Catálogo y Clientes,Maestro Clientes,cargarClientesGestion(),HECHO,PENDIENTE,,
+49,catalogos.js (o integrado en UI),CAT-007,Catálogo y Clientes,Alertas Financieras,Monitoreo y proyección de CxC,HECHO,PENDIENTE,,
+50,catalogos.js (o integrado en UI),MAS-001,Catálogo y Clientes,Control Multitenant,cargarInquilinosMaster() / Panel SaaS,HECHO,PENDIENTE,,
+51,auth.js,SEC-007,Seguridad y RBAC,Validación Fiscal RIF,validarRifVzla() / validarRifInput() (Validación formato V/E/J/G/P),HECHO,PENDIENTE,Validación automática de RIF/Cédula venezolana en formularios,Listo
+52,auth.js,SEC-008,Seguridad y RBAC,Navegación SPA,cambiarPestana() / toggleSidebarColapso() / toggleSidebarMovil(),HECHO,PENDIENTE,Navegación lateral adaptable desktop/móvil con control RBAC,Listo
+53,index.html,SEC-009,Seguridad y RBAC,Visor PDF Universal,abrirVisorImpresionPdf() / descargarPdfDesdeVisor() / ejecutarImpresionConRespaldo(),HECHO,PENDIENTE,Visor modal iframe-safe con impresión directa y descarga PDF,Listo
+54,index.html,SEC-010,Seguridad y RBAC,Notificaciones y Confirmación,notificarSistema() / pedirConfirmacion(),HECHO,PENDIENTE,Sistema propio de notificaciones y diálogos sin alerts bloqueantes,Listo
+55,pos.js,POS-012,POS y Cálculo Fiscal,Edición y Anulación,editarFacturaPorId() / eliminarFacturaPorId() (Reverso Kardex y Contabilidad),HECHO,PENDIENTE,Edición de facturas recientes y anulación con reverso automático de stock,Listo
+56,pos.js,POS-013,POS y Cálculo Fiscal,Multi-Sucursal POS,cargarSucursalesYAlmacenesPos() / filtrarAlmacenesPosPorSucursal(),HECHO,PENDIENTE,Selección de sucursal emisora y almacén de despacho en facturación,Listo
+57,pos.js,POS-014,POS y Cálculo Fiscal,Vías de Pago Contables,cargarViasPagoContabPos() (Medios de cobro integrados a bancos/cajas),HECHO,PENDIENTE,Carga dinámica de cuentas y vías de pago activas en el POS,Listo
+58,pos.js,POS-015,POS y Cálculo Fiscal,Descuento Stock Lotes,ajustarStockProductoYLotes() (Control por depósito y lote FEFO),HECHO,PENDIENTE,Ajuste automático de existencias en producto y lotes asignados,Listo
+59,pos.js,POS-016,POS y Cálculo Fiscal,Correlativo y Listado POS,calcularProximoDocumentoVenta() / cargarDocumentosPos(),HECHO,PENDIENTE,Cálculo correlativo próximo documento fiscal y grilla rápida POS,Listo
+60,reportes.js,SEN-007,Historial y Notas,Formato Dual Comprobante,cambiarFormatoComprobante() / construirComprobanteJsPdf() (Carta Digital y Ticket 80mm),HECHO,PENDIENTE,Alternancia instantánea entre Formato Carta Digital y Ticket Térmico 80mm,Listo
+61,reportes.js,SEN-008,Historial y Notas,Imprenta Digital SENIAT,obtenerConfigImprentaTenant() / obtenerQrDataUrl() (QR Verificación Fiscal),HECHO,PENDIENTE,Cabecera de Imprenta Digital autorizada y código QR en documentos,Listo
+62,reportes.js,SEN-009,Historial y Notas,Notas Fiscales Avanzadas,cargarDetalleFacturaAfectadaNota() / agregarProductoExtraNd() / sincronizarTasaNotaBcv(),HECHO,PENDIENTE,"Devolución parcial/total en NC, ítems adicionales en ND y tasa BCV",Listo
+63,reportes.js,SEN-010,Historial y Notas,Historial de Notas,cargarTablaNotasFiscalesRecientes(),HECHO,PENDIENTE,Tabla dedicada con notas de crédito/débito emitidas y factura origen,Listo
+64,reportes.js,CIE-006,Cierres y Libros,Gestión y Exportación CxC,cargarCuentasPorCobrar() / exportarCuentasPorCobrarExcel(),HECHO,PENDIENTE,Monitor de cuentas por cobrar a crédito con abonos y exportación Excel,Listo
+65,kardex.js,COM-004,Compras y Retenciones,Gestión Lotes en Compra,cargarLotesExistentesCompra() / autocompletarVencimientoLoteCompra() / consultarTasaBcvCompra(),HECHO,PENDIENTE,"Autocompletado de lotes, fechas de vencimiento y tasa BCV en compras",Listo
+66,kardex.js,COM-005,Compras y Retenciones,Histórico de Compras,cargarHistorialCompras() / cargarSucursalesYAlmacenesCompra(),HECHO,PENDIENTE,Listado de compras registradas por sucursal y depósito destino,Listo
+67,kardex.js,INV-010,Kardex e Inventario,Filtros y Reportes Kardex,filtrarKardexMovimientos() / exportarKardexExcel() / exportarKardexPdf(),HECHO,PENDIENTE,Filtrado multi-criterio de Kardex con exportación a Excel y PDF,Listo
+68,kardex.js,INV-011,Kardex e Inventario,Transferencias Sucursales,cargarLotesOrigenTransferencia() / cargarHistorialTransferencias(),HECHO,PENDIENTE,Trazabilidad por lote origen e histórico de traslados entre depósitos,Listo
+69,inventarioFisico.js,INV-012,Kardex e Inventario,Actas Físicas y Conciliación,imprimirActaInventarioFisicoPdf() / exportarActaInventarioExcel(),HECHO,PENDIENTE,Impresión directa de Actas de Inventario Físico (teórico vs físico) y Excel,Listo
+70,inventarioFisico.js,INV-013,Kardex e Inventario,Etiquetas QR y Códigos,imprimirEtiquetasQrPdf() / imprimirEtiquetasQrNavegador() / exportarEtiquetasQrExcel(),HECHO,PENDIENTE,Generación e impresión directa de etiquetas QR y catálogo en Excel,Listo
+71,catalogos.js,CAT-008,Catálogo y Clientes,Gestión Proveedores,cargarProveedoresGestion() / guardarProveedor() / editarProveedor() / eliminarProveedor() / exportarProveedoresExcel(),HECHO,PENDIENTE,CRUD completo de proveedores fiscales con exportación a Excel,Listo
+72,catalogos.js,CAT-009,Catálogo y Clientes,Sucursales y Almacenes,cargarSucursalesGestion() / guardarSucursal() / cargarAlmacenesGestion() / guardarAlmacen(),HECHO,PENDIENTE,Administración multi-sucursal y multi-almacén por inquilino,Listo
+73,catalogos.js,CAT-010,Catálogo y Clientes,Lotes y Vencimientos,cargarLotesGestion() / guardarLote() / editarLote() / eliminarLote() / exportarLotesExcel(),HECHO,PENDIENTE,"Maestro de lotes, fechas de vencimiento y ubicación por almacén",Listo
+74,catalogos.js,CAT-011,Catálogo y Clientes,Tipos de IVA y Alícuotas,cargarTiposIvaGestion() / guardarTipoIva() / exportarTiposIvaExcel(),HECHO,PENDIENTE,"Configuración de alícuotas fiscales (General, Reducido, Adicional, Exento)",Listo
+75,catalogos.js,CAT-012,Catálogo y Clientes,Vías de Pago y Bancos,cargarViasPagoGestion() / guardarViaPago() / exportarViasPagoExcel(),HECHO,PENDIENTE,"Maestro de vías de cobro (Efectivo, Pago Móvil, Zelle, Biopago, Puntos)",Listo
+76,catalogos.js,CAT-013,Catálogo y Clientes,Exportación Maestros,exportarStockExcel() / exportarClientesExcel() / exportarUnidadesExcel(),HECHO,PENDIENTE,"Descarga directa en Excel (.xlsx) de inventario, clientes y unidades",Listo
+77,contabilidad.js,CON-001,Contabilidad VEN-NIF,Configuración Contable,obtenerConfigContableTenant() / guardarConfigContableEmpresa(),HECHO,PENDIENTE,Parámetros contables por empresa y mapeo de cuentas por defecto,Listo
+78,contabilidad.js,CON-002,Contabilidad VEN-NIF,Plan de Cuentas VEN-NIF,cargarPlanCuentas() / inicializarPlanCuentasBase() / guardarCuentaContable() / eliminarCuentaContable(),HECHO,PENDIENTE,Plan de cuentas jerárquico venezolano editable con plantilla base,Listo
+79,contabilidad.js,CON-003,Contabilidad VEN-NIF,Asientos Automáticos,registrarAsientoAutomaticoVenta() / registrarAsientoAutomaticoNota() / registrarAsientoAutomaticoCompra() / registrarAsientoAutomaticoAbonoCxc() / registrarAsientoAutomaticoRetencion(),HECHO,PENDIENTE,"Motor de partida doble automática en ventas, notas, compras, CxC y retenciones",Listo
+80,contabilidad.js,CON-004,Contabilidad VEN-NIF,Libro Diario y Sincronización,cargarAsientosContables() / renderizarLibroDiario() / sincronizarAsientosHistoricos(),HECHO,PENDIENTE,Consulta de Libro Diario cuadrado y generación retroactiva de asientos,Listo
+81,contabilidad.js,CON-005,Contabilidad VEN-NIF,Reportes y Exportación ERP,exportarLibroDiarioExcel() / exportarBalanceComprobacionExcel() / exportarPaqueteIntegracionJson(),HECHO,PENDIENTE,"Libro Diario Excel, Balance de Comprobación y paquete JSON ERP",Listo
+82,contabilidad.js,CON-006,Contabilidad VEN-NIF,Diagnóstico SQL Contable,verificarEstadoEsquemaContable() / descargarScriptSqlMigracion() / copiarScriptSqlMigracion(),HECHO,PENDIENTE,Verificador de tablas en Supabase y exportador de migración SQL,Listo
+83,suscripciones.js,MAS-002,SaaS y Panel Master,Precios de Planes Editable,cargarConfigPlanesMaster() / guardarConfigPlanesMaster() / aplicarDescuentoAnual20Master(),HECHO,PENDIENTE,"Matriz editable por Master para Freemium, Pyme y Enterprise (Mensual/Anual)",Listo
+84,suscripciones.js,MAS-003,SaaS y Panel Master,Cuentas Receptoras Master,cargarConfigBancosMaster() / guardarConfigBancosMaster(),HECHO,PENDIENTE,"Configuración de Pago Móvil, Transferencia, Zelle y Binance del Master",Listo
+85,suscripciones.js,MAS-004,SaaS y Panel Master,Gestión Inquilinos Master,abrirModalInquilinoMaster() / guardarInquilinoMaster() / toggleEstadoInquilinoMaster(),HECHO,PENDIENTE,"Alta, edición y activación/suspensión inmediata de empresas clientes",Listo
+86,suscripciones.js,MAS-005,SaaS y Panel Master,Permisos Granulares RBAC,abrirModalPermisosMaster() / guardarPermisosMaster() / aplicarPermisosMenuTenant(),HECHO,PENDIENTE,Control por inquilino de módulos visibles en el menú según plan o ajuste Master,Listo
+87,suscripciones.js,MAS-006,SaaS y Panel Master,Aprobación de Pagos SaaS,renderizarBandejaPagosMaster() / aprobarPagoSuscripcionMaster() / rechazarPagoSuscripcionMaster(),HECHO,PENDIENTE,Bandeja de validación de pagos reportados con activación de plan y vigencia,Listo
+88,suscripciones.js,MAS-007,SaaS y Panel Master,Vista Previa y SQL SaaS,toggleVistaErpEnMaster() / verificarEstadoEsquemaSaas() / descargarScriptSqlSaas(),HECHO,PENDIENTE,"Alternador vista ERP en sesión Master, diagnóstico y descarga SQL SaaS",Listo
+89,suscripciones.js,SAAS-001,SaaS y Panel Master,Portal Suscripción Cliente,cargarModuloSuscripcion() / pintarResumenSuscripcionCliente() / renderizarTarjetasPlanesCliente(),HECHO,PENDIENTE,"Vista cliente con vigencia de plan, ciclo mensual/anual y comparativa",Listo
+90,suscripciones.js,SAAS-002,SaaS y Panel Master,Reporte Pago Cliente,enviarReportePagoSuscripcion() / renderizarHistorialPagosCliente() / consultarEstadoPasarelaServidor(),HECHO,PENDIENTE,"Registro de comprobantes de pago SaaS, tasa BCV y estado de pasarelas",Listo
+91,referidos.js,REF-001,Referidos Híbrido 3 Niveles,Rastreo y Atribución ?ref=,capturarReferidoDeUrl() / leerAtribucionReferidoLocal() / resolverReferidorPorCodigoOId(),HECHO,PENDIENTE,Captura persistente por 30 días de parámetro ?ref=TENANT_ID o código,Listo
+92,referidos.js,REF-002,Referidos Híbrido 3 Niveles,Registro Comercio o Promotor,abrirModalRegistroLanding() / cambiarTipoRegistroPublico() / registrarCuentaDesdeLanding(),HECHO,PENDIENTE,Alta pública desde Landing para Comercio Cliente o Promotor/Contador Externo,Listo
+93,referidos.js,REF-003,Referidos Híbrido 3 Niveles,Reglas Editables Master,cargarConfigReferidosMaster() / guardarConfigReferidosMaster() / recalcularMargenReferidosMasterUI(),HECHO,PENDIENTE,"Porcentajes N1/N2/N3, Tiers 1-2-3, bono meta y descuento bienvenida editables",Listo
+94,referidos.js,REF-004,Referidos Híbrido 3 Niveles,Motor Comisiones 3 Niveles,procesarComisionesPorPagoAprobado() / calcularTierPromotor() / obtenerDescuentoBienvenidaParaTenant(),HECHO,PENDIENTE,Disparo automático multinivel al aprobar suscripción con control anti-fraude,Listo
+95,referidos.js,REF-005,Referidos Híbrido 3 Niveles,"Billetera, Retiros y Canje",calcularResumenBilleteraReferido() / solicitarRetiroComisiones() / canjearSaldoPorSuscripcion(),HECHO,PENDIENTE,"Saldo disponible, retiro a banco/Zelle/Binance y canje por meses de plan",Listo
+96,referidos.js,REF-006,Referidos Híbrido 3 Niveles,Aprobación y Carga Pagos,aprobarRetiroReferidoMaster() / rechazarRetiroReferidoMaster() / cargarPagoAReferidoMaster(),HECHO,PENDIENTE,Aprobación de retiros y carga directa de pagos o bonos por el Master,Listo
+97,referidos.js,REF-007,Referidos Híbrido 3 Niveles,Estado de Cuenta Imprimible,construirEstadoCuentaReferido() / generarPdfEstadoCuentaReferido() / exportarEstadoCuentaReferidoExcel(),HECHO,PENDIENTE,"Historial cronológico por fechas con saldo corrido, PDF imprimible y Excel",Listo
+98,referidos.js,REF-008,Referidos Híbrido 3 Niveles,Leads Landing y Compartir,cargarLeadsLandingMaster() / compartirReferidoWhatsapp() / copiarEnlaceReferidoUuid(),HECHO,PENDIENTE,Auditoría de leads atribuidos y difusión rápida por enlace único o WhatsApp,Listo
+99,landing.js,PUB-001,Landing y Backend,Landing Comercial SPA,renderizarLandingPage() / mostrarVistaLanding() / mostrarVistaLogin(),HECHO,PENDIENTE,"Portada pública comercial con planes dinámicos, beneficios y acceso",Listo
+100,landing.js,PUB-002,Landing y Backend,Solicitud Demo y Leads,abrirModalDemo() / procesarSolicitudDemo() / enviarFormularioContactoLanding(),HECHO,PENDIENTE,Captura de solicitudes de demostración y contacto con atribución ?ref=,Listo
+101,server.js,API-001,Landing y Backend,Servicio BCV Oficial,GET /api/tasa-bcv (Scraping oficial BCV con caché y respaldo DolarAPI),HECHO,PENDIENTE,Endpoint Express propio con caché de 5 min y fallback automático,Listo
+102,server.js,API-002,Landing y Backend,Estado Pasarela SaaS,GET /api/saas/pasarela-estado (Verificación Stripe/PayPal/LemonSqueezy/MercadoPago),HECHO,PENDIENTE,Endpoint servidor para detectar pasarelas internacionales configuradas,Listo
+103,escaner.js,POS-017,POS y Cálculo Fiscal,Escáner Barras / QR (Valery),procesarCodigoBarrasPos() / abrirEscanerCamara() / atajo F2 (Pistola USB y Cámara),HECHO,PENDIENTE,Captura directa al carrito POS por código de barras (EAN/UPC/Code128) o QR con sonido beep,Listo
+104,escaner.js,CAT-014,Catálogo y Clientes,Código Barras en Material,generarCodigoBarrasEan13() / prodCodigoBarras / filtrarProductosGestion(),HECHO,PENDIENTE,Asignación/escaneo de código de barras o generación EAN-13 al crear/editar material y búsqueda rápida,Listo
+105,escaner.js,INV-014,Kardex e Inventario,Escáner en Compras/Conteo/Traslados,procesarCodigoBarrasCompra() / procesarCodigoBarrasFisico() / procesarCodigoBarrasTransferencia() / procesarCodigoBarrasNotaNd(),HECHO,PENDIENTE,"Lectura con pistola o cámara continua para compras, conteo físico (+1), transferencias, etiquetas QR y notas ND",Listo
+106,catalogos.js,CAT-015,Catálogo y Clientes,Importación Masiva Excel (9 Maestros),descargarPlantillaCatalogoExcel() / importarProductosExcel() / importarClientesExcel() / importarProveedoresExcel() / importarUnidadesExcel() / importarTiposIvaExcel() / importarViasPagoExcel() / importarSucursalesExcel() / importarLotesExcel(),HECHO,PENDIENTE,"Plantillas Excel descargables e importación/actualización masiva (.xlsx/.xls/.csv) para los 9 catálogos maestros",Listo
+

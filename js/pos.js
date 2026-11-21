@@ -61,6 +61,10 @@ async function inicializarModuloPos() {
     cargarDocumentosPos(),
     !editId ? consultarTasaBcvApi(true) : Promise.resolve()
   ]);
+
+  setTimeout(() => {
+    if (typeof enfocarEscanerPos === 'function') enfocarEscanerPos();
+  }, 150);
 }
 
 async function cargarViasPagoContabPos() {
@@ -200,6 +204,10 @@ async function cargarProductosSelect() {
   const tenantId = obtenerTenantPos();
   if (!tenantId) return;
 
+  if (typeof sincronizarMetaContableNube === 'function') {
+    await sincronizarMetaContableNube(tenantId, 'productos');
+  }
+
   const [resProds, resIvas] = await Promise.all([
     supabaseClient.from('productos').select('*, tipos_iva(id, nombre, porcentaje)').eq('tenant_id', tenantId).order('descripcion', { ascending: true }),
     supabaseClient.from('tipos_iva').select('*').eq('tenant_id', tenantId)
@@ -227,7 +235,8 @@ async function cargarProductosSelect() {
     const pv = Number(prod.precio_venta_usd ?? prod.precio_unitario_usd ?? 0);
     const tagIva = prod._ivaPorcentaje === 0 ? 'EXENTO' : `IVA ${prod._ivaPorcentaje}%`;
     const avisoSinPrecio = pv <= 0 ? ' [SIN PRECIO]' : '';
-    select.innerHTML += `<option value="${esc(prod.id)}">[${esc(prod.codigo_sku || 'S/N')}] ${esc(prod.descripcion)} - $${pv.toFixed(2)} (${esc(tagIva)})${avisoSinPrecio}</option>`;
+    const barTag = prod.codigo_barras ? ` | ${prod.codigo_barras}` : '';
+    select.innerHTML += `<option value="${esc(prod.id)}">[${esc(prod.codigo_sku || 'S/N')}${esc(barTag)}] ${esc(prod.descripcion)} - $${pv.toFixed(2)} (${esc(tagIva)})${avisoSinPrecio}</option>`;
   });
 }
 
@@ -312,6 +321,65 @@ function agregarItem() {
   }
   document.getElementById('cantidadItem').value = '1';
   actualizarTablaYCalculos();
+}
+
+function procesarCodigoBarrasPos(rawInput) {
+  const inputEl = document.getElementById('posBarcodeInput');
+  const valor = String(rawInput !== undefined ? rawInput : (inputEl?.value || '')).trim();
+  if (!valor) return false;
+
+  const { producto } = typeof buscarProductoPorCodigoEscaneado === 'function'
+    ? buscarProductoPorCodigoEscaneado(productosCache, valor)
+    : { producto: null };
+
+  const statusEl = document.getElementById('posBarcodeFeedback');
+
+  if (!producto) {
+    if (typeof reproducirBeepEscaner === 'function') reproducirBeepEscaner('error');
+    if (statusEl) {
+      statusEl.innerHTML = `<span class="text-rose-300">Código <strong>${esc(valor)}</strong> no encontrado.</span> <button type="button" onclick='irACrearMaterialConCodigo("${esc(valor)}")' class="text-emerald-400 hover:underline font-semibold ml-1 cursor-pointer">+ Crear Material con este código</button>`;
+      statusEl.classList.remove('hidden');
+    }
+    avisarPos(`Código "${valor}" no encontrado en el catálogo de artículos.`, 'warning', 4500);
+    if (inputEl) inputEl.select();
+    return false;
+  }
+
+  const selProd = document.getElementById('productoSelect');
+  if (selProd) selProd.value = String(producto.id);
+
+  const modo = document.getElementById('posBarcodeModo')?.value || 'AUTO';
+  if (modo === 'AUTO') {
+    const pv = Number(producto.precio_venta_usd ?? producto.precio_unitario_usd ?? 0);
+    if (pv <= 0) {
+      if (typeof reproducirBeepEscaner === 'function') reproducirBeepEscaner('error');
+      avisarPos(`El material "${producto.descripcion}" no tiene Precio de Venta configurado (> 0).`, 'warning', 6500);
+      return false;
+    }
+    agregarItem();
+    if (typeof reproducirBeepEscaner === 'function') reproducirBeepEscaner('ok');
+    if (statusEl) {
+      statusEl.innerHTML = `<span class="text-emerald-300">Capturado: <strong>${esc(producto.descripcion)}</strong> ($ ${pv.toFixed(2)})</span>`;
+      statusEl.classList.remove('hidden');
+    }
+    if (inputEl) {
+      inputEl.value = '';
+      inputEl.focus();
+    }
+  } else {
+    if (typeof reproducirBeepEscaner === 'function') reproducirBeepEscaner('ok');
+    if (statusEl) {
+      statusEl.innerHTML = `<span class="text-sky-300">Ubicado: <strong>${esc(producto.descripcion)}</strong> — ajusta cantidad y pulsa "+ Añadir al Carrito".</span>`;
+      statusEl.classList.remove('hidden');
+    }
+    if (inputEl) inputEl.value = '';
+    const cantEl = document.getElementById('cantidadItem');
+    if (cantEl) {
+      cantEl.focus();
+      cantEl.select();
+    }
+  }
+  return true;
 }
 
 function eliminarItemCarrito(index) {
@@ -1246,4 +1314,214 @@ async function eliminarFacturaPorId(id) {
     typeof cargarHistorial === 'function' ? cargarHistorial() : Promise.resolve(),
     typeof cargarKardexMovimientos === 'function' ? cargarKardexMovimientos() : Promise.resolve()
   ]);
+}
+
+// ==========================================
+// POS-003: CREAR, MODIFICAR Y ELIMINAR CLIENTE DIRECTO DESDE EL POS
+// ==========================================
+
+function abrirModalClienteRapidoPos(modo = 'crear') {
+  const modal = document.getElementById('modalClienteRapidoPos');
+  if (!modal) return;
+
+  const titulo = document.getElementById('posCliModalTitulo');
+  const idInput = document.getElementById('posCliRapidoId');
+  const rifEl = document.getElementById('posCliRapidoRif');
+  const nomEl = document.getElementById('posCliRapidoNombre');
+  const telEl = document.getElementById('posCliRapidoTelefono');
+  const emailEl = document.getElementById('posCliRapidoEmail');
+  const dirEl = document.getElementById('posCliRapidoDireccion');
+  const contribEl = document.getElementById('posCliRapidoContrib');
+
+  if (modo === 'editar') {
+    const selId = document.getElementById('clienteSelect')?.value || clienteIdSeleccionado;
+    const cli = clientesCache.find(c => String(c.id) === String(selId));
+    if (!cli) {
+      avisarPos('Selecciona primero un cliente registrado en la lista para modificarlo.', 'warning');
+      return;
+    }
+    if (titulo) titulo.textContent = 'Modificar Cliente (POS)';
+    if (idInput) idInput.value = cli.id;
+    if (rifEl) rifEl.value = cli.rif || '';
+    if (nomEl) nomEl.value = cli.razon_social || cli.nombre || '';
+    if (telEl) telEl.value = cli.telefono || '';
+    if (emailEl) emailEl.value = cli.email || '';
+    if (dirEl) dirEl.value = cli.direccion || '';
+    if (contribEl) contribEl.value = String(Boolean(cli.es_contribuyente_especial));
+  } else {
+    if (titulo) titulo.textContent = 'Nuevo Cliente Rápido (POS)';
+    if (idInput) idInput.value = '';
+    if (rifEl) rifEl.value = document.getElementById('clienteRif')?.value.trim().toUpperCase() || '';
+    if (nomEl) nomEl.value = document.getElementById('clienteNombre')?.value.trim() || '';
+    if (telEl) telEl.value = document.getElementById('clienteTelefono')?.value.trim() || '';
+    if (emailEl) emailEl.value = '';
+    if (dirEl) dirEl.value = document.getElementById('clienteDireccion')?.value.trim() || '';
+    if (contribEl) contribEl.value = 'false';
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function cerrarModalClienteRapidoPos() {
+  document.getElementById('modalClienteRapidoPos')?.classList.add('hidden');
+}
+
+async function guardarClienteRapidoPos(e) {
+  if (e) e.preventDefault();
+  const tenantId = obtenerTenantPos();
+  if (!tenantId || !supabaseClient) return;
+
+  const editId = document.getElementById('posCliRapidoId')?.value || '';
+  const rif = (document.getElementById('posCliRapidoRif')?.value || '').trim().toUpperCase();
+  const razon_social = (document.getElementById('posCliRapidoNombre')?.value || '').trim().toUpperCase();
+  const telefono = (document.getElementById('posCliRapidoTelefono')?.value || '').trim();
+  const email = (document.getElementById('posCliRapidoEmail')?.value || '').trim().toLowerCase() || null;
+  const direccion = (document.getElementById('posCliRapidoDireccion')?.value || '').trim();
+  const es_contribuyente_especial = document.getElementById('posCliRapidoContrib')?.value === 'true';
+
+  if (!rif || !razon_social) {
+    avisarPos('RIF / Cédula y Razón Social son obligatorios.', 'warning');
+    return;
+  }
+  if (typeof validarRifVzla === 'function' && !validarRifVzla(rif)) {
+    avisarPos('Formato de RIF/Cédula inválido (ej. V-12345678 o J-12345678-0).', 'warning');
+    return;
+  }
+
+  const payload = { tenant_id: tenantId, rif, razon_social, telefono, email, direccion, es_contribuyente_especial };
+  let res;
+  if (editId) {
+    res = await supabaseClient.from('clientes').update(payload).eq('id', editId).eq('tenant_id', tenantId).select();
+  } else {
+    res = await supabaseClient.from('clientes').insert([payload]).select();
+  }
+
+  if (res.error || !res.data?.[0]) {
+    avisarPos(`No se pudo guardar el cliente: ${res.error?.message || 'Error en base de datos'}`, 'error', 7000);
+    return;
+  }
+
+  const cliGuardado = res.data[0];
+  cerrarModalClienteRapidoPos();
+  await cargarClientesSelect();
+  const sel = document.getElementById('clienteSelect');
+  if (sel) sel.value = cliGuardado.id;
+  seleccionarClientePredefinido();
+
+  if (typeof cargarClientesGestion === 'function') {
+    cargarClientesGestion();
+  }
+  avisarPos(editId ? `Cliente ${razon_social} actualizado.` : `Cliente ${razon_social} creado y seleccionado en el POS.`, 'success');
+}
+
+async function eliminarClienteRapidoPos() {
+  const tenantId = obtenerTenantPos();
+  if (!tenantId || !supabaseClient) return;
+
+  const selId = document.getElementById('clienteSelect')?.value || clienteIdSeleccionado;
+  const cli = clientesCache.find(c => String(c.id) === String(selId));
+  if (!cli) {
+    avisarPos('Selecciona primero un cliente registrado de la lista para eliminarlo.', 'warning');
+    return;
+  }
+
+  const ok = typeof pedirConfirmacion === 'function'
+    ? await pedirConfirmacion('Eliminar Cliente', `¿Eliminar al cliente "${cli.razon_social || cli.nombre}" (${cli.rif}) del catálogo?`)
+    : true;
+  if (!ok) return;
+
+  const { error } = await supabaseClient.from('clientes').delete().eq('id', cli.id).eq('tenant_id', tenantId);
+  if (error) {
+    avisarPos(`No se pudo eliminar el cliente (puede tener facturas asociadas): ${error.message}`, 'error', 7500);
+    return;
+  }
+
+  clienteIdSeleccionado = null;
+  if (document.getElementById('clienteSelect')) document.getElementById('clienteSelect').value = '';
+  if (document.getElementById('clienteRif')) document.getElementById('clienteRif').value = '';
+  if (document.getElementById('clienteNombre')) document.getElementById('clienteNombre').value = '';
+  if (document.getElementById('clienteDireccion')) document.getElementById('clienteDireccion').value = '';
+  if (document.getElementById('clienteTelefono')) document.getElementById('clienteTelefono').value = '';
+
+  await cargarClientesSelect();
+  if (typeof cargarClientesGestion === 'function') cargarClientesGestion();
+  avisarPos('Cliente eliminado del catálogo.', 'success');
+}
+
+// ==========================================
+// POS-010: CONEXIÓN E IMPRESIÓN EN IMPRESORA FISCAL WEBSERIAL
+// ==========================================
+
+let puertoSerialFiscal = null;
+
+async function conectarImpresoraFiscalWebSerial() {
+  if (!('serial' in navigator)) {
+    avisarPos('Tu navegador o visor embebido no soporta WebSerial API. Usa Chrome o Edge en ventana principal para impresoras seriales USB/RS-232.', 'warning', 7000);
+    return null;
+  }
+
+  try {
+    if (puertoSerialFiscal && puertoSerialFiscal.readable) {
+      avisarPos('Impresora fiscal WebSerial ya conectada.', 'info');
+      return puertoSerialFiscal;
+    }
+
+    const puerto = await navigator.serial.requestPort();
+    await puerto.open({ baudRate: 9600, dataBits: 8, stopBits: 1, parity: 'none' });
+    puertoSerialFiscal = puerto;
+
+    const badge = document.getElementById('posEstadoWebSerial');
+    if (badge) {
+      badge.textContent = 'Serial Conectada';
+      badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40';
+    }
+    avisarPos('Impresora fiscal conectada vía WebSerial (9600 bps).', 'success');
+    return puertoSerialFiscal;
+  } catch (e) {
+    if (e?.name !== 'NotFoundError') {
+      avisarPos(`Error conectando impresora WebSerial: ${e?.message || e}`, 'error');
+    }
+    return null;
+  }
+}
+
+async function imprimirTicketWebSerial() {
+  const puerto = await conectarImpresoraFiscalWebSerial();
+  if (!puerto || !puerto.writable) return;
+
+  const d = typeof comprobanteRenderCache !== 'undefined' ? comprobanteRenderCache : null;
+  if (!d) {
+    avisarPos('Abre un comprobante fiscal antes de enviarlo a la impresora WebSerial.', 'warning');
+    return;
+  }
+
+  const writer = puerto.writable.getWriter();
+  try {
+    const encoder = new TextEncoder();
+    const lineas = [
+      '\x1B@',
+      `${String(d.emisorNombre || '').toUpperCase()}\n`,
+      `RIF: ${d.emisorRif || ''}\n`,
+      `--------------------------------\n`,
+      `${d.tituloDoc || 'FACTURA'}: ${d.numDoc || ''}\n`,
+      `CONTROL: ${d.nroControl || ''}\n`,
+      `FECHA: ${d.fechaMostrar || ''}\n`,
+      `CLIENTE: ${d.cliNombre || ''}\n`,
+      `RIF/CI: ${d.cliRif || ''}\n`,
+      `--------------------------------\n`,
+      ...(d.items || []).map(it => `${Number(it.cant)} x ${String(it.desc).slice(0, 20)}  ${Number(it.totBs).toFixed(2)}\n`),
+      `--------------------------------\n`,
+      `EXENTO:    Bs. ${Number(d.montoExentoBs || 0).toFixed(2)}\n`,
+      `IGTF 3%:   Bs. ${Number(d.igtfBs || 0).toFixed(2)}\n`,
+      `TOTAL:     Bs. ${Number(d.totalBs || 0).toFixed(2)}\n`,
+      `REF USD:   $ ${(Number(d.totalBs || 0) / Math.max(1, Number(d.tasa || 1))).toFixed(2)}\n`,
+      `\n\n\n\x1DV\x00`
+    ];
+    await writer.write(encoder.encode(lineas.join('')));
+    avisarPos(`Documento ${d.numDoc} enviado a impresora WebSerial.`, 'success');
+  } catch (e) {
+    avisarPos(`Error enviando datos WebSerial: ${e?.message || e}`, 'error');
+  } finally {
+    writer.releaseLock();
+  }
 }

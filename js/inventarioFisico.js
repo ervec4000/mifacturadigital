@@ -29,6 +29,10 @@ async function cargarInventarioFisico() {
   const tenantId = obtenerTenantInv();
   if (!tenantId) return;
 
+  if (typeof sincronizarMetaContableNube === 'function') {
+    await sincronizarMetaContableNube(tenantId, 'productos');
+  }
+
   const { data, error } = await supabaseClient
     .from('productos')
     .select('*')
@@ -44,7 +48,9 @@ async function cargarInventarioFisico() {
     return;
   }
 
-  inventarioFisicoCache = (data || []).filter(p => p.maneja_inventario !== false);
+  inventarioFisicoCache = (data || [])
+    .map(p => typeof obtenerMetaContableRegistro === 'function' ? obtenerMetaContableRegistro(tenantId, 'productos', p) : p)
+    .filter(p => p.maneja_inventario !== false);
   if (!inventarioFisicoCache.length) {
     tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Sin artículos con control de inventario registrados.</td></tr>`;
     await cargarHistoricoInventarioFisico();
@@ -54,9 +60,10 @@ async function cargarInventarioFisico() {
   inventarioFisicoCache.forEach(p => {
     const stockTeorico = Number(p.stock || 0);
     const costo = Number(p.costo_unitario_usd || 0);
+    const barTag = p.codigo_barras ? `<div class="text-[10px] text-sky-300 font-mono">BAR: ${esc(p.codigo_barras)}</div>` : '';
     tbody.innerHTML += `
-      <tr class="hover:bg-slate-900/80 border-b border-slate-800/60">
-        <td class="p-3 font-mono text-slate-300 tabular-nums">${esc(p.codigo_sku || 'S/N')}</td>
+      <tr id="filaFisico_${esc(p.id)}" class="hover:bg-slate-900/80 border-b border-slate-800/60 transition-colors">
+        <td class="p-3 font-mono text-slate-300 tabular-nums">${esc(p.codigo_sku || 'S/N')}${barTag}</td>
         <td class="p-3">
           <div class="font-medium text-white">${esc(p.descripcion)}</div>
           <div class="text-[11px] text-slate-400 font-mono">${esc(p.unidad_medida || 'UND')} · Costo: $ ${costo.toFixed(2)}</div>
@@ -109,6 +116,59 @@ function calcularDiferenciaFisica(prodId) {
   }
   recalcularResumenFisico();
   return dif;
+}
+
+function ponerConteoFisicoEnCero() {
+  inventarioFisicoCache.forEach(p => {
+    const inp = document.getElementById(`conteo_${p.id}`);
+    if (inp) {
+      inp.value = '0';
+      calcularDiferenciaFisica(p.id);
+    }
+  });
+  avisarInvFisico('Conteo físico reiniciado a 0 para toma desde cero con escáner.', 'info', 4000);
+  document.getElementById('fisicoBarcodeInput')?.focus();
+}
+
+function procesarCodigoBarrasFisico(rawInput) {
+  const inputEl = document.getElementById('fisicoBarcodeInput');
+  const valor = String(rawInput !== undefined ? rawInput : (inputEl?.value || '')).trim();
+  if (!valor) return false;
+
+  const { producto } = typeof buscarProductoPorCodigoEscaneado === 'function'
+    ? buscarProductoPorCodigoEscaneado(inventarioFisicoCache, valor)
+    : { producto: null };
+
+  if (!producto) {
+    if (typeof reproducirBeepEscaner === 'function') reproducirBeepEscaner('error');
+    avisarInvFisico(`Código "${valor}" no encontrado en la lista de inventario físico.`, 'warning');
+    if (inputEl) inputEl.select();
+    return false;
+  }
+
+  const paso = parseFloat(document.getElementById('fisicoPasoEscaner')?.value) || 1;
+  const inpConteo = document.getElementById(`conteo_${producto.id}`);
+  if (inpConteo) {
+    const actual = parseFloat(inpConteo.value);
+    const nuevo = Number(((Number.isFinite(actual) ? actual : 0) + paso).toFixed(3));
+    inpConteo.value = nuevo;
+    calcularDiferenciaFisica(producto.id);
+
+    const fila = document.getElementById(`filaFisico_${producto.id}`);
+    if (fila) {
+      fila.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      fila.classList.add('bg-emerald-950/70');
+      setTimeout(() => fila.classList.remove('bg-emerald-950/70'), 1100);
+    }
+  }
+
+  if (typeof reproducirBeepEscaner === 'function') reproducirBeepEscaner('ok');
+  avisarInvFisico(`Contado +${paso}: ${producto.descripcion} (Total físico: ${inpConteo?.value ?? paso})`, 'success', 3000);
+  if (inputEl) {
+    inputEl.value = '';
+    inputEl.focus();
+  }
+  return true;
 }
 
 function recalcularResumenFisico() {
@@ -482,8 +542,13 @@ function imprimirActaInventarioFisicoPdf(actaId = null) {
   pdf.setFontSize(9.5);
   pdf.text(`TOTAL ÍTEMS AUDITADOS: ${sesion.items.length}    |    IMPACTO NETO EN COSTO: ${totalImpacto >= 0 ? '+' : ''}$ ${totalImpacto.toFixed(2)} USD`, margin, y);
 
-  pdf.save(`${sesion.id}.pdf`);
-  avisarInvFisico(`Acta ${sesion.id}.pdf descargada con éxito.`, 'success');
+  const fileName = `${sesion.id}.pdf`;
+  if (typeof abrirVisorImpresionPdf === 'function') {
+    abrirVisorImpresionPdf(pdf, fileName, `Acta de Conciliación de Inventario · ${sesion.id}`);
+  } else {
+    pdf.save(fileName);
+  }
+  avisarInvFisico(`Acta ${fileName} lista para imprimir o descargar.`, 'success');
 }
 
 function exportarActaInventarioExcel(actaId) {
@@ -589,6 +654,10 @@ async function renderizarEtiquetasQr() {
   const tenantId = obtenerTenantInv();
   if (!tenantId) return;
 
+  if (typeof sincronizarMetaContableNube === 'function') {
+    await sincronizarMetaContableNube(tenantId, 'productos');
+  }
+
   const { data, error } = await supabaseClient
     .from('productos')
     .select('*')
@@ -600,7 +669,9 @@ async function renderizarEtiquetasQr() {
     return;
   }
 
-  etiquetasQrCache = data || [];
+  etiquetasQrCache = (data || []).map(p =>
+    typeof obtenerMetaContableRegistro === 'function' ? obtenerMetaContableRegistro(tenantId, 'productos', p) : p
+  );
   pintarGridEtiquetasQr();
 }
 
@@ -617,6 +688,7 @@ function pintarGridEtiquetasQr() {
   const filtrados = q
     ? etiquetasQrCache.filter(p =>
         String(p.codigo_sku || '').toUpperCase().includes(q) ||
+        String(p.codigo_barras || '').toUpperCase().includes(q) ||
         String(p.descripcion || '').toUpperCase().includes(q) ||
         String(p.lote || '').toUpperCase().includes(q)
       )
@@ -635,7 +707,8 @@ function pintarGridEtiquetasQr() {
   filtrados.forEach((p, idx) => {
     const qrId = `qr_div_${idx}`;
     const pv = Number(p.precio_venta_usd ?? p.precio_unitario_usd ?? 0);
-    const textoQr = `SKU:${p.codigo_sku || 'S/N'}|DESC:${p.descripcion}|LOTE:${p.lote || 'SIN-LOTE'}|UBI:${p.ubicacion || 'DEP'}|PV:$${pv.toFixed(2)}`;
+    const barPart = p.codigo_barras ? `|BAR:${p.codigo_barras}` : '';
+    const textoQr = `SKU:${p.codigo_sku || 'S/N'}|DESC:${p.descripcion}|LOTE:${p.lote || 'SIN-LOTE'}|UBI:${p.ubicacion || 'DEP'}|PV:$${pv.toFixed(2)}${barPart}`;
 
     container.innerHTML += `
       <div class="border border-dashed border-slate-400 rounded-lg p-3 bg-white text-slate-900 flex items-center justify-between gap-3">
@@ -645,7 +718,7 @@ function pintarGridEtiquetasQr() {
             <span class="font-mono font-bold text-xs text-emerald-700 shrink-0">$ ${pv.toFixed(2)}</span>
           </div>
           <p class="text-xs font-bold text-slate-900 leading-snug line-clamp-2">${esc(p.descripcion)}</p>
-          <p class="text-[10px] font-mono text-slate-600 truncate">Lote: ${esc(p.lote || 'N/A')} · Ubi: ${esc(p.ubicacion || 'DEP')}</p>
+          <p class="text-[10px] font-mono text-slate-600 truncate">${p.codigo_barras ? `BAR: ${esc(p.codigo_barras)} · ` : ''}Lote: ${esc(p.lote || 'N/A')} · Ubi: ${esc(p.ubicacion || 'DEP')}</p>
         </div>
         <div id="${qrId}" data-qr-text="${esc(textoQr)}" class="w-20 h-20 bg-white p-0.5 border border-slate-200 rounded shrink-0 flex items-center justify-center"></div>
       </div>
@@ -675,6 +748,7 @@ function construirEtiquetasQrJsPdf() {
   const baseList = q
     ? etiquetasQrCache.filter(p =>
         String(p.codigo_sku || '').toUpperCase().includes(q) ||
+        String(p.codigo_barras || '').toUpperCase().includes(q) ||
         String(p.descripcion || '').toUpperCase().includes(q) ||
         String(p.lote || '').toUpperCase().includes(q)
       )
@@ -760,7 +834,8 @@ function construirEtiquetasQrJsPdf() {
     pdf.setLineDashPattern([], 0);
 
     const pv = Number(p.precio_venta_usd ?? p.precio_unitario_usd ?? 0);
-    const textoQr = `SKU:${p.codigo_sku || 'S/N'}|DESC:${p.descripcion}|LOTE:${p.lote || 'SIN-LOTE'}|UBI:${p.ubicacion || 'DEP'}|PV:$${pv.toFixed(2)}`;
+    const barPart = p.codigo_barras ? `|BAR:${p.codigo_barras}` : '';
+    const textoQr = `SKU:${p.codigo_sku || 'S/N'}|DESC:${p.descripcion}|LOTE:${p.lote || 'SIN-LOTE'}|UBI:${p.ubicacion || 'DEP'}|PV:$${pv.toFixed(2)}${barPart}`;
     const qrDataUrl = qrDomMap[textoQr];
     const qrSize = cols === 2 ? 26 : 21;
     const qrX = x + cellW - qrSize - 2.5;
@@ -834,14 +909,18 @@ function exportarEtiquetasQrExcel() {
   const filtrados = q
     ? etiquetasQrCache.filter(p =>
         String(p.codigo_sku || '').toUpperCase().includes(q) ||
-        String(p.descripcion || '').toUpperCase().includes(q)
+        String(p.codigo_barras || '').toUpperCase().includes(q) ||
+        String(p.descripcion || '').toUpperCase().includes(q) ||
+        String(p.lote || '').toUpperCase().includes(q)
       )
     : etiquetasQrCache;
 
   const rows = filtrados.map(p => {
     const pv = Number(p.precio_venta_usd ?? p.precio_unitario_usd ?? 0);
+    const barPart = p.codigo_barras ? `|BAR:${p.codigo_barras}` : '';
     return {
       SKU: p.codigo_sku || 'S/N',
+      'Código de Barras': p.codigo_barras || '',
       Descripción: p.descripcion,
       Categoría: p.categoria || '',
       Unidad: p.unidad_medida || 'UND',
@@ -849,7 +928,7 @@ function exportarEtiquetasQrExcel() {
       Ubicación: p.ubicacion || 'DEP',
       'Precio Venta ($)': pv,
       Stock: p.stock ?? 0,
-      'Código QR (Payload)': `SKU:${p.codigo_sku || 'S/N'}|DESC:${p.descripcion}|LOTE:${p.lote || 'SIN-LOTE'}|UBI:${p.ubicacion || 'DEP'}|PV:$${pv.toFixed(2)}`
+      'Código QR (Payload)': `SKU:${p.codigo_sku || 'S/N'}|DESC:${p.descripcion}|LOTE:${p.lote || 'SIN-LOTE'}|UBI:${p.ubicacion || 'DEP'}|PV:$${pv.toFixed(2)}${barPart}`
     };
   });
 

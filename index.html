@@ -26,6 +26,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
   <style id="estiloPaginaImpresion"></style>
   <style>
@@ -451,9 +452,15 @@
             <h3 id="tituloFormPos" class="text-base font-bold text-white tracking-tight">Facturación Fiscal Digital (POS)</h3>
             <p class="text-xs text-slate-400">Emite, edita o anula documentos fiscales con cálculo automático de IVA, IGTF 3% y registro en Kardex.</p>
           </div>
-          <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs font-mono">
-            <span class="text-slate-400">Próximo Documento:</span>
-            <span id="posProximoDoc" class="text-emerald-400 font-bold ml-1 tabular-nums">FAC-00000001</span>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="conectarImpresoraFiscalWebSerial()" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-semibold cursor-pointer flex items-center gap-2 whitespace-nowrap">
+              <span>Impresora Serial</span>
+              <span id="posEstadoWebSerial" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Desconectada</span>
+            </button>
+            <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs font-mono">
+              <span class="text-slate-400">Próximo Documento:</span>
+              <span id="posProximoDoc" class="text-emerald-400 font-bold ml-1 tabular-nums">FAC-00000001</span>
+            </div>
           </div>
         </div>
 
@@ -504,7 +511,14 @@
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Cliente Registrado</label>
+            <div class="flex items-center justify-between gap-1 mb-1.5">
+              <label class="text-xs font-semibold text-slate-300">Cliente Registrado</label>
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="abrirModalClienteRapidoPos('crear')" title="Crear cliente nuevo" class="bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/50 px-1.5 py-0.5 rounded text-[10px] font-semibold cursor-pointer">+ Crear</button>
+                <button type="button" onclick="abrirModalClienteRapidoPos('editar')" title="Modificar cliente seleccionado" class="bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 px-1.5 py-0.5 rounded text-[10px] font-semibold cursor-pointer">Editar</button>
+                <button type="button" onclick="eliminarClienteRapidoPos()" title="Eliminar cliente seleccionado" class="bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-800/60 px-1.5 py-0.5 rounded text-[10px] font-semibold cursor-pointer">Eliminar</button>
+              </div>
+            </div>
             <select id="clienteSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm" onchange="seleccionarClientePredefinido()"><option value="">-- Seleccionar --</option></select>
           </div>
           <div>
@@ -547,7 +561,36 @@
         </div>
 
         <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
-          <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Detalle de Artículos (Carrito POS)</h3>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">Detalle de Artículos (Carrito POS)</h3>
+            <span class="text-[11px] text-slate-400">Compatible con lector USB/Bluetooth, cámara web o tecla <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 font-mono">F2</kbd></span>
+          </div>
+
+          <!-- Captura rápida estilo Valery (Código de Barras / QR / SKU) -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-2.5 items-center bg-slate-950/70 border border-emerald-500/30 rounded-xl p-3">
+            <div class="md:col-span-6 relative">
+              <input
+                type="text"
+                id="posBarcodeInput"
+                autocomplete="off"
+                placeholder="Escanear Código de Barras, QR o SKU (F2) + Enter..."
+                onkeydown="if(event.key==='Enter'){event.preventDefault();procesarCodigoBarrasPos();}"
+                class="w-full bg-slate-900 border border-slate-700 focus:border-emerald-500 focus:outline-none rounded-xl px-3.5 py-2.5 text-white text-sm font-mono"
+              >
+            </div>
+            <div class="md:col-span-3">
+              <select id="posBarcodeModo" title="Comportamiento al escanear" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-200 font-semibold">
+                <option value="AUTO" selected>Auto: Sumar al carrito (+Cant)</option>
+                <option value="SOLO_BUSCAR">Solo ubicar artículo</option>
+              </select>
+            </div>
+            <div class="md:col-span-3 flex gap-2">
+              <button type="button" onclick="procesarCodigoBarrasPos()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-3 rounded-xl text-xs cursor-pointer whitespace-nowrap">Capturar</button>
+              <button type="button" onclick="abrirEscanerCamara('pos', {continuo: true})" title="Escanear con cámara web o teléfono" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 font-semibold py-2.5 px-3 rounded-xl text-xs cursor-pointer whitespace-nowrap">Cámara QR/Barras</button>
+            </div>
+            <div id="posBarcodeFeedback" class="hidden md:col-span-12 text-xs pt-0.5"></div>
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
             <div class="md:col-span-6"><select id="productoSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm"><option value="">Cargando catálogo...</option></select></div>
             <div class="md:col-span-2"><input type="number" id="cantidadItem" min="0.001" step="0.001" value="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white text-sm font-mono tabular-nums"></div>
@@ -763,17 +806,29 @@
             </div>
 
             <!-- Solo ND Reposición: agregar otro material adicional -->
-            <div id="notaNdAgregarWrap" class="hidden grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-950/60 border border-slate-800 rounded-xl p-3">
-              <div class="md:col-span-2">
-                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Agregar Material Adicional (Reposición ND)</label>
-                <select id="notaNdExtraProdSelect" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white text-xs"></select>
+            <div id="notaNdAgregarWrap" class="hidden space-y-3 bg-slate-950/60 border border-slate-800 rounded-xl p-3">
+              <div class="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  id="notaNdBarcodeInput"
+                  placeholder="Escanear código de barras / QR o SKU para añadir a la ND..."
+                  onkeydown="if(event.key==='Enter'){event.preventDefault();procesarCodigoBarrasNotaNd();}"
+                  class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs font-mono text-white"
+                >
+                <button type="button" onclick="abrirEscanerCamara('notaNd', {continuo: true})" class="bg-slate-800 hover:bg-slate-700 border border-emerald-500/40 text-emerald-300 px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap">Escanear Cámara</button>
               </div>
-              <div>
-                <label class="block text-[11px] font-semibold text-slate-400 mb-1">Cantidad</label>
-                <input type="number" step="0.01" min="0.01" id="notaNdExtraCant" value="1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white text-xs font-mono tabular-nums">
-              </div>
-              <div class="flex items-end">
-                <button type="button" onclick="agregarProductoExtraNd()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer">Agregar Renglón</button>
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                <div class="md:col-span-2">
+                  <label class="block text-[11px] font-semibold text-slate-400 mb-1">Agregar Material Adicional (Reposición ND)</label>
+                  <select id="notaNdExtraProdSelect" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white text-xs"></select>
+                </div>
+                <div>
+                  <label class="block text-[11px] font-semibold text-slate-400 mb-1">Cantidad</label>
+                  <input type="number" step="0.01" min="0.01" id="notaNdExtraCant" value="1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white text-xs font-mono tabular-nums">
+                </div>
+                <div class="flex items-end">
+                  <button type="button" onclick="agregarProductoExtraNd()" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer">Agregar Renglón</button>
+                </div>
               </div>
             </div>
           </div>
@@ -941,6 +996,18 @@
 
         <!-- Agregar Múltiples Materiales / Productos -->
         <div class="grid grid-cols-1 md:grid-cols-6 gap-3 bg-slate-900 p-5 rounded-2xl border border-slate-800 items-end">
+          <div class="md:col-span-6 flex flex-col sm:flex-row gap-2 pb-2 border-b border-slate-800">
+            <input
+              type="text"
+              id="compraBarcodeInput"
+              autocomplete="off"
+              placeholder="Escanear Código de Barras, QR o SKU para cargar material a la compra..."
+              onkeydown="if(event.key==='Enter'){event.preventDefault();procesarCodigoBarrasCompra();}"
+              class="flex-1 bg-slate-950 border border-slate-700 focus:border-emerald-500 focus:outline-none rounded-xl px-3.5 py-2.5 text-white text-xs font-mono"
+            >
+            <button type="button" onclick="procesarCodigoBarrasCompra()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Buscar Código</button>
+            <button type="button" onclick="abrirEscanerCamara('compra', {continuo: false})" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Cámara QR/Barras</button>
+          </div>
           <div class="md:col-span-2">
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Material / Producto *</label>
             <select id="compraProductoSelect" onchange="onSeleccionarProductoCompra()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
@@ -1044,7 +1111,14 @@
       <div id="seccionProveedores" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h3 id="tituloFormProveedor" class="text-base font-bold text-white tracking-tight">Maestro de Proveedores</h3>
-          <button onclick="exportarProveedoresExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="descargarPlantillaCatalogoExcel('proveedores')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Plantilla Excel</button>
+            <label class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-emerald-500/40 cursor-pointer whitespace-nowrap">
+              Importar Excel
+              <input type="file" accept=".xlsx,.xls,.csv" onchange="importarProveedoresExcel(event)" class="hidden">
+            </label>
+            <button type="button" onclick="exportarProveedoresExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editProveedorId">
@@ -1219,6 +1293,23 @@
             <p class="text-xs text-slate-400">Impacto Neto ($ USD)</p>
             <p id="fisicoValorDiferencia" class="font-mono font-bold text-lg text-slate-200 tabular-nums mt-1">$ 0.00</p>
           </div>
+          <div class="md:col-span-5 flex flex-wrap items-center gap-2 pt-3 border-t border-slate-800 no-print">
+            <input
+              type="text"
+              id="fisicoBarcodeInput"
+              autocomplete="off"
+              placeholder="Escanear código de barras o QR para sumar al conteo físico..."
+              onkeydown="if(event.key==='Enter'){event.preventDefault();procesarCodigoBarrasFisico();}"
+              class="flex-1 min-w-[240px] bg-slate-950 border border-slate-700 focus:border-emerald-500 focus:outline-none rounded-xl px-3.5 py-2 text-xs font-mono text-white"
+            >
+            <div class="flex items-center gap-1.5">
+              <span class="text-[11px] text-slate-400">Sumar:</span>
+              <input type="number" id="fisicoPasoEscaner" step="1" min="0.001" value="1" class="w-16 bg-slate-950 border border-slate-700 rounded-xl p-2 text-xs font-mono text-center text-white tabular-nums">
+            </div>
+            <button type="button" onclick="procesarCodigoBarrasFisico()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Contar (+)</button>
+            <button type="button" onclick="abrirEscanerCamara('fisico', {continuo: true})" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Cámara Continua</button>
+            <button type="button" onclick="ponerConteoFisicoEnCero()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer whitespace-nowrap">Iniciar Conteo en 0</button>
+          </div>
         </div>
 
         <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
@@ -1267,6 +1358,18 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
+          <div class="md:col-span-3 flex flex-col sm:flex-row gap-2 pb-2 border-b border-slate-800">
+            <input
+              type="text"
+              id="transfBarcodeInput"
+              autocomplete="off"
+              placeholder="Escanear Código de Barras, Etiqueta QR o SKU para seleccionar artículo y lote..."
+              onkeydown="if(event.key==='Enter'){event.preventDefault();procesarCodigoBarrasTransferencia();}"
+              class="flex-1 bg-slate-950 border border-slate-700 focus:border-emerald-500 focus:outline-none rounded-xl px-3.5 py-2 text-xs font-mono text-white"
+            >
+            <button type="button" onclick="procesarCodigoBarrasTransferencia()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Buscar Código</button>
+            <button type="button" onclick="abrirEscanerCamara('transferencia', {continuo: false})" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Cámara QR/Barras</button>
+          </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Artículo *</label>
             <select id="transfProductoSelect" onchange="cargarLotesOrigenTransferencia()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
@@ -1316,7 +1419,14 @@
       <div id="seccionSucursales" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h3 id="tituloFormSucursal" class="text-base font-bold text-white tracking-tight">Maestro de Sucursales</h3>
-          <button onclick="exportarSucursalesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="descargarPlantillaCatalogoExcel('sucursales')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Plantilla Excel</button>
+            <label class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-emerald-500/40 cursor-pointer whitespace-nowrap">
+              Importar Excel
+              <input type="file" accept=".xlsx,.xls,.csv" onchange="importarSucursalesExcel(event)" class="hidden">
+            </label>
+            <button type="button" onclick="exportarSucursalesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editSucursalId">
@@ -1335,7 +1445,14 @@
       <div id="seccionAlmacenes" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h3 id="tituloFormAlmacen" class="text-base font-bold text-white tracking-tight">Maestro de Almacenes / Depósitos</h3>
-          <button onclick="exportarAlmacenesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="descargarPlantillaCatalogoExcel('almacenes')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Plantilla Excel</button>
+            <label class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-emerald-500/40 cursor-pointer whitespace-nowrap">
+              Importar Excel
+              <input type="file" accept=".xlsx,.xls,.csv" onchange="importarAlmacenesExcel(event)" class="hidden">
+            </label>
+            <button type="button" onclick="exportarAlmacenesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editAlmacenId">
@@ -1355,7 +1472,14 @@
       <div id="seccionLotes" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h3 id="tituloFormLote" class="text-base font-bold text-white tracking-tight">Maestro de Lotes de Inventario</h3>
-          <button onclick="exportarLotesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="descargarPlantillaCatalogoExcel('lotes')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Plantilla Excel</button>
+            <label class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-emerald-500/40 cursor-pointer whitespace-nowrap">
+              Importar Excel
+              <input type="file" accept=".xlsx,.xls,.csv" onchange="importarLotesExcel(event)" class="hidden">
+            </label>
+            <button type="button" onclick="exportarLotesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editLoteId">
@@ -1389,8 +1513,11 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-900 p-4 rounded-2xl border border-slate-800 no-print">
           <div class="sm:col-span-2">
-            <label class="block text-xs font-semibold text-slate-400 mb-1">Filtrar SKU, Descripción o Lote</label>
-            <input type="text" id="filtroEtiquetasQr" oninput="filtrarEtiquetasQr()" placeholder="Buscar producto para etiquetar..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Filtrar Código de Barras, SKU, Descripción o Lote</label>
+            <div class="flex gap-2">
+              <input type="text" id="filtroEtiquetasQr" oninput="filtrarEtiquetasQr()" placeholder="Buscar o escanear producto para etiquetar..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white font-mono">
+              <button type="button" onclick="abrirEscanerCamara('etiquetas', {continuo: false})" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 px-3 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Cámara</button>
+            </div>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-400 mb-1">Distribución en Carta</label>
@@ -1412,7 +1539,14 @@
       <div id="seccionUnidades" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h3 id="tituloFormUnidad" class="text-base font-bold text-white tracking-tight">Maestro de Unidades de Medida</h3>
-          <button onclick="exportarUnidadesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="descargarPlantillaCatalogoExcel('unidades')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Plantilla Excel</button>
+            <label class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-emerald-500/40 cursor-pointer whitespace-nowrap">
+              Importar Excel
+              <input type="file" accept=".xlsx,.xls,.csv" onchange="importarUnidadesExcel(event)" class="hidden">
+            </label>
+            <button type="button" onclick="exportarUnidadesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          </div>
         </div>
         <div class="flex flex-wrap gap-3 bg-slate-900 p-5 rounded-2xl border border-slate-800 items-center">
           <input type="hidden" id="editUnidadId">
@@ -1427,7 +1561,14 @@
       <div id="seccionTiposIva" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h3 id="tituloFormTipoIva" class="text-base font-bold text-white tracking-tight">Maestro de Tipos de IVA (Alícuotas SENIAT)</h3>
-          <button onclick="exportarTiposIvaExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="descargarPlantillaCatalogoExcel('tiposIva')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Plantilla Excel</button>
+            <label class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-emerald-500/40 cursor-pointer whitespace-nowrap">
+              Importar Excel
+              <input type="file" accept=".xlsx,.xls,.csv" onchange="importarTiposIvaExcel(event)" class="hidden">
+            </label>
+            <button type="button" onclick="exportarTiposIvaExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-6 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 items-end">
           <input type="hidden" id="editTipoIvaId">
@@ -1448,7 +1589,14 @@
       <div id="seccionViasPago" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h3 id="tituloFormViaPago" class="text-base font-bold text-white tracking-tight">Maestro de Vías y Métodos de Pago</h3>
-          <button onclick="exportarViasPagoExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="descargarPlantillaCatalogoExcel('viasPago')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Plantilla Excel</button>
+            <label class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-emerald-500/40 cursor-pointer whitespace-nowrap">
+              Importar Excel
+              <input type="file" accept=".xlsx,.xls,.csv" onchange="importarViasPagoExcel(event)" class="hidden">
+            </label>
+            <button type="button" onclick="exportarViasPagoExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editViaPagoId">
@@ -1471,11 +1619,33 @@
       <div id="seccionProductos" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h3 id="tituloFormProducto" class="text-base font-bold text-white tracking-tight">Maestro de Artículos y Servicios</h3>
-          <button onclick="exportarStockExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="cambiarPestana('etiquetas')" class="bg-slate-800 hover:bg-slate-700 text-sky-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-sky-500/40 cursor-pointer whitespace-nowrap">Etiquetas QR</button>
+            <button type="button" onclick="descargarPlantillaCatalogoExcel('productos')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Plantilla Excel</button>
+            <label class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-emerald-500/40 cursor-pointer whitespace-nowrap">
+              Importar Excel
+              <input type="file" accept=".xlsx,.xls,.csv" onchange="importarProductosExcel(event)" class="hidden">
+            </label>
+            <button type="button" onclick="exportarStockExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editProductoId">
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Código SKU</label><input type="text" id="prodSku" placeholder="SKU-001" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Código de Barras / QR (Pistola o Cámara)</label>
+            <div class="flex gap-2">
+              <input
+                type="text"
+                id="prodCodigoBarras"
+                placeholder="Escanea EAN-13, UPC, Code-128 o genera uno..."
+                onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('prodDescripcion')?.focus();}"
+                class="flex-1 bg-slate-950 border border-slate-800 focus:border-emerald-500 focus:outline-none rounded-xl p-2.5 text-sky-300 text-sm font-mono"
+              >
+              <button type="button" onclick="abrirEscanerCamara('producto', {continuo: false})" title="Capturar con cámara web o teléfono" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 px-3 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Cámara</button>
+              <button type="button" onclick="generarCodigoBarrasEan13()" title="Generar código EAN-13 interno válido" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Gen. EAN</button>
+            </div>
+          </div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Categoría</label><input type="text" id="prodCategoria" placeholder="GENERAL" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">Descripción *</label><input type="text" id="prodDescripcion" placeholder="Nombre del artículo o servicio" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Ubicación</label><input type="text" id="prodUbicacion" placeholder="PASILLO A-1" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></div>
@@ -1547,14 +1717,25 @@
             <button id="btnCancelarProd" onclick="limpiarFormProducto()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-4 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Cancelar</button>
           </div>
         </div>
-        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">SKU</th><th class="p-3">Categoría</th><th class="p-3">Descripción</th><th class="p-3">Ubicación</th><th class="p-3 text-center">Stock</th><th class="p-3">Costo ($)</th><th class="p-3">Precio Venta</th><th class="p-3">IVA</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaProductosGestion" class="divide-y divide-slate-800/60 tabular-nums"></tbody></table></div>
+        <div class="flex flex-col sm:flex-row gap-2 bg-slate-900 p-3 rounded-2xl border border-slate-800">
+          <input type="text" id="filtroProductosGestion" oninput="filtrarProductosGestion()" placeholder="Buscar o escanear código de barras, SKU, descripción o categoría..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs font-mono text-white">
+          <button type="button" onclick="abrirEscanerCamara('catalogo', {continuo: false})" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Escanear con Cámara</button>
+        </div>
+        <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">SKU / Barras</th><th class="p-3">Categoría</th><th class="p-3">Descripción</th><th class="p-3">Ubicación</th><th class="p-3 text-center">Stock</th><th class="p-3">Costo ($)</th><th class="p-3">Precio Venta</th><th class="p-3">IVA</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaProductosGestion" class="divide-y divide-slate-800/60 tabular-nums"></tbody></table></div>
       </div>
 
       <!-- Clientes -->
       <div id="seccionClientes" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <h3 id="tituloFormCliente" class="text-base font-bold text-white tracking-tight">Maestro de Clientes</h3>
-          <button onclick="exportarClientesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="descargarPlantillaCatalogoExcel('clientes')" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Plantilla Excel</button>
+            <label class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-semibold px-3.5 py-2 rounded-xl border border-emerald-500/40 cursor-pointer whitespace-nowrap">
+              Importar Excel
+              <input type="file" accept=".xlsx,.xls,.csv" onchange="importarClientesExcel(event)" class="hidden">
+            </label>
+            <button type="button" onclick="exportarClientesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-xl border border-slate-700 cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800">
           <input type="hidden" id="editClienteId">
@@ -2705,9 +2886,12 @@
           <button type="button" id="btnFormatoDigital" onclick="cambiarFormatoComprobante('digital')" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">📄 Factura Digital (SENIAT)</button>
           <button type="button" id="btnFormatoTicket" onclick="cambiarFormatoComprobante('ticket')" class="bg-slate-200 text-slate-800 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">🧾 Ticket 80mm</button>
         </div>
-        <div class="flex items-center gap-2">
-          <button type="button" onclick="descargarComprobantePdf()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">📥 Descargar PDF</button>
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button type="button" onclick="descargarComprobantePdf()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">📥 PDF</button>
           <button type="button" onclick="imprimirComprobante()" class="bg-sky-700 hover:bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">🖨️ Imprimir</button>
+          <button type="button" onclick="imprimirTicketWebSerial()" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">Serial</button>
+          <button type="button" onclick="imprimirBluetoothReal()" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">BT 80mm</button>
+          <button type="button" onclick="enviarWhatsApp()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">WhatsApp</button>
           <button type="button" onclick="cerrarTicket()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">✕ Cerrar</button>
         </div>
       </div>
@@ -2831,6 +3015,52 @@
     </div>
   </div>
 
+  <!-- MODAL CLIENTE RÁPIDO EN POS (CREAR / MODIFICAR) -->
+  <div id="modalClienteRapidoPos" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[105] overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl my-6">
+      <div class="flex items-center justify-between">
+        <h3 id="posCliModalTitulo" class="text-base font-bold text-emerald-400">Nuevo Cliente Rápido (POS)</h3>
+        <button type="button" onclick="cerrarModalClienteRapidoPos()" class="text-slate-400 hover:text-white font-bold text-sm cursor-pointer">✕</button>
+      </div>
+      <form onsubmit="guardarClienteRapidoPos(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="posCliRapidoId">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] text-slate-300 mb-1">RIF / Cédula *</label>
+            <input type="text" id="posCliRapidoRif" required placeholder="V-12345678 / J-12345678-0" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono uppercase">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-300 mb-1">Razón Social / Nombre *</label>
+            <input type="text" id="posCliRapidoNombre" required placeholder="Nombre completo o Razón Social" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white uppercase">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-300 mb-1">Teléfono / WhatsApp</label>
+            <input type="text" id="posCliRapidoTelefono" placeholder="0414-0000000" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-300 mb-1">Correo Electrónico</label>
+            <input type="email" id="posCliRapidoEmail" placeholder="cliente@correo.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono">
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-300 mb-1">Contribuyente Especial</label>
+            <select id="posCliRapidoContrib" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+              <option value="false">NO</option>
+              <option value="true">SÍ</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-[11px] text-slate-300 mb-1">Dirección Fiscal</label>
+            <input type="text" id="posCliRapidoDireccion" placeholder="Dirección fiscal completa" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+          </div>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer">Guardar y Seleccionar</button>
+          <button type="button" onclick="cerrarModalClienteRapidoPos()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 py-2.5 rounded-xl font-semibold cursor-pointer">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- MODAL REGISTRO PÚBLICO DESDE LANDING / LOGIN (COMERCIO O PROMOTOR SIN COMERCIO) -->
   <div id="modalRegistroSaasPublico" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[105] overflow-y-auto">
     <div class="bg-slate-900 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl my-8">
@@ -2935,6 +3165,38 @@
         </div>
       </div>
       <iframe id="visorPdfFrame" title="Documento listo para imprimir" class="w-full flex-1 bg-white"></iframe>
+    </div>
+  </div>
+
+  <!-- MODAL ESCÁNER ÓPTICO DE CÓDIGOS DE BARRAS Y QR -->
+  <div id="modalEscanerCamara" class="hidden fixed inset-0 bg-black/85 flex items-center justify-center p-3 sm:p-4 z-[125] no-print">
+    <div class="bg-slate-900 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+      <div class="flex items-center justify-between gap-3 px-5 py-4 border-b border-slate-800 bg-slate-950">
+        <div>
+          <h4 class="text-sm font-bold text-white">Escáner de Códigos de Barras y QR</h4>
+          <p id="escanerModalSubtitulo" class="text-[11px] text-slate-400 mt-0.5">Apunta la cámara hacia el código EAN, UPC, Code-128 o QR.</p>
+        </div>
+        <button type="button" onclick="cerrarEscanerCamara()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">Cerrar</button>
+      </div>
+      <div class="p-4 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <select id="escanerCamaraSelect" onchange="cambiarCamaraEscaner()" class="flex-1 min-w-[180px] bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"></select>
+          <label class="inline-flex items-center gap-2 text-xs text-slate-300 cursor-pointer select-none">
+            <input type="checkbox" id="escanerModoContinuo" class="rounded border-slate-700 bg-slate-950 text-emerald-500">
+            <span>Modo continuo</span>
+          </label>
+        </div>
+        <div id="escanerCamaraReader" class="w-full min-h-[240px] bg-slate-950 border border-slate-800 rounded-xl overflow-hidden flex items-center justify-center text-xs text-slate-500"></div>
+        <p id="escanerEstadoCamara" class="text-xs text-slate-400 text-center">Iniciando cámara...</p>
+        <p id="escanerUltimoResultado" class="text-xs font-mono text-emerald-400 text-center truncate"></p>
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
+          <label class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">
+            Subir imagen de código
+            <input type="file" accept="image/*" capture="environment" onchange="decodificarArchivoCodigo(event)" class="hidden">
+          </label>
+          <button type="button" onclick="cerrarEscanerCamara()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer">Listo</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -3122,6 +3384,7 @@
   <script src="./js/suscripciones.js"></script>
   <script src="./js/referidos.js"></script>
   <script src="./js/contabilidad.js"></script>
+  <script src="./js/escaner.js"></script>
   <script src="./js/pos.js"></script>
   <script src="./js/kardex.js"></script>
   <script src="./js/inventarioFisico.js"></script>

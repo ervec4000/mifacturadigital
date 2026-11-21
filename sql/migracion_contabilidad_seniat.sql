@@ -29,6 +29,7 @@ ALTER TABLE IF EXISTS public.tenants
 
 -- 2. ARTÍCULOS / SERVICIOS (productos): mapeo contable completo (Inventario, Ingreso, Costo, Devolución, CC)
 ALTER TABLE IF EXISTS public.productos
+  ADD COLUMN IF NOT EXISTS codigo_barras TEXT,
   ADD COLUMN IF NOT EXISTS cuenta_contable TEXT,
   ADD COLUMN IF NOT EXISTS cuenta_ingreso TEXT DEFAULT '4.1.01.01',
   ADD COLUMN IF NOT EXISTS cuenta_costo TEXT DEFAULT '5.1.01.01',

@@ -55,7 +55,7 @@ const MODULOS_ERP_SAAS = [
   { id: 'fisico', grupo: 'Inventario y Kardex', nombre: 'Conteo Físico', btnId: 'btnTabFisico', defaultPlans: ['Pyme', 'Enterprise', 'Administración'] },
   { id: 'transferencias', grupo: 'Inventario y Kardex', nombre: 'Transferencias Depósito', btnId: 'btnTabTransferencias', defaultPlans: ['Enterprise', 'Administración'] },
   { id: 'lotes', grupo: 'Inventario y Kardex', nombre: 'Lotes y Vencimientos', btnId: 'btnTabLotes', defaultPlans: ['Enterprise', 'Administración'] },
-  { id: 'etiquetas', grupo: 'Inventario y Kardex', nombre: 'Etiquetas QR (Carta)', btnId: 'btnTabEtiquetas', defaultPlans: ['Enterprise', 'Administración'] },
+  { id: 'etiquetas', grupo: 'Inventario y Kardex', nombre: 'Etiquetas QR (Carta)', btnId: 'btnTabEtiquetas', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
   { id: 'compras', grupo: 'Compras y Tributos', nombre: 'Registro de Compras', btnId: 'btnTabCompras', defaultPlans: ['Pyme', 'Enterprise', 'Administración'] },
   { id: 'retenciones', grupo: 'Compras y Tributos', nombre: 'Retenciones IVA', btnId: 'btnTabRetenciones', defaultPlans: ['Enterprise', 'Administración'] },
   { id: 'contabilidad', grupo: 'Compras y Tributos', nombre: 'Contabilidad y ERP', btnId: 'btnTabContabilidad', defaultPlans: ['Enterprise', 'Administración'] },
@@ -258,6 +258,9 @@ function obtenerPermisosEfectivosTenant(tenant = tenantActual) {
   if (Array.isArray(enriched.modulos_permitidos) && enriched.modulos_permitidos.length > 0) {
     const set = new Set(enriched.modulos_permitidos);
     set.add('suscripcion');
+    if (enriched.permisos_manuales !== true && set.has('productos')) {
+      set.add('etiquetas');
+    }
     return Array.from(set);
   }
   return obtenerPresetModulosPorPlan(enriched.plan_activo || 'Freemium');
@@ -1199,7 +1202,7 @@ async function guardarPermisosMaster() {
     return;
   }
 
-  const res = await guardarMetaYEstadoTenantEnNube(tenantId, {}, { modulos_permitidos: seleccionados });
+  const res = await guardarMetaYEstadoTenantEnNube(tenantId, {}, { modulos_permitidos: seleccionados, permisos_manuales: true });
   if (!res.ok && res.error) {
     avisarSaas(`Permisos guardados en respaldo nube/local (${seleccionados.length} módulos). ${res.error}`, 'info', 6500);
   } else {

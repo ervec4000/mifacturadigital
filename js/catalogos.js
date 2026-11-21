@@ -158,16 +158,30 @@ async function cargarProductosGestion() {
     return;
   }
   productosGestionCache = await enriquecerListaContable(tenantId, 'productos', data || []);
+  filtrarProductosGestion();
+}
 
+function filtrarProductosGestion() {
+  const tbody = document.getElementById('tablaProductosGestion');
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  if (productosGestionCache.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">No hay artículos registrados.</td></tr>`;
+  const q = (document.getElementById('filtroProductosGestion')?.value || '').trim().toUpperCase();
+  const lista = q
+    ? productosGestionCache.filter(prod =>
+        String(prod.codigo_sku || '').toUpperCase().includes(q) ||
+        String(prod.codigo_barras || '').toUpperCase().includes(q) ||
+        String(prod.descripcion || '').toUpperCase().includes(q) ||
+        String(prod.categoria || '').toUpperCase().includes(q)
+      )
+    : productosGestionCache;
+
+  if (lista.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">${q ? 'Ningún artículo coincide con el código o búsqueda.' : 'No hay artículos registrados.'}</td></tr>`;
     return;
   }
 
-  productosGestionCache.forEach(prod => {
+  lista.forEach(prod => {
     const pv = Number(prod.precio_venta_usd ?? prod.precio_unitario_usd ?? 0);
     const costo = Number(prod.costo_unitario_usd ?? 0);
     const esExento = prod.tipos_iva ? Number(prod.tipos_iva.porcentaje) === 0 : false;
@@ -176,9 +190,10 @@ async function cargarProductosGestion() {
     const badgeClass = !tieneIva
       ? 'bg-slate-800 text-slate-400'
       : (esExento ? 'bg-sky-950 text-sky-300' : 'bg-emerald-950 text-emerald-300');
+    const barrasTxt = prod.codigo_barras ? `<div class="text-[10px] text-sky-300 font-mono mt-0.5">BAR: ${esc(prod.codigo_barras)}</div>` : '';
     tbody.innerHTML += `
       <tr class="hover:bg-slate-900 border-b border-slate-800/60">
-        <td class="p-3 font-mono text-emerald-400 font-bold">${esc(prod.codigo_sku || 'S/N')}</td>
+        <td class="p-3 font-mono text-emerald-400 font-bold">${esc(prod.codigo_sku || 'S/N')}${barrasTxt}</td>
         <td class="p-3 text-amber-300 font-semibold">${esc(prod.categoria || 'N/A')}</td>
         <td class="p-3 text-white font-medium">${esc(prod.descripcion)}</td>
         <td class="p-3 font-mono text-slate-300">${esc(prod.ubicacion || 'N/A')}</td>
@@ -208,6 +223,8 @@ function editarProducto(id) {
   if (!prod) return;
   document.getElementById('editProductoId').value = prod.id;
   document.getElementById('prodSku').value = prod.codigo_sku || '';
+  const inpBar = document.getElementById('prodCodigoBarras');
+  if (inpBar) inpBar.value = prod.codigo_barras || '';
   document.getElementById('prodCategoria').value = prod.categoria || '';
   document.getElementById('prodUbicacion').value = prod.ubicacion || '';
   document.getElementById('prodManejaInventario').value = String(prod.maneja_inventario ?? true);
@@ -253,6 +270,8 @@ function editarProducto(id) {
 function limpiarFormProducto() {
   document.getElementById('editProductoId').value = '';
   document.getElementById('prodSku').value = '';
+  const inpBar = document.getElementById('prodCodigoBarras');
+  if (inpBar) inpBar.value = '';
   document.getElementById('prodCategoria').value = '';
   document.getElementById('prodUbicacion').value = '';
   document.getElementById('prodManejaInventario').value = 'true';
@@ -358,7 +377,10 @@ async function guardarProducto() {
     cuenta_contable: document.getElementById('prodCuentaContable').value.trim()
   };
 
+  const codBarrasVal = (document.getElementById('prodCodigoBarras')?.value || '').trim().toUpperCase() || null;
+
   const payloadContable = {
+    codigo_barras: codBarrasVal,
     cuenta_ingreso: (document.getElementById('prodCuentaIngreso')?.value || '').trim() || null,
     cuenta_costo: (document.getElementById('prodCuentaCosto')?.value || '').trim() || null,
     cuenta_devolucion: (document.getElementById('prodCuentaDevolucion')?.value || '').trim() || null,
@@ -408,6 +430,7 @@ async function exportarStockExcel() {
   const enriquecidos = await enriquecerListaContable(tenantId, 'productos', data);
   const excelData = enriquecidos.map(p => ({
     SKU: p.codigo_sku || 'N/A',
+    'Código de Barras': p.codigo_barras || '',
     Categoría: p.categoria || '',
     Descripción: p.descripcion,
     Ubicación: p.ubicacion || '',
@@ -560,6 +583,7 @@ async function guardarCliente() {
     avisarUsuario(editId ? '¡Cliente actualizado con éxito!' : '¡Cliente guardado con éxito!', 'success');
     limpiarFormCliente();
     await cargarClientesGestion();
+    if (typeof cargarClientesSelect === 'function') await cargarClientesSelect();
   } finally {
     setEstadoBotonGuardar('btnGuardarCliente', false, document.getElementById('editClienteId').value ? '💾 Actualizar Cliente' : '💾 Guardar Cliente');
   }
@@ -579,6 +603,7 @@ async function eliminarCliente(id) {
   if (!res.ok) { avisarUsuario(res.message, 'error', 9000); return; }
   avisarUsuario('¡Cliente eliminado!', 'success');
   await cargarClientesGestion();
+  if (typeof cargarClientesSelect === 'function') await cargarClientesSelect();
 }
 
 async function exportarClientesExcel() {
@@ -2087,4 +2112,859 @@ async function cambiarPlanInquilinoMaster(tenantIdTarget, nuevoPlan) {
   avisarUsuario(`Plan actualizado a ${nuevoPlan}.`, 'success');
   await cargarInquilinosMaster();
 }
+
+// ==========================================
+// 12. IMPORTACIÓN MASIVA Y PLANTILLAS EXCEL (9 MAESTROS)
+// ==========================================
+
+function normalizarClaveExcel(clave) {
+  return String(clave || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+function obtenerCampoFilaExcel(filaNorm, aliases = []) {
+  for (const alias of aliases) {
+    const k = normalizarClaveExcel(alias);
+    if (k in filaNorm && filaNorm[k] !== undefined && filaNorm[k] !== null && String(filaNorm[k]).trim() !== '') {
+      return filaNorm[k];
+    }
+  }
+  return '';
+}
+
+function parseBoolExcel(val, defecto = false) {
+  if (typeof val === 'boolean') return val;
+  const s = String(val ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toUpperCase();
+  if (!s) return defecto;
+  if (['SI', 'S', 'YES', 'Y', 'TRUE', '1', 'ACTIVO', 'HABILITADO'].includes(s)) return true;
+  if (['NO', 'N', 'FALSE', '0', 'INACTIVO', 'DESHABILITADO'].includes(s)) return false;
+  return defecto;
+}
+
+function parseNumeroExcel(val, defecto = 0) {
+  if (typeof val === 'number') return Number.isFinite(val) ? val : defecto;
+  let s = String(val ?? '').trim().replace(/[^\d.,-]/g, '');
+  if (!s) return defecto;
+  if (s.includes(',') && !s.includes('.')) s = s.replace(',', '.');
+  else if (s.includes(',') && s.includes('.')) s = s.replace(/,/g, '');
+  const num = parseFloat(s);
+  return Number.isFinite(num) ? num : defecto;
+}
+
+function parseFechaIsoExcel(val) {
+  if (val === undefined || val === null || val === '') return null;
+  if (typeof val === 'number' && Number.isFinite(val) && val > 20000 && val < 90000) {
+    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+  }
+  const s = String(val).trim();
+  if (!s || /^n\/?a$/i.test(s) || /^sin/i.test(s)) return null;
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (m) {
+    return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  }
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+}
+
+async function leerFilasExcelCatalogo(file) {
+  if (!file) return [];
+  if (typeof XLSX === 'undefined') {
+    throw new Error('La librería SheetJS (XLSX) no está cargada.');
+  }
+  const buffer = await file.arrayBuffer();
+  const workbook = XLSX.read(buffer, { type: 'array' });
+  const sheetName = workbook.SheetNames[0];
+  if (!sheetName) return [];
+  const worksheet = workbook.Sheets[sheetName];
+  const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+  return rawRows
+    .map(row => {
+      const norm = {};
+      Object.keys(row).forEach(k => {
+        norm[normalizarClaveExcel(k)] = row[k];
+      });
+      return norm;
+    })
+    .filter(norm => Object.values(norm).some(v => String(v ?? '').trim() !== ''));
+}
+
+function descargarPlantillaCatalogoExcel(tipo) {
+  const plantillas = {
+    productos: {
+      archivo: 'Plantilla_Productos',
+      hoja: 'Productos',
+      filas: [
+        ['SKU', 'Código de Barras', 'Categoría', 'Descripción', 'Ubicación', 'Control Inventario', 'Unidad', 'Stock', 'Lote', 'Costo ($)', '% Utilidad', 'Precio Venta ($)', 'Estatus Fiscal', 'Cta. Inventario', 'Cta. Ingreso', 'Cta. Costo', 'Cta. Devolución', 'Centro de Costo'],
+        ['SKU-001', '7591234567890', 'VIVERES', 'HARINA DE MAIZ PRECOCIDA 1KG', 'PASILLO A-1', 'SÍ', 'UND', 50, 'LOTE-01', 1.00, 30, 1.30, 'GENERAL (16%)', '1.1.04.01', '4.1.01.01', '5.1.01.01', '4.1.02.01', 'CC-01']
+      ]
+    },
+    clientes: {
+      archivo: 'Plantilla_Clientes',
+      hoja: 'Clientes',
+      filas: [
+        ['RIF', 'Razón Social', 'Dirección', 'Teléfono', 'Correo', 'Contacto', 'Contribuyente Especial', 'Cuenta Contable (CxC)', 'Cta. Anticipos', 'Días Crédito', 'Límite Crédito ($)'],
+        ['J-12345678-9', 'INVERSIONES EJEMPLO C.A.', 'AV. BOLIVAR, LOCAL 4', '0414-0000000', 'compras@ejemplo.com', 'CARLOS PEREZ', 'NO', '1.1.02.01', '2.1.03.01', 15, 500]
+      ]
+    },
+    proveedores: {
+      archivo: 'Plantilla_Proveedores',
+      hoja: 'Proveedores',
+      filas: [
+        ['RIF', 'Razón Social', 'Dirección', 'Teléfono', 'Correo', 'Contacto', 'Contribuyente Especial', 'Cuenta Contable (CxP)', 'Tipo Persona', '% Retención IVA', 'Días Crédito', 'Cta. Anticipos'],
+        ['J-98765432-1', 'DISTRIBUIDORA NACIONAL C.A.', 'ZONA INDUSTRIAL II', '0212-0000000', 'ventas@distribuidora.com', 'ANA GOMEZ', 'SÍ', '2.1.01.01', 'PJD', 75, 30, '1.1.06.01']
+      ]
+    },
+    unidades: {
+      archivo: 'Plantilla_Unidades_Medida',
+      hoja: 'Unidades',
+      filas: [
+        ['Abreviatura / Nombre'],
+        ['CAJA'],
+        ['KG']
+      ]
+    },
+    tiposIva: {
+      archivo: 'Plantilla_Tipos_IVA',
+      hoja: 'TiposIVA',
+      filas: [
+        ['Descripción / Nombre', 'Porcentaje (%)', 'Código SENIAT', 'Cta. IVA Débito', 'Cta. IVA Crédito'],
+        ['IVA GENERAL 16%', 16, 'G', '2.1.04.01', '1.1.05.01'],
+        ['EXENTO 0%', 0, 'E', '', '']
+      ]
+    },
+    viasPago: {
+      archivo: 'Plantilla_Vias_Pago',
+      hoja: 'ViasPago',
+      filas: [
+        ['Método de Pago', 'Código', 'Moneda', 'Causa IGTF', 'Requiere Ref', 'Estatus', 'Cuenta Contable'],
+        ['PAGO MOVIL', 'PM-01', 'VES', 'NO', 'SÍ', 'ACTIVO', '1.1.01.02'],
+        ['EFECTIVO USD', 'USD-01', 'USD', 'SÍ', 'NO', 'ACTIVO', '1.1.01.03']
+      ]
+    },
+    sucursales: {
+      archivo: 'Plantilla_Sucursales',
+      hoja: 'Sucursales',
+      filas: [
+        ['Sucursal', 'Dirección', 'Centro de Costo'],
+        ['SEDE PRINCIPAL', 'AV. FRANCISCO DE MIRANDA', 'CC-01']
+      ]
+    },
+    almacenes: {
+      archivo: 'Plantilla_Almacenes',
+      hoja: 'Almacenes',
+      filas: [
+        ['Nombre Almacén', 'Tipo', 'Sucursal', 'Cuenta Inventario'],
+        ['DEPOSITO CENTRAL', 'PRINCIPAL', 'SEDE PRINCIPAL', '1.1.04.01']
+      ]
+    },
+    lotes: {
+      archivo: 'Plantilla_Lotes',
+      hoja: 'Lotes',
+      filas: [
+        ['Lote', 'SKU', 'Material', 'Sucursal', 'Almacén', 'Ubicación', 'Stock', 'Fecha Vencimiento'],
+        ['LOTE-2026-01', 'SKU-001', 'HARINA DE MAIZ PRECOCIDA 1KG', 'SEDE PRINCIPAL', 'DEPOSITO CENTRAL', 'RACK A-1', 50, '2026-12-31']
+      ]
+    }
+  };
+
+  const cfg = plantillas[tipo];
+  if (!cfg) return;
+  descargarExcelMatriz(cfg.filas, cfg.archivo, cfg.hoja);
+  avisarUsuario(`Plantilla Excel "${cfg.archivo}.xlsx" descargada.`, 'success');
+}
+
+function mostrarResumenImportacion(nombreCatalogo, creados, actualizados, omitidos, primerError = '') {
+  const totalOk = creados + actualizados;
+  const msg = `Importación de ${nombreCatalogo}: ${creados} creados, ${actualizados} actualizados` +
+    (omitidos > 0 ? `, ${omitidos} omitidos${primerError ? ` (${primerError})` : ''}.` : '.');
+  avisarUsuario(msg, totalOk > 0 ? 'success' : 'warning', 7500);
+}
+
+async function importarProductosExcel(event) {
+  const input = event?.target;
+  const file = input?.files?.[0];
+  if (!file) return;
+  const tenantId = obtenerTenantIdActual();
+  if (!tenantId) { input.value = ''; return; }
+
+  try {
+    avisarUsuario('Leyendo archivo Excel de Productos...', 'info', 3000);
+    const filas = await leerFilasExcelCatalogo(file);
+    if (filas.length === 0) {
+      avisarUsuario('El archivo no contiene filas válidas para importar.', 'warning');
+      return;
+    }
+
+    const [{ data: prodDb }, { data: ivaDb }, { data: uniDb }] = await Promise.all([
+      supabaseClient.from('productos').select('*').eq('tenant_id', tenantId),
+      supabaseClient.from('tipos_iva').select('*').eq('tenant_id', tenantId),
+      supabaseClient.from('unidades_medida').select('*').eq('tenant_id', tenantId)
+    ]);
+
+    const existentes = await enriquecerListaContable(tenantId, 'productos', prodDb || []);
+    const listaIva = ivaDb || [];
+    const listaUnidades = uniDb || [];
+
+    if (listaIva.length === 0) {
+      const resG = await ejecutarGuardarRegistroContable('tipos_iva', '', tenantId, { tenant_id: tenantId, nombre: 'GENERAL', porcentaje: 16 }, { codigo_seniat: 'G' });
+      const resE = await ejecutarGuardarRegistroContable('tipos_iva', '', tenantId, { tenant_id: tenantId, nombre: 'EXENTO', porcentaje: 0 }, { codigo_seniat: 'E' });
+      if (resG.ok && resG.data) listaIva.push(resG.data);
+      if (resE.ok && resE.data) listaIva.push(resE.data);
+    }
+
+    const resolverTipoIvaId = (txtFiscal) => {
+      if (listaIva.length === 0) return null;
+      const raw = String(txtFiscal || '').trim().toUpperCase();
+      if (!raw) {
+        const g16 = listaIva.find(t => Number(t.porcentaje) === 16);
+        return (g16 || listaIva[0]).id;
+      }
+      const exacto = listaIva.find(t =>
+        `${t.nombre} (${t.porcentaje}%)`.toUpperCase() === raw ||
+        String(t.nombre || '').toUpperCase() === raw
+      );
+      if (exacto) return exacto.id;
+      if (/EXENT|0%/.test(raw)) {
+        const ex = listaIva.find(t => Number(t.porcentaje) === 0);
+        if (ex) return ex.id;
+      }
+      const mPct = raw.match(/(\d+(?:[.,]\d+)?)/);
+      if (mPct) {
+        const pct = parseNumeroExcel(mPct[1], -1);
+        const byPct = listaIva.find(t => Number(t.porcentaje) === pct);
+        if (byPct) return byPct.id;
+      }
+      const g16 = listaIva.find(t => Number(t.porcentaje) === 16);
+      return (g16 || listaIva[0]).id;
+    };
+
+    const asegurarUnidad = async (uniRaw) => {
+      const nombreUni = String(uniRaw || 'UND').trim().toUpperCase() || 'UND';
+      const existe = listaUnidades.find(u => String(u.nombre || '').trim().toUpperCase() === nombreUni);
+      if (!existe) {
+        const rUni = await ejecutarGuardarRegistro('unidades_medida', '', tenantId, { tenant_id: tenantId, nombre: nombreUni });
+        if (rUni.ok && rUni.data) listaUnidades.push(rUni.data);
+      }
+      return nombreUni;
+    };
+
+    let creados = 0, actualizados = 0, omitidos = 0, primerError = '';
+
+    for (const fila of filas) {
+      const descripcion = String(obtenerCampoFilaExcel(fila, ['Descripción', 'Descripcion', 'Nombre', 'Producto', 'Material'])).trim().toUpperCase();
+      if (!descripcion) {
+        omitidos++;
+        if (!primerError) primerError = 'Falta columna Descripción';
+        continue;
+      }
+
+      const skuRaw = String(obtenerCampoFilaExcel(fila, ['SKU', 'Código SKU', 'Codigo SKU', 'Codigo'])).trim().toUpperCase();
+      const sku = (skuRaw && !['N/A', 'S/N', 'NA'].includes(skuRaw)) ? skuRaw : '';
+      const codigoBarras = String(obtenerCampoFilaExcel(fila, ['Código de Barras', 'Codigo de Barras', 'Codigo Barras', 'Barras', 'EAN', 'QR'])).trim().toUpperCase() || null;
+      const categoria = String(obtenerCampoFilaExcel(fila, ['Categoría', 'Categoria', 'Familia'])).trim().toUpperCase();
+      const ubicacion = String(obtenerCampoFilaExcel(fila, ['Ubicación', 'Ubicacion', 'Pasillo'])).trim().toUpperCase();
+      const manejaInv = parseBoolExcel(obtenerCampoFilaExcel(fila, ['Control Inventario', 'Maneja Inventario', 'Inventario']), true);
+      const unidad = await asegurarUnidad(obtenerCampoFilaExcel(fila, ['Unidad', 'Unidad de Medida', 'UND']));
+      const stock = parseNumeroExcel(obtenerCampoFilaExcel(fila, ['Stock', 'Existencia', 'Stock Inicial', 'Cantidad']), 0);
+      const lote = String(obtenerCampoFilaExcel(fila, ['Lote'])).trim().toUpperCase() || 'SIN-LOTE';
+      const costo = parseNumeroExcel(obtenerCampoFilaExcel(fila, ['Costo ($)', 'Costo', 'Costo Unitario']), 0);
+      const utilidad = parseNumeroExcel(obtenerCampoFilaExcel(fila, ['% Utilidad', 'Utilidad', 'Margen']), 30);
+      let precioVenta = parseNumeroExcel(obtenerCampoFilaExcel(fila, ['Precio Venta ($)', 'Precio Venta', 'Precio', 'PVP']), 0);
+      if (precioVenta <= 0 && costo > 0) {
+        precioVenta = Number((costo * (1 + (utilidad / 100))).toFixed(2));
+      }
+      if (precioVenta <= 0) {
+        omitidos++;
+        if (!primerError) primerError = `Precio Venta <= 0 en "${descripcion}"`;
+        continue;
+      }
+
+      const tipoIvaId = resolverTipoIvaId(obtenerCampoFilaExcel(fila, ['Estatus Fiscal', 'Tipo de IVA', 'Tipo IVA', 'IVA']));
+      const existente = existentes.find(p =>
+        (sku && String(p.codigo_sku || '').trim().toUpperCase() === sku) ||
+        (codigoBarras && String(p.codigo_barras || '').trim().toUpperCase() === codigoBarras) ||
+        String(p.descripcion || '').trim().toUpperCase() === descripcion
+      );
+
+      const payload = {
+        tenant_id: tenantId,
+        codigo_sku: sku,
+        categoria,
+        ubicacion,
+        descripcion,
+        maneja_inventario: manejaInv,
+        unidad_medida: unidad,
+        stock,
+        lote,
+        costo_unitario_usd: costo,
+        margen_utilidad_porcentaje: utilidad,
+        precio_venta_usd: precioVenta,
+        precio_unitario_usd: precioVenta,
+        tipo_iva_id: tipoIvaId,
+        cuenta_contable: String(obtenerCampoFilaExcel(fila, ['Cta. Inventario', 'Cuenta Contable', 'Cta Inventario'])).trim()
+      };
+
+      const payloadContable = {
+        codigo_barras: codigoBarras,
+        cuenta_ingreso: String(obtenerCampoFilaExcel(fila, ['Cta. Ingreso', 'Cuenta Ingreso'])).trim() || null,
+        cuenta_costo: String(obtenerCampoFilaExcel(fila, ['Cta. Costo', 'Cuenta Costo'])).trim() || null,
+        cuenta_devolucion: String(obtenerCampoFilaExcel(fila, ['Cta. Devolución', 'Cta Devolucion', 'Cuenta Devolucion'])).trim() || null,
+        centro_costo_default: String(obtenerCampoFilaExcel(fila, ['Centro de Costo', 'Centro Costo'])).trim().toUpperCase() || null
+      };
+
+      const res = await ejecutarGuardarRegistroContable('productos', existente?.id || '', tenantId, payload, payloadContable);
+      if (res.ok) {
+        if (existente) actualizados++;
+        else {
+          creados++;
+          if (res.data) existentes.push({ ...res.data, ...payloadContable });
+        }
+      } else {
+        omitidos++;
+        if (!primerError) primerError = res.message;
+      }
+    }
+
+    mostrarResumenImportacion('Productos', creados, actualizados, omitidos, primerError);
+    await cargarProductosGestion();
+    await cargarUnidadesSelectForm();
+    await cargarTiposIvaSelectForm();
+    if (typeof cargarProductosSelect === 'function') await cargarProductosSelect();
+  } catch (err) {
+    avisarUsuario(`Error leyendo Excel de Productos: ${err.message}`, 'error', 7000);
+  } finally {
+    if (input) input.value = '';
+  }
+}
+
+async function importarClientesExcel(event) {
+  const input = event?.target;
+  const file = input?.files?.[0];
+  if (!file) return;
+  const tenantId = obtenerTenantIdActual();
+  if (!tenantId) { input.value = ''; return; }
+
+  try {
+    avisarUsuario('Leyendo archivo Excel de Clientes...', 'info', 3000);
+    const filas = await leerFilasExcelCatalogo(file);
+    if (filas.length === 0) {
+      avisarUsuario('El archivo no contiene filas válidas.', 'warning');
+      return;
+    }
+
+    const { data: cliDb } = await supabaseClient.from('clientes').select('*').eq('tenant_id', tenantId);
+    const existentes = cliDb || [];
+    let creados = 0, actualizados = 0, omitidos = 0, primerError = '';
+
+    for (const fila of filas) {
+      const rif = String(obtenerCampoFilaExcel(fila, ['RIF', 'RIF / Cédula', 'Cedula', 'Documento'])).trim().toUpperCase();
+      const razonSocial = String(obtenerCampoFilaExcel(fila, ['Razón Social', 'Razon Social', 'Nombre', 'Cliente'])).trim().toUpperCase();
+      if (!rif || !razonSocial) {
+        omitidos++;
+        if (!primerError) primerError = 'Falta RIF o Razón Social';
+        continue;
+      }
+
+      const existente = existentes.find(c => String(c.rif || '').trim().toUpperCase() === rif);
+      const payload = {
+        tenant_id: tenantId,
+        rif,
+        razon_social: razonSocial,
+        direccion: String(obtenerCampoFilaExcel(fila, ['Dirección', 'Direccion', 'Dirección Fiscal'])).trim(),
+        telefono: String(obtenerCampoFilaExcel(fila, ['Teléfono', 'Telefono', 'Celular'])).trim(),
+        email: String(obtenerCampoFilaExcel(fila, ['Correo', 'Correo Electrónico', 'Email'])).trim().toLowerCase() || null,
+        contacto: String(obtenerCampoFilaExcel(fila, ['Contacto', 'Persona de Contacto'])).trim() || null,
+        es_contribuyente_especial: parseBoolExcel(obtenerCampoFilaExcel(fila, ['Contribuyente Especial', 'Contribuyente']), false),
+        cuenta_contable: String(obtenerCampoFilaExcel(fila, ['Cuenta Contable (CxC)', 'Cuenta Contable', 'CxC'])).trim()
+      };
+      const payloadContable = {
+        cuenta_anticipos: String(obtenerCampoFilaExcel(fila, ['Cta. Anticipos', 'Cuenta Anticipos'])).trim() || null,
+        condicion_credito_dias: Math.trunc(parseNumeroExcel(obtenerCampoFilaExcel(fila, ['Días Crédito', 'Dias Credito']), 0)),
+        limite_credito_usd: parseNumeroExcel(obtenerCampoFilaExcel(fila, ['Límite Crédito ($)', 'Limite Credito']), 0)
+      };
+
+      const res = await ejecutarGuardarRegistroContable('clientes', existente?.id || '', tenantId, payload, payloadContable);
+      if (res.ok) {
+        if (existente) actualizados++;
+        else {
+          creados++;
+          if (res.data) existentes.push(res.data);
+        }
+      } else {
+        omitidos++;
+        if (!primerError) primerError = res.message;
+      }
+    }
+
+    mostrarResumenImportacion('Clientes', creados, actualizados, omitidos, primerError);
+    await cargarClientesGestion();
+    if (typeof cargarClientesSelect === 'function') await cargarClientesSelect();
+  } catch (err) {
+    avisarUsuario(`Error leyendo Excel de Clientes: ${err.message}`, 'error', 7000);
+  } finally {
+    if (input) input.value = '';
+  }
+}
+
+async function importarProveedoresExcel(event) {
+  const input = event?.target;
+  const file = input?.files?.[0];
+  if (!file) return;
+  const tenantId = obtenerTenantIdActual();
+  if (!tenantId) { input.value = ''; return; }
+
+  try {
+    avisarUsuario('Leyendo archivo Excel de Proveedores...', 'info', 3000);
+    const filas = await leerFilasExcelCatalogo(file);
+    if (filas.length === 0) {
+      avisarUsuario('El archivo no contiene filas válidas.', 'warning');
+      return;
+    }
+
+    const { data: provDb } = await supabaseClient.from('proveedores').select('*').eq('tenant_id', tenantId);
+    const existentes = provDb || [];
+    let creados = 0, actualizados = 0, omitidos = 0, primerError = '';
+
+    for (const fila of filas) {
+      const rif = String(obtenerCampoFilaExcel(fila, ['RIF', 'Documento'])).trim().toUpperCase();
+      const razonSocial = String(obtenerCampoFilaExcel(fila, ['Razón Social', 'Razon Social', 'Nombre', 'Proveedor'])).trim().toUpperCase();
+      if (!rif || !razonSocial) {
+        omitidos++;
+        if (!primerError) primerError = 'Falta RIF o Razón Social';
+        continue;
+      }
+
+      const existente = existentes.find(p => String(p.rif || '').trim().toUpperCase() === rif);
+      const payload = {
+        tenant_id: tenantId,
+        rif,
+        razon_social: razonSocial,
+        direccion: String(obtenerCampoFilaExcel(fila, ['Dirección', 'Direccion', 'Dirección Fiscal'])).trim(),
+        telefono: String(obtenerCampoFilaExcel(fila, ['Teléfono', 'Telefono'])).trim(),
+        email: String(obtenerCampoFilaExcel(fila, ['Correo', 'Correo Electrónico', 'Email'])).trim().toLowerCase() || null,
+        contacto: String(obtenerCampoFilaExcel(fila, ['Contacto', 'Persona de Contacto'])).trim() || null,
+        es_contribuyente_especial: parseBoolExcel(obtenerCampoFilaExcel(fila, ['Contribuyente Especial', 'Contribuyente']), true),
+        cuenta_contable: String(obtenerCampoFilaExcel(fila, ['Cuenta Contable (CxP)', 'Cuenta Contable', 'CxP'])).trim()
+      };
+      const payloadContable = {
+        tipo_persona: String(obtenerCampoFilaExcel(fila, ['Tipo Persona'])).trim().toUpperCase() || 'PJD',
+        retencion_iva_pct: parseNumeroExcel(obtenerCampoFilaExcel(fila, ['% Retención IVA', 'Retencion IVA']), 75),
+        condicion_credito_dias: Math.trunc(parseNumeroExcel(obtenerCampoFilaExcel(fila, ['Días Crédito', 'Dias Credito']), 0)),
+        cuenta_anticipos: String(obtenerCampoFilaExcel(fila, ['Cta. Anticipos', 'Cuenta Anticipos'])).trim() || null
+      };
+
+      const res = await ejecutarGuardarRegistroContable('proveedores', existente?.id || '', tenantId, payload, payloadContable);
+      if (res.ok) {
+        if (existente) actualizados++;
+        else {
+          creados++;
+          if (res.data) existentes.push(res.data);
+        }
+      } else {
+        omitidos++;
+        if (!primerError) primerError = res.message;
+      }
+    }
+
+    mostrarResumenImportacion('Proveedores', creados, actualizados, omitidos, primerError);
+    await cargarProveedoresGestion();
+    if (typeof cargarProveedoresSelectCompra === 'function') await cargarProveedoresSelectCompra();
+  } catch (err) {
+    avisarUsuario(`Error leyendo Excel de Proveedores: ${err.message}`, 'error', 7000);
+  } finally {
+    if (input) input.value = '';
+  }
+}
+
+async function importarUnidadesExcel(event) {
+  const input = event?.target;
+  const file = input?.files?.[0];
+  if (!file) return;
+  const tenantId = obtenerTenantIdActual();
+  if (!tenantId) { input.value = ''; return; }
+
+  try {
+    const filas = await leerFilasExcelCatalogo(file);
+    if (filas.length === 0) {
+      avisarUsuario('El archivo no contiene filas válidas.', 'warning');
+      return;
+    }
+
+    const { data: uniDb } = await supabaseClient.from('unidades_medida').select('*').eq('tenant_id', tenantId);
+    const existentes = uniDb || [];
+    let creados = 0, actualizados = 0, omitidos = 0, primerError = '';
+
+    for (const fila of filas) {
+      const nombre = String(obtenerCampoFilaExcel(fila, ['Abreviatura / Nombre', 'Abreviatura', 'Nombre', 'Unidad'])).trim().toUpperCase();
+      if (!nombre) { omitidos++; continue; }
+
+      const existente = existentes.find(u => String(u.nombre || '').trim().toUpperCase() === nombre);
+      if (existente) {
+        actualizados++;
+        continue;
+      }
+      const res = await ejecutarGuardarRegistro('unidades_medida', '', tenantId, { tenant_id: tenantId, nombre });
+      if (res.ok) {
+        creados++;
+        if (res.data) existentes.push(res.data);
+      } else {
+        omitidos++;
+        if (!primerError) primerError = res.message;
+      }
+    }
+
+    mostrarResumenImportacion('Unidades', creados, actualizados, omitidos, primerError);
+    await cargarUnidadesMedidaGestion();
+    await cargarUnidadesSelectForm();
+  } catch (err) {
+    avisarUsuario(`Error leyendo Excel de Unidades: ${err.message}`, 'error', 7000);
+  } finally {
+    if (input) input.value = '';
+  }
+}
+
+async function importarTiposIvaExcel(event) {
+  const input = event?.target;
+  const file = input?.files?.[0];
+  if (!file) return;
+  const tenantId = obtenerTenantIdActual();
+  if (!tenantId) { input.value = ''; return; }
+
+  try {
+    const filas = await leerFilasExcelCatalogo(file);
+    if (filas.length === 0) {
+      avisarUsuario('El archivo no contiene filas válidas.', 'warning');
+      return;
+    }
+
+    const { data: ivaDb } = await supabaseClient.from('tipos_iva').select('*').eq('tenant_id', tenantId);
+    const existentes = ivaDb || [];
+    let creados = 0, actualizados = 0, omitidos = 0, primerError = '';
+
+    for (const fila of filas) {
+      const nombre = String(obtenerCampoFilaExcel(fila, ['Descripción / Nombre', 'Descripcion', 'Nombre', 'Alícuota', 'Tipo IVA'])).trim().toUpperCase();
+      if (!nombre) { omitidos++; continue; }
+      const porcentaje = parseNumeroExcel(obtenerCampoFilaExcel(fila, ['Porcentaje (%)', 'Porcentaje', 'Tasa', 'IVA']), 16);
+      const codDefault = porcentaje === 0 ? 'E' : (porcentaje === 8 ? 'R' : (porcentaje > 16 ? 'A' : 'G'));
+      const codigoSeniat = String(obtenerCampoFilaExcel(fila, ['Código SENIAT', 'Codigo SENIAT', 'Codigo'])).trim().toUpperCase() || codDefault;
+
+      const existente = existentes.find(t => String(t.nombre || '').trim().toUpperCase() === nombre);
+      const payload = { tenant_id: tenantId, nombre, porcentaje };
+      const payloadContable = {
+        codigo_seniat: codigoSeniat,
+        cuenta_debito_fiscal: String(obtenerCampoFilaExcel(fila, ['Cta. IVA Débito', 'Cta IVA Debito', 'Cuenta Debito'])).trim() || null,
+        cuenta_credito_fiscal: String(obtenerCampoFilaExcel(fila, ['Cta. IVA Crédito', 'Cta IVA Credito', 'Cuenta Credito'])).trim() || null
+      };
+
+      const res = await ejecutarGuardarRegistroContable('tipos_iva', existente?.id || '', tenantId, payload, payloadContable);
+      if (res.ok) {
+        if (existente) actualizados++;
+        else {
+          creados++;
+          if (res.data) existentes.push(res.data);
+        }
+      } else {
+        omitidos++;
+        if (!primerError) primerError = res.message;
+      }
+    }
+
+    mostrarResumenImportacion('Tipos de IVA', creados, actualizados, omitidos, primerError);
+    await cargarTiposIvaGestion();
+    await cargarTiposIvaSelectForm();
+  } catch (err) {
+    avisarUsuario(`Error leyendo Excel de Tipos de IVA: ${err.message}`, 'error', 7000);
+  } finally {
+    if (input) input.value = '';
+  }
+}
+
+async function importarViasPagoExcel(event) {
+  const input = event?.target;
+  const file = input?.files?.[0];
+  if (!file) return;
+  const tenantId = obtenerTenantIdActual();
+  if (!tenantId) { input.value = ''; return; }
+
+  try {
+    const filas = await leerFilasExcelCatalogo(file);
+    if (filas.length === 0) {
+      avisarUsuario('El archivo no contiene filas válidas.', 'warning');
+      return;
+    }
+
+    const { data: viasDb } = await supabaseClient.from('vias_pago').select('*').eq('tenant_id', tenantId);
+    const existentes = viasDb || [];
+    let creados = 0, actualizados = 0, omitidos = 0, primerError = '';
+
+    for (const fila of filas) {
+      const nombre = String(obtenerCampoFilaExcel(fila, ['Método de Pago', 'Metodo de Pago', 'Nombre', 'Nombre del Método'])).trim().toUpperCase();
+      if (!nombre) { omitidos++; continue; }
+
+      const existente = existentes.find(v => String(v.nombre || '').trim().toUpperCase() === nombre);
+      const payload = {
+        tenant_id: tenantId,
+        nombre,
+        codigo_interno: String(obtenerCampoFilaExcel(fila, ['Código', 'Codigo', 'Código Interno'])).trim().toUpperCase() || null,
+        requiere_referencia: parseBoolExcel(obtenerCampoFilaExcel(fila, ['Requiere Ref', 'Requiere Referencia']), true),
+        activo: parseBoolExcel(obtenerCampoFilaExcel(fila, ['Estatus', 'Activo', 'Estado']), true),
+        cuenta_contable: String(obtenerCampoFilaExcel(fila, ['Cuenta Contable', 'Cuenta'])).trim() || null
+      };
+      const payloadContable = {
+        tipo_moneda: String(obtenerCampoFilaExcel(fila, ['Moneda', 'Moneda de Cuenta'])).trim().toUpperCase() || 'VES',
+        es_divisa_igtf: parseBoolExcel(obtenerCampoFilaExcel(fila, ['Causa IGTF', 'IGTF']), false)
+      };
+
+      const res = await ejecutarGuardarRegistroContable('vias_pago', existente?.id || '', tenantId, payload, payloadContable);
+      if (res.ok) {
+        if (existente) actualizados++;
+        else {
+          creados++;
+          if (res.data) existentes.push(res.data);
+        }
+      } else {
+        omitidos++;
+        if (!primerError) primerError = res.message;
+      }
+    }
+
+    mostrarResumenImportacion('Vías de Pago', creados, actualizados, omitidos, primerError);
+    await cargarViasPagoGestion();
+    await cargarViasPagoSelectPos();
+  } catch (err) {
+    avisarUsuario(`Error leyendo Excel de Vías de Pago: ${err.message}`, 'error', 7000);
+  } finally {
+    if (input) input.value = '';
+  }
+}
+
+async function importarSucursalesExcel(event) {
+  const input = event?.target;
+  const file = input?.files?.[0];
+  if (!file) return;
+  const tenantId = obtenerTenantIdActual();
+  if (!tenantId) { input.value = ''; return; }
+
+  try {
+    const filas = await leerFilasExcelCatalogo(file);
+    if (filas.length === 0) {
+      avisarUsuario('El archivo no contiene filas válidas.', 'warning');
+      return;
+    }
+
+    const { data: sucDb } = await supabaseClient.from('sucursales').select('*').eq('tenant_id', tenantId);
+    const existentes = sucDb || [];
+    let creados = 0, actualizados = 0, omitidos = 0, primerError = '';
+
+    for (const fila of filas) {
+      const nombre = String(obtenerCampoFilaExcel(fila, ['Sucursal', 'Nombre de Sucursal', 'Nombre'])).trim().toUpperCase();
+      if (!nombre) { omitidos++; continue; }
+
+      const existente = existentes.find(s => String(s.nombre || '').trim().toUpperCase() === nombre);
+      const payload = {
+        tenant_id: tenantId,
+        nombre,
+        direccion: String(obtenerCampoFilaExcel(fila, ['Dirección', 'Direccion'])).trim()
+      };
+      const payloadContable = {
+        centro_costo: String(obtenerCampoFilaExcel(fila, ['Centro de Costo', 'Centro Costo'])).trim().toUpperCase() || null
+      };
+
+      const res = await ejecutarGuardarRegistroContable('sucursales', existente?.id || '', tenantId, payload, payloadContable);
+      if (res.ok) {
+        if (existente) actualizados++;
+        else {
+          creados++;
+          if (res.data) existentes.push(res.data);
+        }
+      } else {
+        omitidos++;
+        if (!primerError) primerError = res.message;
+      }
+    }
+
+    mostrarResumenImportacion('Sucursales', creados, actualizados, omitidos, primerError);
+    await cargarSucursalesGestion();
+    await cargarSucursalesSelectAlmacen();
+  } catch (err) {
+    avisarUsuario(`Error leyendo Excel de Sucursales: ${err.message}`, 'error', 7000);
+  } finally {
+    if (input) input.value = '';
+  }
+}
+
+async function importarAlmacenesExcel(event) {
+  const input = event?.target;
+  const file = input?.files?.[0];
+  if (!file) return;
+  const tenantId = obtenerTenantIdActual();
+  if (!tenantId) { input.value = ''; return; }
+
+  try {
+    const filas = await leerFilasExcelCatalogo(file);
+    if (filas.length === 0) {
+      avisarUsuario('El archivo no contiene filas válidas.', 'warning');
+      return;
+    }
+
+    const [{ data: almDb }, { data: sucDb }] = await Promise.all([
+      supabaseClient.from('almacenes').select('*').eq('tenant_id', tenantId),
+      supabaseClient.from('sucursales').select('*').eq('tenant_id', tenantId)
+    ]);
+    const existentes = almDb || [];
+    const sucursales = sucDb || [];
+    let creados = 0, actualizados = 0, omitidos = 0, primerError = '';
+
+    for (const fila of filas) {
+      const nombre = String(obtenerCampoFilaExcel(fila, ['Nombre Almacén', 'Nombre del Almacén', 'Almacén', 'Almacen', 'Nombre'])).trim().toUpperCase();
+      if (!nombre) { omitidos++; continue; }
+      const tipo = String(obtenerCampoFilaExcel(fila, ['Tipo'])).trim().toUpperCase() || 'PRINCIPAL';
+      const sucNom = String(obtenerCampoFilaExcel(fila, ['Sucursal'])).trim().toUpperCase();
+
+      let sucursalId = null;
+      if (sucNom && !['GENERAL', 'N/A', 'NA', 'NINGUNA'].includes(sucNom)) {
+        let suc = sucursales.find(s => String(s.nombre || '').trim().toUpperCase() === sucNom);
+        if (!suc) {
+          const rSuc = await ejecutarGuardarRegistroContable('sucursales', '', tenantId, { tenant_id: tenantId, nombre: sucNom, direccion: '' }, {});
+          if (rSuc.ok && rSuc.data) {
+            suc = rSuc.data;
+            sucursales.push(suc);
+          }
+        }
+        sucursalId = suc?.id || null;
+      }
+
+      const existente = existentes.find(a =>
+        String(a.nombre || '').trim().toUpperCase() === nombre &&
+        String(a.sucursal_id || '') === String(sucursalId || '')
+      );
+      const payload = {
+        tenant_id: tenantId,
+        sucursal_id: sucursalId,
+        nombre,
+        tipo
+      };
+      const payloadContable = {
+        cuenta_inventario: String(obtenerCampoFilaExcel(fila, ['Cuenta Inventario', 'Cta. Inventario'])).trim() || null
+      };
+
+      const res = await ejecutarGuardarRegistroContable('almacenes', existente?.id || '', tenantId, payload, payloadContable);
+      if (res.ok) {
+        if (existente) actualizados++;
+        else {
+          creados++;
+          if (res.data) existentes.push(res.data);
+        }
+      } else {
+        omitidos++;
+        if (!primerError) primerError = res.message;
+      }
+    }
+
+    mostrarResumenImportacion('Almacenes', creados, actualizados, omitidos, primerError);
+    await cargarAlmacenesGestion();
+    await cargarAlmacenesSelectLote();
+    await cargarSucursalesSelectAlmacen();
+  } catch (err) {
+    avisarUsuario(`Error leyendo Excel de Almacenes: ${err.message}`, 'error', 7000);
+  } finally {
+    if (input) input.value = '';
+  }
+}
+
+async function importarLotesExcel(event) {
+  const input = event?.target;
+  const file = input?.files?.[0];
+  if (!file) return;
+  const tenantId = obtenerTenantIdActual();
+  if (!tenantId) { input.value = ''; return; }
+
+  try {
+    const filas = await leerFilasExcelCatalogo(file);
+    if (filas.length === 0) {
+      avisarUsuario('El archivo no contiene filas válidas.', 'warning');
+      return;
+    }
+
+    const [{ data: lotesDb }, { data: prodDb }, { data: almDb }] = await Promise.all([
+      supabaseClient.from('inventario_lotes').select('*').eq('tenant_id', tenantId),
+      supabaseClient.from('productos').select('id, codigo_sku, descripcion').eq('tenant_id', tenantId),
+      supabaseClient.from('almacenes').select('id, nombre').eq('tenant_id', tenantId)
+    ]);
+
+    const existentes = lotesDb || [];
+    const productos = prodDb || [];
+    const almacenes = almDb || [];
+    let creados = 0, actualizados = 0, omitidos = 0, primerError = '';
+
+    for (const fila of filas) {
+      const numeroLote = String(obtenerCampoFilaExcel(fila, ['Lote', 'Número de Lote', 'Numero de Lote'])).trim().toUpperCase();
+      if (!numeroLote) { omitidos++; continue; }
+
+      const sku = String(obtenerCampoFilaExcel(fila, ['SKU', 'Código SKU', 'Codigo SKU'])).trim().toUpperCase();
+      const material = String(obtenerCampoFilaExcel(fila, ['Material', 'Producto', 'Descripción', 'Descripcion'])).trim().toUpperCase();
+      const prod = productos.find(p =>
+        (sku && !['N/A', 'S/N'].includes(sku) && String(p.codigo_sku || '').trim().toUpperCase() === sku) ||
+        (material && String(p.descripcion || '').trim().toUpperCase() === material)
+      );
+      if (!prod) {
+        omitidos++;
+        if (!primerError) primerError = `Producto no encontrado (${sku || material || 'sin SKU/Material'})`;
+        continue;
+      }
+
+      const almNom = String(obtenerCampoFilaExcel(fila, ['Almacén', 'Almacen', 'Nombre Almacén'])).trim().toUpperCase();
+      let alm = null;
+      if (almNom && !['SIN ALMACEN', 'SIN ALMACÉN', 'N/A'].includes(almNom)) {
+        alm = almacenes.find(a => String(a.nombre || '').trim().toUpperCase() === almNom);
+      }
+
+      const existente = existentes.find(l =>
+        String(l.numero_lote || '').trim().toUpperCase() === numeroLote &&
+        String(l.producto_id || '') === String(prod.id) &&
+        String(l.almacen_id || '') === String(alm?.id || '')
+      );
+
+      const payload = {
+        tenant_id: tenantId,
+        producto_id: prod.id,
+        almacen_id: alm?.id || null,
+        numero_lote: numeroLote,
+        stock: parseNumeroExcel(obtenerCampoFilaExcel(fila, ['Stock', 'Cantidad', 'Existencia']), 0),
+        ubicacion: String(obtenerCampoFilaExcel(fila, ['Ubicación', 'Ubicacion'])).trim().toUpperCase(),
+        fecha_vencimiento: parseFechaIsoExcel(obtenerCampoFilaExcel(fila, ['Fecha Vencimiento', 'Vencimiento'])),
+        updated_at: new Date().toISOString()
+      };
+
+      const res = await ejecutarGuardarRegistro('inventario_lotes', existente?.id || '', tenantId, payload);
+      if (res.ok) {
+        if (existente) actualizados++;
+        else {
+          creados++;
+          if (res.data) existentes.push(res.data);
+        }
+      } else {
+        omitidos++;
+        if (!primerError) primerError = res.message;
+      }
+    }
+
+    mostrarResumenImportacion('Lotes', creados, actualizados, omitidos, primerError);
+    await cargarLotesGestion();
+  } catch (err) {
+    avisarUsuario(`Error leyendo Excel de Lotes: ${err.message}`, 'error', 7000);
+  } finally {
+    if (input) input.value = '';
+  }
+}
+
 
