@@ -1230,8 +1230,8 @@ async function guardarInquilinoMaster() {
           p_datos_cobro_comision: {},
           p_auth_user_id: null
         });
-        if (!rpcCreate.error && rpcCreate.data?.ok && rpcCreate.data?.tenant_id) {
-          nuevoId = rpcCreate.data.tenant_id;
+        if (!rpcCreate.error && rpcCreate.data?.ok) {
+          nuevoId = rpcCreate.data?.tenant?.id || rpcCreate.data?.tenant_id || rpcCreate.data?.id || null;
         }
       } catch (e) {}
     }

@@ -34,7 +34,11 @@ async function confirmarOperacion(titulo, mensaje) {
 }
 
 function obtenerTenantIdActual() {
-  const tid = tenantActual ? (tenantActual.id || tenantActual.tenant_id || null) : null;
+  let tid = tenantActual ? (tenantActual.id || tenantActual.tenant_id || null) : null;
+  if (!tid && typeof usuarioActual !== 'undefined' && usuarioActual?.tenant_id) {
+    tid = usuarioActual.tenant_id;
+    if (tenantActual && !tenantActual.id) tenantActual.id = tid;
+  }
   if (!tid) {
     avisarUsuario('No se detectó sesión activa de comercio (tenant_id). Inicia sesión nuevamente.', 'error', 7000);
   }

@@ -337,12 +337,21 @@ async function resolverReferidorPorCodigoOId(codigoOId) {
   if (supabaseClient) {
     try {
       const { data: rpcRef, error: rpcErr } = await supabaseClient.rpc('resolver_referidor_publico', { p_codigo_o_id: limpio });
-      if (!rpcErr && rpcRef && rpcRef.encontrado && rpcRef.nivel1?.id) {
-        return {
-          nivel1: rpcRef.nivel1,
-          nivel2Id: rpcRef.nivel2_id || null,
-          nivel3Id: rpcRef.nivel3_id || null
-        };
+      if (!rpcErr && rpcRef) {
+        if (rpcRef.encontrado && rpcRef.nivel1?.id) {
+          return {
+            nivel1: rpcRef.nivel1,
+            nivel2Id: rpcRef.nivel2_id || null,
+            nivel3Id: rpcRef.nivel3_id || null
+          };
+        }
+        if (rpcRef.id) {
+          return {
+            nivel1: rpcRef,
+            nivel2Id: rpcRef.referido_por_id || null,
+            nivel3Id: rpcRef.referido_nivel2_id || null
+          };
+        }
       }
     } catch (e) {}
   }
@@ -479,9 +488,11 @@ async function registrarCuentaDesdeLanding(e) {
 
     // 2. Intentar crear sesión JWT real en Supabase Auth
     let authUserId = null;
+    let authSession = null;
     try {
       const { data: signUpData } = await supabaseClient.auth.signUp({ email, password });
       authUserId = signUpData?.user?.id || null;
+      authSession = signUpData?.session || null;
     } catch (e) {}
 
     let nuevoTenant = null;
@@ -512,19 +523,24 @@ async function registrarCuentaDesdeLanding(e) {
           avisarRef(rpcRes.error || 'Ya existe una cuenta registrada con ese correo electrónico.', 'warning');
           return;
         }
-        nuevoTenant = {
-          id: rpcRes.tenant_id,
-          auth_user_id: authUserId,
-          razon_social,
-          rif,
-          telefono,
-          direccion: esPromotor ? 'PROMOTOR ALIADO EXTERNO' : 'VENEZUELA',
-          email,
-          rol: esPromotor ? 'promotor' : 'tenant',
-          plan_activo: esPromotor ? 'Promotor' : 'Freemium',
-          activo: true,
-          ...metaSaas
-        };
+        const tenantRpc = (rpcRes.tenant && typeof rpcRes.tenant === 'object') ? rpcRes.tenant : {};
+        const resolvedId = tenantRpc.id || rpcRes.tenant_id || rpcRes.id || null;
+        if (resolvedId) {
+          nuevoTenant = {
+            ...tenantRpc,
+            id: resolvedId,
+            auth_user_id: authUserId || tenantRpc.auth_user_id || null,
+            razon_social: tenantRpc.razon_social || razon_social,
+            rif: tenantRpc.rif || rif,
+            telefono: tenantRpc.telefono ?? telefono,
+            direccion: tenantRpc.direccion || (esPromotor ? 'PROMOTOR ALIADO EXTERNO' : 'VENEZUELA'),
+            email: tenantRpc.email || email,
+            rol: tenantRpc.rol || (esPromotor ? 'promotor' : 'tenant'),
+            plan_activo: tenantRpc.plan_activo || (esPromotor ? 'Promotor' : 'Freemium'),
+            activo: tenantRpc.activo !== false,
+            ...metaSaas
+          };
+        }
       }
     } catch (e) {}
 
@@ -567,6 +583,21 @@ async function registrarCuentaDesdeLanding(e) {
         credLocal[email] = { id: nuevoTenant.id, tenant_id: nuevoTenant.id, hash };
         localStorage.setItem('mfd_credenciales_fallback', JSON.stringify(credLocal));
       }
+    }
+
+    if (!nuevoTenant?.id) {
+      avisarRef('No se pudo obtener el identificador del comercio recién creado. Inicia sesión nuevamente.', 'error', 7000);
+      return;
+    }
+
+    if (!authSession && supabaseClient?.auth?.signInWithPassword) {
+      try {
+        const { data: signInData } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (signInData?.session) authSession = signInData.session;
+        if (signInData?.user?.id && !nuevoTenant.auth_user_id) {
+          nuevoTenant.auth_user_id = signInData.user.id;
+        }
+      } catch (e) {}
     }
 
     if (typeof guardarMetaYEstadoTenantEnNube === 'function') {

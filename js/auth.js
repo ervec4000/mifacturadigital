@@ -496,7 +496,37 @@ async function verificarSesionGuardada() {
     } catch (e) {
       tenantActual = null;
     }
-    if (!tenantActual?.id) return;
+    if (!tenantActual?.id && supabaseClient) {
+      try {
+        let recovered = null;
+        const authRes = supabaseClient.auth?.getUser ? await supabaseClient.auth.getUser() : null;
+        const authUid = authRes?.data?.user?.id || null;
+        const authEmail = authRes?.data?.user?.email || tenantActual?.email || usuarioActual?.email || '';
+        if (authUid) {
+          recovered = await consultarTenantSeguroPorColumna('auth_user_id', authUid);
+        }
+        if (!recovered && authEmail) {
+          recovered = await consultarTenantSeguroPorColumna('email', String(authEmail).toLowerCase());
+        }
+        if (recovered?.id) {
+          tenantActual = recovered;
+          if (usuarioActual && !usuarioActual.tenant_id) {
+            usuarioActual.tenant_id = recovered.id;
+            if (!usuarioActual.id) usuarioActual.id = recovered.id;
+            localStorage.setItem('mfd_usuario_actual', JSON.stringify(usuarioActual));
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!tenantActual?.id) {
+      localStorage.removeItem('tenant_actual');
+      localStorage.removeItem('mfd_usuario_actual');
+      localStorage.removeItem('mfd_sesion_auditoria_activa');
+      tenantActual = null;
+      usuarioActual = null;
+      return;
+    }
 
     localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
     activarVistaPrincipal();
