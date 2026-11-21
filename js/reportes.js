@@ -155,6 +155,16 @@ async function verComprobantePorId(id) {
 }
 
 function obtenerConfigImprentaTenant(tenantId) {
+  if (tenantActual && String(tenantActual.id) === String(tenantId)) {
+    if (tenantActual.imprenta_nombre || tenantActual.imprenta_rif || tenantActual.imprenta_providencia || tenantActual.imprenta_rango) {
+      return {
+        nombre: tenantActual.imprenta_nombre || 'IMPRENTA DIGITAL AUTORIZADA',
+        rif: tenantActual.imprenta_rif || 'J-00000000-0',
+        providencia: tenantActual.imprenta_providencia || 'SNAT/2024/000102',
+        rango: tenantActual.imprenta_rango || '00-00000001 al 00-00099999'
+      };
+    }
+  }
   try {
     const raw = localStorage.getItem(`imprenta_seniat_${tenantId}`);
     if (raw) return JSON.parse(raw);
@@ -2112,9 +2122,10 @@ async function cargarCuentasPorCobrar() {
   if (!tenantActual) return;
   const tenantId = tenantActual.id;
 
-  const [resInv, resAudit] = await Promise.all([
+  const [resInv, resAudit, resAbonos] = await Promise.all([
     supabaseClient.from('invoices').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false }),
-    supabaseClient.from('audit_logs').select('*').eq('tenant_id', tenantId).eq('accion', 'ABONO_CXC')
+    supabaseClient.from('audit_logs').select('*').eq('tenant_id', tenantId).eq('accion', 'ABONO_CXC'),
+    supabaseClient.from('abonos_cxc').select('invoice_id, monto_usd').eq('tenant_id', tenantId)
   ]);
 
   const abonosPorFactura = {};
@@ -2135,6 +2146,18 @@ async function cargarCuentasPorCobrar() {
     });
     Object.keys(nubeSum).forEach(invId => {
       abonosPorFactura[invId] = Math.max(abonosPorFactura[invId] || 0, nubeSum[invId]);
+    });
+  }
+
+  if (!resAbonos.error && Array.isArray(resAbonos.data)) {
+    const nativoSum = {};
+    resAbonos.data.forEach(a => {
+      if (a.invoice_id && Number(a.monto_usd) > 0) {
+        nativoSum[String(a.invoice_id)] = (nativoSum[String(a.invoice_id)] || 0) + Number(a.monto_usd);
+      }
+    });
+    Object.keys(nativoSum).forEach(invId => {
+      abonosPorFactura[invId] = Math.max(abonosPorFactura[invId] || 0, nativoSum[invId]);
     });
   }
 
@@ -2247,15 +2270,37 @@ async function abonarCuentaPorCobrar(invoiceId) {
     avisarReporte('Ingresa un monto de abono mayor a 0.', 'warning');
     return;
   }
+  const actorCxc = typeof obtenerActorActual === 'function' ? obtenerActorActual() : null;
+  const actorCxcUuid = actorCxc?.usuarioId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(actorCxc.usuarioId))
+    ? actorCxc.usuarioId
+    : null;
+
   const montoAplicado = Math.min(montoUsd, item.saldoUsd);
   const abonoObj = {
     invoiceId,
     facturaNro: item.factura_nro,
     montoUsd: Number(montoAplicado.toFixed(2)),
-    fecha: new Date().toISOString()
+    fecha: new Date().toISOString(),
+    usuarioNombre: actorCxc?.usuarioNombre || null
   };
 
   guardarAbonoCxcLocal(tenantId, invoiceId, abonoObj);
+  try {
+    await supabaseClient.from('abonos_cxc').insert([{
+      tenant_id: tenantId,
+      invoice_id: invoiceId,
+      factura_nro: item.factura_nro,
+      cliente_rif: item.cliente_rif,
+      cliente_nombre: item.cliente_nombre,
+      monto_usd: Number(montoAplicado.toFixed(2)),
+      tasa_bcv: item.tasa || 1,
+      metodo_pago: 'ABONO',
+      usuario_id: actorCxcUuid,
+      usuario_nombre: actorCxc?.usuarioNombre || null,
+      fecha: abonoObj.fecha
+    }]);
+  } catch (e) {}
+
   await supabaseClient.from('audit_logs').insert([{
     tenant_id: tenantId,
     accion: 'ABONO_CXC',

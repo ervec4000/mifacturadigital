@@ -267,6 +267,10 @@
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>
             <span class="sidebar-label truncate">Inquilinos y Menús</span>
           </button>
+          <button type="button" onclick="abrirSubModuloMaster('usuarios')" id="btnTabMasterUsuarios" title="Usuarios y Entradas/Salidas Globales" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/></svg>
+            <span class="sidebar-label truncate">Usuarios y Entradas/Salidas</span>
+          </button>
           <button type="button" onclick="abrirSubModuloMaster('pagos')" id="btnTabMasterPagos" title="Precios de Planes, Suscripciones y Pagos" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
             <span class="sidebar-label truncate">Precios, Planes y Pagos</span>
@@ -391,6 +395,10 @@
           <button type="button" onclick="cambiarPestana('viasPago')" id="btnTabViasPago" title="Vías de Pago" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
             <span class="sidebar-label truncate">Vías de Pago</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('usuarios')" id="btnTabUsuarios" title="Equipo de Usuarios y Bitácora" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            <span class="sidebar-label truncate">Equipo y Usuarios</span>
           </button>
           <button type="button" onclick="cambiarPestana('referidos')" id="btnTabReferidos" title="Programa de Afiliados" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
@@ -1757,6 +1765,162 @@
         <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">RIF</th><th class="p-3">Razón Social</th><th class="p-3">Teléfono</th><th class="p-3">Correo</th><th class="p-3">Contacto</th><th class="p-3 text-center">Contrib. Esp.</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaClientesGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
       </div>
 
+      <!-- Gestión de Equipo Multi-Usuario y Bitácora de Entradas/Salidas (Cliente) -->
+      <div id="seccionUsuarios" class="hidden space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Equipo de Usuarios y Bitácora de Entradas / Salidas</h3>
+            <p class="text-xs text-slate-400">Crea operadores con roles y permisos específicos para tu comercio y audita cada inicio y cierre de sesión con duración exacta.</p>
+          </div>
+          <button type="button" onclick="cargarModuloUsuarios()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Actualizar Equipo</button>
+        </div>
+
+        <!-- KPIs Equipo y Sesiones -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Usuarios Activos / Cupo Plan</p>
+            <p id="usrKpiActivosCupo" class="text-xl font-bold font-mono text-emerald-400 tabular-nums mt-1">0 / 2</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Total Sub-Usuarios</p>
+            <p id="usrKpiTotalEquipo" class="text-xl font-bold font-mono text-white tabular-nums mt-1">0</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Entradas Registradas Hoy</p>
+            <p id="usrKpiEntradasHoy" class="text-xl font-bold font-mono text-sky-400 tabular-nums mt-1">0</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Sesiones Sin Cierre</p>
+            <p id="usrKpiSesionesAbiertas" class="text-xl font-bold font-mono text-amber-300 tabular-nums mt-1">0</p>
+          </div>
+        </div>
+
+        <!-- Formulario Alta / Edición Sub-Usuario -->
+        <form id="formUsuarioComercio" onsubmit="guardarUsuarioTenant(event)" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <h4 id="tituloFormUsuario" class="text-xs font-bold uppercase tracking-wider text-emerald-400">Registrar Nuevo Usuario del Comercio</h4>
+            <button type="button" id="btnCancelarUsuario" onclick="limpiarFormUsuarioTenant()" class="hidden bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer">Cancelar Edición</button>
+          </div>
+          <input type="hidden" id="editUsuarioId">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Nombre Completo *</label><input type="text" id="usrNombreCompleto" required placeholder="Ej. Carlos Mendoza" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Correo de Acceso *</label><input type="email" id="usrEmail" required placeholder="cajero@miempresa.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
+            <div><label class="block text-[11px] font-semibold text-slate-400 mb-1">Contraseña (mín. 6 caracteres)</label><input type="password" id="usrPassword" placeholder="Requerida al crear" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-400 mb-1">Rol Interno</label>
+              <select id="usrRolInterno" onchange="aplicarPresetRolUsuarioForm()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+                <option value="CAJERO_POS">Cajero / Facturador POS</option>
+                <option value="SUPERVISOR">Supervisor Operativo</option>
+                <option value="ALMACENISTA">Almacenista / Inventario</option>
+                <option value="CONTADOR">Contador / Auditor Fiscal</option>
+                <option value="ADMIN_EMPRESA">Administrador de Empresa</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-400 mb-1">Sucursal Asignada</label>
+              <select id="usrSucursalId" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+                <option value="">Todas las Sucursales</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-400 mb-1">Estado</label>
+              <select id="usrActivo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+                <option value="true">Activo</option>
+                <option value="false">Suspendido</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-[11px] font-semibold text-slate-400">Módulos Permitidos (acotados al plan contratado de tu empresa)</label>
+            <div id="usrChecksModulos" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2"></div>
+          </div>
+
+          <div class="flex justify-end">
+            <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl cursor-pointer whitespace-nowrap">Guardar Usuario del Equipo</button>
+          </div>
+        </form>
+
+        <!-- Directorio de Sub-Usuarios del Comercio -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Usuarios Registrados en tu Comercio</h4>
+          <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr>
+                  <th class="p-3">Usuario / Correo</th>
+                  <th class="p-3">Rol</th>
+                  <th class="p-3">Sucursal</th>
+                  <th class="p-3 text-center">Módulos</th>
+                  <th class="p-3">Último Acceso</th>
+                  <th class="p-3">Estado</th>
+                  <th class="p-3 text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tablaUsuariosComercio" class="divide-y divide-slate-800/60"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Bitácora de Entradas y Salidas del Comercio -->
+        <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Registro de Entradas y Salidas de Usuarios</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">Auditoría cronológica de inicios de sesión, cierres manuales, desconexión por inactividad (30m) e intentos fallidos.</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" onclick="imprimirBitacoraSesionesPdf()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Imprimir Bitácora (PDF)</button>
+              <button type="button" onclick="exportarBitacoraSesionesExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Exportar Excel</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Usuario</label>
+              <select id="usrAudFiltroUsuario" onchange="renderizarTablaBitacoraTenant()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white">
+                <option value="">Todos los usuarios</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Evento</label>
+              <select id="usrAudFiltroEvento" onchange="renderizarTablaBitacoraTenant()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white">
+                <option value="TODOS">Todos los Eventos</option>
+                <option value="ENTRADA">ENTRADA</option>
+                <option value="SALIDA">SALIDA</option>
+                <option value="CIERRE_INACTIVIDAD">CIERRE_INACTIVIDAD</option>
+                <option value="CIERRE_FORZADO">CIERRE_FORZADO</option>
+                <option value="INTENTO_FALLIDO">INTENTO_FALLIDO</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Desde Fecha</label>
+              <input type="date" id="usrAudFiltroDesde" onchange="renderizarTablaBitacoraTenant()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 font-mono text-white">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Hasta Fecha</label>
+              <input type="date" id="usrAudFiltroHasta" onchange="renderizarTablaBitacoraTenant()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 font-mono text-white">
+            </div>
+          </div>
+
+          <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr>
+                  <th class="p-3">Fecha Entrada</th>
+                  <th class="p-3">Fecha Salida</th>
+                  <th class="p-3">Duración</th>
+                  <th class="p-3">Usuario / Rol</th>
+                  <th class="p-3">Evento</th>
+                  <th class="p-3">Detalle</th>
+                </tr>
+              </thead>
+              <tbody id="tablaBitacoraSesionesComercio" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- Programa de Afiliados y Red 3 Niveles (Clientes y Promotores Externos) -->
       <div id="seccionReferidos" class="hidden space-y-6">
         <div id="refBannerPromotorExterno" class="hidden bg-emerald-950/60 border border-emerald-500/40 rounded-2xl p-4 text-xs text-emerald-100">
@@ -2021,6 +2185,7 @@
         <!-- Sub-navegación Master -->
         <div class="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3">
           <button type="button" id="btnMasterSub_tenants" onclick="cambiarSubtabMaster('tenants')" class="px-3.5 py-2 rounded-xl text-xs font-semibold border bg-emerald-600 text-white border-emerald-500 cursor-pointer whitespace-nowrap">Directorio y Menús por Tenant</button>
+          <button type="button" id="btnMasterSub_usuarios" onclick="cambiarSubtabMaster('usuarios')" class="px-3.5 py-2 rounded-xl text-xs font-semibold border bg-slate-900 text-slate-300 border-slate-800 cursor-pointer whitespace-nowrap">Usuarios y Entradas/Salidas</button>
           <button type="button" id="btnMasterSub_pagos" onclick="cambiarSubtabMaster('pagos')" class="px-3.5 py-2 rounded-xl text-xs font-semibold border bg-slate-900 text-slate-300 border-slate-800 cursor-pointer whitespace-nowrap">Precios de Planes, Suscripciones y Pagos</button>
           <button type="button" id="btnMasterSub_referidosMaster" onclick="cambiarSubtabMaster('referidosMaster')" class="px-3.5 py-2 rounded-xl text-xs font-semibold border bg-slate-900 text-slate-300 border-slate-800 cursor-pointer whitespace-nowrap">Referidos, Bonos y Comisiones</button>
           <button type="button" id="btnMasterSub_infraestructura" onclick="cambiarSubtabMaster('infraestructura')" class="px-3.5 py-2 rounded-xl text-xs font-semibold border bg-slate-900 text-slate-300 border-slate-800 cursor-pointer whitespace-nowrap">Implantación SQL y Base de Datos</button>
@@ -2065,6 +2230,107 @@
               </thead>
               <tbody id="tablaInquilinosMaster" class="divide-y divide-slate-800/60"></tbody>
             </table>
+          </div>
+        </div>
+
+        <!-- SUBPANEL MASTER: USUARIOS GLOBALES Y BITÁCORA DE ENTRADAS / SALIDAS -->
+        <div id="masterSubPanel_usuarios" class="hidden space-y-6">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+              <p class="text-xs text-slate-400">Total Sub-Usuarios Red</p>
+              <p id="masterUsrKpiTotal" class="text-lg font-bold font-mono text-white tabular-nums mt-1">0</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+              <p class="text-xs text-slate-400">Sub-Usuarios Activos</p>
+              <p id="masterUsrKpiActivos" class="text-lg font-bold font-mono text-emerald-400 tabular-nums mt-1">0</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+              <p class="text-xs text-slate-400">Entradas Hoy (Global)</p>
+              <p id="masterUsrKpiEntradasHoy" class="text-lg font-bold font-mono text-sky-400 tabular-nums mt-1">0</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+              <p class="text-xs text-slate-400">Intentos Fallidos</p>
+              <p id="masterUsrKpiFallidos" class="text-lg font-bold font-mono text-rose-400 tabular-nums mt-1">0</p>
+            </div>
+          </div>
+
+          <form id="formMasterCrearUsuario" onsubmit="crearUsuarioDesdeMaster(event)" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Crear Sub-Usuario para Cualquier Comercio</h4>
+              <button type="button" onclick="cargarUsuariosYSesionesMaster()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer">Refrescar Global</button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+              <div><label class="block text-[11px] text-slate-400 mb-1">Empresa *</label><select id="masterNewUsrTenantId" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"><option value="">-- Seleccionar Empresa --</option></select></div>
+              <div><label class="block text-[11px] text-slate-400 mb-1">Nombre *</label><input type="text" id="masterNewUsrNombre" required placeholder="Nombre Operador" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"></div>
+              <div><label class="block text-[11px] text-slate-400 mb-1">Correo *</label><input type="email" id="masterNewUsrEmail" required placeholder="usuario@empresa.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 font-mono text-white"></div>
+              <div><label class="block text-[11px] text-slate-400 mb-1">Contraseña *</label><input type="password" id="masterNewUsrPassword" required placeholder="Mín. 6 chars" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 font-mono text-white"></div>
+              <div><label class="block text-[11px] text-slate-400 mb-1">Rol</label><select id="masterNewUsrRol" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"><option value="CAJERO_POS">Cajero POS</option><option value="SUPERVISOR">Supervisor</option><option value="ALMACENISTA">Almacenista</option><option value="CONTADOR">Contador</option><option value="ADMIN_EMPRESA">Admin Empresa</option></select></div>
+            </div>
+            <div class="flex justify-end">
+              <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer">Asignar Sub-Usuario a Comercio</button>
+            </div>
+          </form>
+
+          <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-4 text-xs">
+            <div><label class="block text-[11px] text-slate-400 mb-1">Empresa</label><select id="masterUsrFiltroTenant" onchange="renderizarTablaUsuariosMaster();renderizarTablaBitacoraMaster();" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"><option value="">Todas las Empresas</option></select></div>
+            <div><label class="block text-[11px] text-slate-400 mb-1">Buscar Usuario / Correo</label><input type="text" id="masterUsrFiltroTexto" oninput="renderizarTablaUsuariosMaster();renderizarTablaBitacoraMaster();" placeholder="Nombre o correo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white"></div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Evento</label>
+              <select id="masterAudFiltroEvento" onchange="renderizarTablaBitacoraMaster()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-white">
+                <option value="TODOS">Todos</option>
+                <option value="ENTRADA">ENTRADA</option>
+                <option value="SALIDA">SALIDA</option>
+                <option value="CIERRE_INACTIVIDAD">CIERRE_INACTIVIDAD</option>
+                <option value="CIERRE_FORZADO">CIERRE_FORZADO</option>
+                <option value="INTENTO_FALLIDO">INTENTO_FALLIDO</option>
+              </select>
+            </div>
+            <div><label class="block text-[11px] text-slate-400 mb-1">Desde</label><input type="date" id="masterAudFiltroDesde" onchange="renderizarTablaBitacoraMaster()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 font-mono text-white"></div>
+            <div><label class="block text-[11px] text-slate-400 mb-1">Hasta</label><input type="date" id="masterAudFiltroHasta" onchange="renderizarTablaBitacoraMaster()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 font-mono text-white"></div>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Directorio Global de Sub-Usuarios por Empresa</h4>
+            <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                  <tr>
+                    <th class="p-3">Empresa</th>
+                    <th class="p-3">Usuario / Correo</th>
+                    <th class="p-3">Rol</th>
+                    <th class="p-3">Último Acceso</th>
+                    <th class="p-3">Estado</th>
+                    <th class="p-3 text-center">Control Master</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaMasterUsuariosGlobal" class="divide-y divide-slate-800/60"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl p-5 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Auditoría Global de Entradas y Salidas (Todos los Comercios)</h4>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" onclick="imprimirBitacoraMasterPdf()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer">Imprimir PDF Global</button>
+                <button type="button" onclick="exportarBitacoraMasterExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-1.5 rounded-xl cursor-pointer">Exportar Excel Global</button>
+              </div>
+            </div>
+            <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                  <tr>
+                    <th class="p-3">Entrada</th>
+                    <th class="p-3">Salida</th>
+                    <th class="p-3">Duración</th>
+                    <th class="p-3">Empresa</th>
+                    <th class="p-3">Usuario / Rol</th>
+                    <th class="p-3">Evento</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaMasterBitacoraGlobal" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+              </table>
+            </div>
           </div>
         </div>
 
@@ -2521,6 +2787,17 @@
                   <button type="button" onclick="descargarScriptSqlSaas()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer whitespace-nowrap">Descargar .SQL SaaS</button>
                 </div>
               </div>
+              <div class="bg-slate-950 border border-emerald-500/40 rounded-xl p-4 space-y-3 md:col-span-2">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span class="text-xs font-bold text-emerald-400">3. Seguridad Bcrypt, Multi-Usuario, Bitácora Entradas/Salidas & Tablas Nativas (v100)</span>
+                  <span id="v100EstadoEsquemaBadge" class="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">Verificando BD...</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Bóveda <code class="text-slate-300">credenciales_erp</code> (hash bcrypt + pgcrypto), <code class="text-slate-300">tenant_usuarios</code>, <code class="text-slate-300">sesiones_auditoria</code>, <code class="text-slate-300">compras_documentos</code>, <code class="text-slate-300">abonos_cxc</code>, <code class="text-slate-300">inventario_fisico_actas</code>, políticas RLS multitenant estrictas y funciones <code class="text-slate-300">SECURITY DEFINER</code>.</p>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="copiarScriptSqlV100()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Copiar .SQL Seguridad v100</button>
+                  <button type="button" onclick="descargarScriptSqlV100()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Descargar .SQL Seguridad v100</button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -2835,13 +3112,14 @@
         <div><label class="block text-[11px] text-slate-400 mb-1">Razón Social *</label><input type="text" id="masterTenantRazonSocial" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
         <div><label class="block text-[11px] text-slate-400 mb-1">RIF *</label><input type="text" id="masterTenantRif" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
         <div><label class="block text-[11px] text-slate-400 mb-1">Correo Electrónico *</label><input type="email" id="masterTenantEmail" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
-        <div><label class="block text-[11px] text-slate-400 mb-1">Contraseña Acceso</label><input type="text" id="masterTenantPassword" placeholder="Dejar igual para no cambiar" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">Nueva Contraseña (opcional)</label><input type="password" id="masterTenantPassword" placeholder="Dejar vacío para no cambiar" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
         <div><label class="block text-[11px] text-slate-400 mb-1">Teléfono</label><input type="text" id="masterTenantTelefono" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
         <div><label class="block text-[11px] text-slate-400 mb-1">Rol</label><select id="masterTenantRol" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"><option value="tenant">TENANT (Cliente)</option><option value="master">MASTER (Administrador SaaS)</option></select></div>
         <div><label class="block text-[11px] text-slate-400 mb-1">Plan de Suscripción</label><select id="masterTenantPlan" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"><option value="Freemium">Freemium</option><option value="Pyme">Pyme</option><option value="Enterprise">Enterprise</option><option value="Administración">Administración</option></select></div>
         <div><label class="block text-[11px] text-slate-400 mb-1">Ciclo</label><select id="masterTenantCiclo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"><option value="MENSUAL">MENSUAL</option><option value="ANUAL">ANUAL</option></select></div>
         <div><label class="block text-[11px] text-slate-400 mb-1">Estado</label><select id="masterTenantActivo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"><option value="true">ACTIVO</option><option value="false">SUSPENDIDO</option></select></div>
         <div><label class="block text-[11px] text-slate-400 mb-1">Fecha Vencimiento Plan</label><input type="date" id="masterTenantVencimiento" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
+        <div><label class="block text-[11px] text-slate-400 mb-1">Cupo Máx. Usuarios</label><input type="number" min="1" max="500" id="masterTenantMaxUsuarios" placeholder="2" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono"></div>
         <div class="sm:col-span-2"><label class="block text-[11px] text-slate-400 mb-1">Domicilio Fiscal</label><input type="text" id="masterTenantDireccion" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></div>
       </div>
       <div class="flex gap-2 pt-2">
@@ -3383,6 +3661,7 @@
   <script src="./js/auth.js"></script>
   <script src="./js/suscripciones.js"></script>
   <script src="./js/referidos.js"></script>
+  <script src="./js/usuarios.js"></script>
   <script src="./js/contabilidad.js"></script>
   <script src="./js/escaner.js"></script>
   <script src="./js/pos.js"></script>

@@ -341,8 +341,14 @@ async function guardarSesionInventarioFisico(sesion) {
   const tenantId = obtenerTenantInv();
   if (!tenantId) return;
 
+  const actor = typeof obtenerActorActual === 'function' ? obtenerActorActual() : null;
+  const actorUuid = actor?.usuarioId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(actor.usuarioId))
+    ? actor.usuarioId
+    : null;
+
   const registro = {
     ...sesion,
+    responsable: actor?.usuarioNombre || sesion.responsable || 'Usuario',
     created_at: new Date().toISOString()
   };
 
@@ -351,6 +357,26 @@ async function guardarSesionInventarioFisico(sesion) {
     const prev = JSON.parse(localStorage.getItem(key) || '[]');
     prev.unshift(registro);
     localStorage.setItem(key, JSON.stringify(prev.slice(0, 50)));
+  } catch (e) {}
+
+  // Persistir en tabla nativa inventario_fisico_actas
+  try {
+    const items = registro.items || [];
+    const conDif = items.filter(it => Math.abs(Number(it.diferencia || 0)) > 0.0001).length;
+    const impactoUsd = items.reduce((acc, it) => acc + (Number(it.diferencia || 0) * Number(it.costoUsd || 0)), 0);
+    await supabaseClient.from('inventario_fisico_actas').insert([{
+      tenant_id: tenantId,
+      acta_nro: registro.id,
+      fecha: registro.fecha || new Date().toISOString().slice(0, 10),
+      responsable: registro.responsable,
+      observacion: registro.observacion || 'Toma Física',
+      total_items: items.length,
+      items_con_diferencia: conDif,
+      impacto_costo_usd: Number(impactoUsd.toFixed(2)),
+      items_json: items,
+      usuario_id: actorUuid,
+      usuario_nombre: actor?.usuarioNombre || null
+    }]);
   } catch (e) {}
 
   try {
@@ -370,6 +396,31 @@ async function cargarHistoricoInventarioFisico() {
 
   const sesionesMap = new Map();
 
+  // 1) Tabla nativa inventario_fisico_actas
+  try {
+    const { data: actasNativas, error: errNativas } = await supabaseClient
+      .from('inventario_fisico_actas')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(40);
+    if (!errNativas && Array.isArray(actasNativas)) {
+      actasNativas.forEach(a => {
+        const actaKey = String(a.acta_nro || a.id);
+        sesionesMap.set(actaKey, {
+          id: actaKey,
+          fecha: a.fecha,
+          responsable: a.responsable,
+          observacion: a.observacion,
+          items: Array.isArray(a.items_json) ? a.items_json : [],
+          created_at: a.created_at,
+          origen: 'Supabase'
+        });
+      });
+    }
+  } catch (e) {}
+
+  // 2) Respaldo desde audit_logs
   try {
     const { data } = await supabaseClient
       .from('audit_logs')
@@ -382,8 +433,8 @@ async function cargarHistoricoInventarioFisico() {
     (data || []).forEach(row => {
       try {
         const parsed = typeof row.detalle === 'string' ? JSON.parse(row.detalle) : row.detalle;
-        if (parsed && parsed.id) {
-          sesionesMap.set(parsed.id, { ...parsed, origen: 'Nube' });
+        if (parsed && parsed.id && !sesionesMap.has(String(parsed.id))) {
+          sesionesMap.set(String(parsed.id), { ...parsed, origen: 'Nube' });
         }
       } catch (e) {}
     });
@@ -392,8 +443,8 @@ async function cargarHistoricoInventarioFisico() {
   try {
     const local = JSON.parse(localStorage.getItem(`inv_fisico_hist_${tenantId}`) || '[]');
     local.forEach(s => {
-      if (s && s.id && !sesionesMap.has(s.id)) {
-        sesionesMap.set(s.id, { ...s, origen: 'Local' });
+      if (s && s.id && !sesionesMap.has(String(s.id))) {
+        sesionesMap.set(String(s.id), { ...s, origen: 'Local' });
       }
     });
   } catch (e) {}

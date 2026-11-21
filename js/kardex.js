@@ -544,6 +544,11 @@ async function registrarCompraInventario() {
         fecha: fechaCompra
       };
 
+      const actorComp = typeof obtenerActorActual === 'function' ? obtenerActorActual() : null;
+      const actorCompUuid = actorComp?.usuarioId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(actorComp.usuarioId))
+        ? actorComp.usuarioId
+        : null;
+
       const payloadKardexContab = {
         sucursal_id: item.sucursalId || null,
         almacen_id: item.almacenId || null,
@@ -553,7 +558,9 @@ async function registrarCompraInventario() {
         cuenta_inventario: almMeta?.cuenta_inventario || prodData.cuenta_contable || null,
         cuenta_contrapartida: prov?.cuenta_contable || null,
         centro_costo: sucMeta?.centro_costo || null,
-        periodo_contable: fechaCompra.slice(0, 7)
+        periodo_contable: fechaCompra.slice(0, 7),
+        usuario_id: actorCompUuid,
+        usuario_nombre: actorComp?.usuarioNombre || null
       };
 
       let resKardex;
@@ -646,6 +653,58 @@ async function registrarCompraInventario() {
       }
     }
 
+    // Persistir documento nativo en compras_documentos + compras_detalle (si tablas v100 existen)
+    try {
+      const actorDoc = typeof obtenerActorActual === 'function' ? obtenerActorActual() : null;
+      const actorDocUuid = actorDoc?.usuarioId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(actorDoc.usuarioId))
+        ? actorDoc.usuarioId
+        : null;
+      const totalCompraUsd = baseGravadaCompraUsd + montoExentoCompraUsd + ivaCompraUsd;
+      const firstItem = carritoCompraItems[0] || {};
+      const { data: docCab, error: errCab } = await supabaseClient
+        .from('compras_documentos')
+        .insert([{
+          tenant_id: tenantId,
+          doc_nro: docNro,
+          fecha: fechaCompra,
+          tasa_bcv: tasaBcv,
+          nro_factura: nroFactura,
+          nro_control: nroControl,
+          proveedor_id: proveedorId || null,
+          proveedor_nombre: provLabel,
+          sucursal_id: firstItem.sucursalId || null,
+          almacen_id: firstItem.almacenId || null,
+          base_gravada_usd: Number(baseGravadaCompraUsd.toFixed(2)),
+          monto_exento_usd: Number(montoExentoCompraUsd.toFixed(2)),
+          iva_usd: Number(ivaCompraUsd.toFixed(2)),
+          total_usd: Number(totalCompraUsd.toFixed(2)),
+          total_bs: Number((totalCompraUsd * tasaBcv).toFixed(2)),
+          items_count: carritoCompraItems.length,
+          usuario_id: actorDocUuid,
+          usuario_nombre: actorDoc?.usuarioNombre || null
+        }])
+        .select('id')
+        .single();
+
+      if (!errCab && docCab?.id) {
+        const detRows = carritoCompraItems.map(it => ({
+          compra_id: docCab.id,
+          tenant_id: tenantId,
+          producto_id: it.productoId || null,
+          sku: it.sku || '',
+          descripcion: it.descripcion,
+          almacen_id: it.almacenId || null,
+          lote: it.lote || null,
+          fecha_vencimiento: it.fechaVencimiento || null,
+          cantidad: Number(it.cantidad || 0),
+          costo_unitario_usd: Number(it.costoUsd || 0),
+          iva_porcentaje: Number(it.ivaPorcentaje ?? 16),
+          subtotal_usd: Number((Number(it.cantidad) * Number(it.costoUsd)).toFixed(2))
+        }));
+        await supabaseClient.from('compras_detalle').insert(detRows);
+      }
+    } catch (e) {}
+
     if (typeof registrarAsientoAutomaticoCompra === 'function') {
       await registrarAsientoAutomaticoCompra({
         docNro,
@@ -687,6 +746,41 @@ async function cargarHistorialCompras() {
   const tenantId = obtenerTenantKardex();
   if (!tenantId) return;
 
+  const tbody = document.getElementById('tablaHistorialCompras');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  const agrupados = {};
+
+  // 1) Intentar cargar desde tabla nativa compras_documentos
+  try {
+    const { data: docsNativos, error: errNativos } = await supabaseClient
+      .from('compras_documentos')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    if (!errNativos && Array.isArray(docsNativos)) {
+      docsNativos.forEach(d => {
+        const key = String(d.doc_nro || d.id);
+        agrupados[key] = {
+          docNro: d.doc_nro || key,
+          fecha: d.fecha || (d.created_at ? d.created_at.slice(0, 10) : ''),
+          factura: d.nro_factura || 'N/A',
+          control: d.nro_control || 'N/A',
+          proveedor: d.proveedor_nombre || 'General',
+          sucursal: '',
+          almacen: '',
+          tasaBcv: Number(d.tasa_bcv || 1),
+          itemsCount: Number(d.items_count || 0),
+          subtotalUsd: Number(d.base_gravada_usd || 0) + Number(d.monto_exento_usd || 0)
+        };
+      });
+    }
+  } catch (e) {}
+
+  // 2) Complementar desde kardex_movimientos para compras históricas o pre-SQL
   const { data, error } = await supabaseClient
     .from('kardex_movimientos')
     .select('*')
@@ -694,33 +788,25 @@ async function cargarHistorialCompras() {
     .eq('tipo_movimiento', 'ENTRADA')
     .order('created_at', { ascending: false });
 
-  const tbody = document.getElementById('tablaHistorialCompras');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-
-  if (error) {
+  if (error && Object.keys(agrupados).length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-rose-400">Error al consultar compras: ${esc(error.message)}</td></tr>`;
     return;
   }
 
   const entradas = (data || []).filter(m => !/^REV-/i.test(String(m.documento_ref || '').trim()));
-  if (entradas.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin documentos de compra registrados.</td></tr>`;
-    return;
-  }
-
-  const agrupados = {};
+  const tempKardex = {};
   entradas.forEach(m => {
     const ref = String(m.documento_ref || '');
     const partes = ref.split('|').map(s => s.trim());
     const docMatch = partes[0]?.match(/^COMP-\d+/i) ? partes[0] : (ref || 'SIN-DOC');
+    if (agrupados[docMatch]) return;
     const getCampo = (pref) => {
       const encontrado = partes.find(p => p.startsWith(pref));
       return encontrado ? encontrado.slice(pref.length).trim() : '';
     };
 
-    if (!agrupados[docMatch]) {
-      agrupados[docMatch] = {
+    if (!tempKardex[docMatch]) {
+      tempKardex[docMatch] = {
         docNro: docMatch,
         fecha: m.fecha || (m.created_at ? m.created_at.slice(0, 10) : ''),
         factura: getCampo('FAC:') || 'N/A',
@@ -734,9 +820,16 @@ async function cargarHistorialCompras() {
       };
     }
 
-    agrupados[docMatch].itemsCount += 1;
-    agrupados[docMatch].subtotalUsd += Number(m.cantidad_in || 0) * Number(m.costo_promedio_usd || 0);
+    tempKardex[docMatch].itemsCount += 1;
+    tempKardex[docMatch].subtotalUsd += Number(m.cantidad_in || 0) * Number(m.costo_promedio_usd || 0);
   });
+
+  Object.assign(agrupados, tempKardex);
+
+  if (Object.keys(agrupados).length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-500">Sin documentos de compra registrados.</td></tr>`;
+    return;
+  }
 
   Object.values(agrupados).forEach(doc => {
     const totalBs = doc.subtotalUsd * doc.tasaBcv;

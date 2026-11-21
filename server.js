@@ -4,6 +4,38 @@ const path = require('path');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
+const BCV_TLS_STRICT = String(process.env.BCV_TLS_STRICT || 'false').toLowerCase() === 'true';
+
+app.disable('x-powered-by');
+app.use(express.json({ limit: '1mb' }));
+
+// Cabeceras de seguridad HTTP compatibles con iframe y cámara QR local
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=()');
+  next();
+});
+
+// Rate limiter en memoria para endpoints /api/* (máx. 100 peticiones/min por IP)
+const apiRateStore = new Map();
+const RATE_WINDOW_MS = 60 * 1000;
+const RATE_MAX_REQ = 100;
+
+app.use('/api', (req, res, next) => {
+  const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'local').split(',')[0].trim();
+  const now = Date.now();
+  const rec = apiRateStore.get(ip);
+  if (!rec || (now - rec.start) > RATE_WINDOW_MS) {
+    apiRateStore.set(ip, { start: now, count: 1 });
+    return next();
+  }
+  rec.count += 1;
+  if (rec.count > RATE_MAX_REQ) {
+    return res.status(429).json({ ok: false, error: 'Demasiadas solicitudes. Intenta nuevamente en unos segundos.' });
+  }
+  return next();
+});
 
 let bcvCache = {
   timestamp: 0,
@@ -46,7 +78,7 @@ function fetchHttpsText(url, { rejectUnauthorized = true, timeoutMs = 8000 } = {
 async function obtenerTasaBcvOficial() {
   // 1. Fuente primaria: sitio oficial https://www.bcv.org.ve/
   try {
-    const res = await fetchHttpsText('https://www.bcv.org.ve/', { rejectUnauthorized: false, timeoutMs: 8000 });
+    const res = await fetchHttpsText('https://www.bcv.org.ve/', { rejectUnauthorized: BCV_TLS_STRICT, timeoutMs: 8000 });
     if (res.status >= 200 && res.status < 300 && res.body) {
       const bloqueDolar = res.body.match(/id=["']dolar["'][\s\S]{0,700}?<strong[^>]*>\s*([0-9.,]+)\s*<\/strong>/i);
       if (bloqueDolar && bloqueDolar[1]) {
@@ -68,7 +100,7 @@ async function obtenerTasaBcvOficial() {
     console.warn('Fallo consulta directa bcv.org.ve, usando respaldo:', err.message);
   }
 
-  // 2. Respaldo automático: ve.dolarapi.com (espejo de tasa oficial BCV)
+  // 2. Respaldo automático: ve.dolarapi.com (TLS estricto)
   try {
     const resApi = await fetchHttpsText('https://ve.dolarapi.com/v1/dolares/oficial', { rejectUnauthorized: true, timeoutMs: 6000 });
     if (resApi.status >= 200 && resApi.status < 300 && resApi.body) {
@@ -89,6 +121,15 @@ async function obtenerTasaBcvOficial() {
 
   return { ok: false, error: 'No se pudo obtener la tasa BCV en este momento.' };
 }
+
+app.get('/api/salud', (req, res) => {
+  res.json({
+    ok: true,
+    service: 'MiFacturaDigital.com.ve',
+    uptimeSec: Math.round(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
 
 app.get('/api/tasa-bcv', async (req, res) => {
   const force = req.query.force === '1' || req.query.force === 'true';
@@ -139,6 +180,11 @@ app.use(express.static(path.join(__dirname), {
 app.get('*', (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.use((err, req, res, next) => {
+  console.error('Error HTTP:', err?.message || err);
+  res.status(500).json({ ok: false, error: 'Error interno del servidor' });
 });
 
 app.listen(PORT, '0.0.0.0', () => {

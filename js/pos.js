@@ -782,6 +782,11 @@ async function emitirFactura() {
           estado: 'EMITIDA'
         };
 
+    const actorPos = typeof obtenerActorActual === 'function' ? obtenerActorActual() : null;
+    const actorPosUuid = actorPos?.usuarioId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(actorPos.usuarioId))
+      ? actorPos.usuarioId
+      : null;
+
     const payloadInvContable = {
       tipo_documento: 'FACTURA',
       sucursal_id: sucId || null,
@@ -796,7 +801,9 @@ async function emitirFactura() {
       base_igtf_bs: Number((baseIgtfUsd * tasa).toFixed(2)),
       costo_total_usd: Number(costoTotalUsd.toFixed(4)),
       costo_total_bs: Number(costoTotalBs.toFixed(2)),
-      periodo_contable: periodoContable
+      periodo_contable: periodoContable,
+      usuario_id: actorPosUuid,
+      usuario_nombre: actorPos?.usuarioNombre || tenantActual?.razon_social || null
     };
 
     if (typeof guardarRegistroConCompatibilidadContable === 'function') {
@@ -903,7 +910,9 @@ async function emitirFactura() {
           cuenta_inventario: almObj?.cuenta_inventario || null,
           cuenta_contrapartida: item.cuentaCosto || null,
           centro_costo: item.centroCosto || centroCostoDoc,
-          periodo_contable: periodoContable
+          periodo_contable: periodoContable,
+          usuario_id: actorPosUuid,
+          usuario_nombre: actorPos?.usuarioNombre || null
         });
 
         if (resKardex.error && String(resKardex.error.code || '') === '42501') {

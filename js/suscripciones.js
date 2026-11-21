@@ -67,6 +67,7 @@ const MODULOS_ERP_SAAS = [
   { id: 'unidades', grupo: 'Catálogos y Maestros', nombre: 'Unidades de Medida', btnId: 'btnTabUnidades', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
   { id: 'tiposIva', grupo: 'Catálogos y Maestros', nombre: 'Tipos de IVA', btnId: 'btnTabTiposIva', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
   { id: 'viasPago', grupo: 'Catálogos y Maestros', nombre: 'Vías de Pago', btnId: 'btnTabViasPago', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
+  { id: 'usuarios', grupo: 'Catálogos y Maestros', nombre: 'Equipo y Usuarios', btnId: 'btnTabUsuarios', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
   { id: 'referidos', grupo: 'Catálogos y Maestros', nombre: 'Afiliados', btnId: 'btnTabReferidos', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración', 'Promotor'] },
   { id: 'suscripcion', grupo: 'Cuenta y Suscripción', nombre: 'Mi Plan y Pagos', btnId: 'btnTabSuscripcion', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] }
 ];
@@ -94,6 +95,7 @@ let masterMostrarModulosCliente = false;
 function marcarBotonSidebarMaster(subtab = 'tenants') {
   const mapa = {
     tenants: 'btnTabMasterTenants',
+    usuarios: 'btnTabMasterUsuarios',
     pagos: 'btnTabMasterPagos',
     referidosMaster: 'btnTabMasterReferidos',
     infraestructura: 'btnTabMasterSql'
@@ -228,13 +230,25 @@ async function sincronizarMetaSaasNube(tenantIdUnico = null) {
 
 async function sincronizarMetaSaasTenantActual() {
   if (!tenantActual?.id || !supabaseClient) return tenantActual;
+  const cols = typeof TENANT_SAFE_COLS !== 'undefined'
+    ? TENANT_SAFE_COLS
+    : 'id,razon_social,rif,email,telefono,direccion,rol,plan_activo,activo,created_at';
   try {
-    const [{ data: freshTenant }] = await Promise.all([
-      supabaseClient.from('tenants').select('*').eq('id', tenantActual.id).single(),
+    let [resT] = await Promise.all([
+      supabaseClient.from('tenants').select(cols).eq('id', tenantActual.id).single(),
       sincronizarMetaSaasNube(tenantActual.id)
     ]);
+    if (resT?.error && typeof esErrorColumnaOTablaFaltante === 'function' && esErrorColumnaOTablaFaltante(resT.error)) {
+      resT = await supabaseClient
+        .from('tenants')
+        .select('id,razon_social,rif,email,telefono,direccion,rol,plan_activo,activo,created_at')
+        .eq('id', tenantActual.id)
+        .single();
+    }
+    const freshTenant = resT?.data;
     if (freshTenant) {
-      tenantActual = fusionarTenantConMetaSaas(freshTenant);
+      const safe = typeof sanitizarTenantSeguro === 'function' ? sanitizarTenantSeguro(freshTenant) : freshTenant;
+      tenantActual = fusionarTenantConMetaSaas(safe);
       localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
     } else {
       tenantActual = fusionarTenantConMetaSaas(tenantActual);
@@ -245,25 +259,49 @@ async function sincronizarMetaSaasTenantActual() {
 
 function obtenerPermisosEfectivosTenant(tenant = tenantActual) {
   if (!tenant) return ['pos', 'suscripcion'];
+  const esSelf = tenantActual && String(tenant.id) === String(tenantActual.id);
+  let modsEmpresa = null;
+
   if (esUsuarioMaster(tenant)) {
-    return MODULOS_ERP_SAAS.map(m => m.id);
-  }
-  const enriched = fusionarTenantConMetaSaas(tenant);
-  if (String(enriched.rol || '').toLowerCase() === 'promotor' || enriched.es_promotor_externo === true) {
-    return ['referidos'];
-  }
-  if (enriched.activo === false) {
-    return ['suscripcion'];
-  }
-  if (Array.isArray(enriched.modulos_permitidos) && enriched.modulos_permitidos.length > 0) {
-    const set = new Set(enriched.modulos_permitidos);
-    set.add('suscripcion');
-    if (enriched.permisos_manuales !== true && set.has('productos')) {
-      set.add('etiquetas');
+    modsEmpresa = MODULOS_ERP_SAAS.map(m => m.id);
+  } else {
+    const enriched = fusionarTenantConMetaSaas(tenant);
+    if (String(enriched.rol || '').toLowerCase() === 'promotor' || enriched.es_promotor_externo === true) {
+      return ['referidos'];
     }
-    return Array.from(set);
+    if (enriched.activo === false) {
+      return ['suscripcion'];
+    }
+    if (Array.isArray(enriched.modulos_permitidos) && enriched.modulos_permitidos.length > 0) {
+      const set = new Set(enriched.modulos_permitidos);
+      set.add('suscripcion');
+      if (enriched.permisos_manuales !== true && set.has('productos')) {
+        set.add('etiquetas');
+      }
+      if (enriched.permisos_manuales !== true) {
+        set.add('usuarios');
+      }
+      modsEmpresa = Array.from(set);
+    } else {
+      modsEmpresa = obtenerPresetModulosPorPlan(enriched.plan_activo || 'Freemium');
+    }
   }
-  return obtenerPresetModulosPorPlan(enriched.plan_activo || 'Freemium');
+
+  // Si hay un sub-usuario interno autenticado (no propietario y no ADMIN_EMPRESA), restringir a sus módulos
+  const actorAct = typeof obtenerActorActual === 'function' ? obtenerActorActual() : null;
+  if (
+    esSelf &&
+    actorAct &&
+    !actorAct.esPropietario &&
+    actorAct.rolInterno !== 'ADMIN_EMPRESA' &&
+    Array.isArray(actorAct.modulosPermitidos) &&
+    actorAct.modulosPermitidos.length > 0
+  ) {
+    const setEmp = new Set(modsEmpresa);
+    return actorAct.modulosPermitidos.filter(m => setEmp.has(m));
+  }
+
+  return modsEmpresa;
 }
 
 function puedeAccederModuloErp(moduloId, tenant = tenantActual) {
@@ -672,7 +710,7 @@ async function registrarPagoEnNube(pagoObj) {
 // ==========================================
 
 function cambiarSubtabMaster(subtab) {
-  ['tenants', 'pagos', 'referidosMaster', 'infraestructura'].forEach(st => {
+  ['tenants', 'usuarios', 'pagos', 'referidosMaster', 'infraestructura'].forEach(st => {
     const panel = document.getElementById(`masterSubPanel_${st}`);
     const btn = document.getElementById(`btnMasterSub_${st}`);
     if (panel) {
@@ -690,12 +728,16 @@ function cambiarSubtabMaster(subtab) {
     }
   });
   marcarBotonSidebarMaster(subtab);
+  if (subtab === 'usuarios' && typeof cargarUsuariosYSesionesMaster === 'function') {
+    cargarUsuariosYSesionesMaster();
+  }
   if (subtab === 'referidosMaster' && typeof cargarPanelReferidosMaster === 'function') {
     cargarPanelReferidosMaster();
   }
   if (subtab === 'infraestructura') {
     if (typeof verificarEstadoEsquemaContable === 'function') verificarEstadoEsquemaContable();
     verificarEstadoEsquemaSaas();
+    if (typeof verificarEstadoEsquemaSeguridadV100 === 'function') verificarEstadoEsquemaSeguridadV100();
   }
 }
 
@@ -735,17 +777,33 @@ async function cargarPanelMasterCompleto() {
     cargarPagosSuscripcion(null)
   ]);
 
-  const { data, error } = await supabaseClient
+  const cols = typeof TENANT_SAFE_COLS !== 'undefined'
+    ? TENANT_SAFE_COLS
+    : 'id,razon_social,rif,email,telefono,direccion,rol,plan_activo,activo,created_at';
+
+  let res = await supabaseClient
     .from('tenants')
-    .select('*')
+    .select(cols)
     .order('created_at', { ascending: false });
+
+  if (res.error && typeof esErrorColumnaOTablaFaltante === 'function' && esErrorColumnaOTablaFaltante(res.error)) {
+    res = await supabaseClient
+      .from('tenants')
+      .select('id,razon_social,rif,email,telefono,direccion,rol,plan_activo,activo,created_at')
+      .order('created_at', { ascending: false });
+  }
+
+  const { data, error } = res;
 
   if (error) {
     if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-rose-400">${esc(error.message)}</td></tr>`;
     return;
   }
 
-  saasTenantsCache = (data || []).map(fusionarTenantConMetaSaas);
+  saasTenantsCache = (data || []).map(t => {
+    const safe = typeof sanitizarTenantSeguro === 'function' ? sanitizarTenantSeguro(t) : t;
+    return fusionarTenantConMetaSaas(safe);
+  });
 
   const activos = saasTenantsCache.filter(t => t.activo !== false).length;
   const planesPagos = saasTenantsCache.filter(t => normalizarNombrePlan(t.plan_activo) !== 'Freemium').length;
@@ -1041,7 +1099,7 @@ function abrirModalInquilinoMaster(tenantId = null) {
   setVal('masterTenantRazonSocial', t ? t.razon_social : '');
   setVal('masterTenantRif', t ? t.rif : '');
   setVal('masterTenantEmail', t ? t.email : '');
-  setVal('masterTenantPassword', t ? (t.password || '') : '');
+  setVal('masterTenantPassword', '');
   setVal('masterTenantTelefono', t ? t.telefono : '');
   setVal('masterTenantDireccion', t ? t.direccion : '');
   setVal('masterTenantRol', t ? String(t.rol || 'tenant').toLowerCase() : 'tenant');
@@ -1049,6 +1107,10 @@ function abrirModalInquilinoMaster(tenantId = null) {
   setVal('masterTenantCiclo', t ? String(t.ciclo_facturacion || 'MENSUAL').toUpperCase() : 'MENSUAL');
   setVal('masterTenantActivo', t ? (t.activo === false ? 'false' : 'true') : 'true');
   setVal('masterTenantVencimiento', t?.fecha_vencimiento_plan || '');
+  const cupoDef = typeof LIMITES_USUARIOS_PLAN !== 'undefined'
+    ? (LIMITES_USUARIOS_PLAN[normalizarNombrePlan(t?.plan_activo || 'Freemium')] || 2)
+    : 2;
+  setVal('masterTenantMaxUsuarios', t?.max_usuarios || cupoDef);
 
   const titulo = document.getElementById('tituloModalInquilinoMaster');
   if (titulo) titulo.textContent = t ? `Administrar Inquilino: ${t.razon_social}` : 'Registrar Nuevo Inquilino SaaS';
@@ -1076,6 +1138,8 @@ async function guardarInquilinoMaster() {
   const ciclo_facturacion = getVal('masterTenantCiclo') || 'MENSUAL';
   const activo = getVal('masterTenantActivo') !== 'false';
   const fecha_vencimiento_plan = getVal('masterTenantVencimiento') || null;
+  const maxUsuariosRaw = parseInt(getVal('masterTenantMaxUsuarios') || '0', 10);
+  const max_usuarios = Number.isFinite(maxUsuariosRaw) && maxUsuariosRaw > 0 ? maxUsuariosRaw : null;
 
   if (!razon_social || !rif || !email) {
     avisarSaas('Razón Social, RIF y Correo son obligatorios.', 'warning');
@@ -1092,37 +1156,94 @@ async function guardarInquilinoMaster() {
     plan_activo,
     activo
   };
-  if (password) camposBase.password = password;
 
   const metaSaas = {
     ciclo_facturacion,
     fecha_vencimiento_plan,
     estado_suscripcion: activo ? 'ACTIVA' : 'SUSPENDIDA'
   };
+  if (max_usuarios) metaSaas.max_usuarios = max_usuarios;
 
   if (editId) {
     const res = await guardarMetaYEstadoTenantEnNube(editId, camposBase, metaSaas);
+    if (password && supabaseClient) {
+      try {
+        const rpcRes = await supabaseClient.rpc('registrar_credencial_erp', {
+          p_tipo: 'TENANT',
+          p_entidad_id: editId,
+          p_email: email,
+          p_password: password,
+          p_auth_user_id: null
+        });
+        if (rpcRes.error && typeof generarHashSha256Salted === 'function') {
+          const hash = await generarHashSha256Salted(password);
+          const credLocal = JSON.parse(localStorage.getItem('mfd_credenciales_fallback') || '{}');
+          credLocal[email] = { id: editId, tenant_id: editId, hash };
+          localStorage.setItem('mfd_credenciales_fallback', JSON.stringify(credLocal));
+        }
+      } catch (e) {}
+    }
     if (!res.ok) {
       avisarSaas(res.error, 'warning', 7500);
     } else {
       avisarSaas(`Inquilino "${razon_social}" actualizado correctamente.`, 'success');
     }
   } else {
-    if (!password) {
-      avisarSaas('Ingresa una contraseña inicial para el nuevo inquilino.', 'warning');
+    if (!password || password.length < 6) {
+      avisarSaas('Ingresa una contraseña inicial de al menos 6 caracteres para el nuevo inquilino.', 'warning');
       return;
     }
-    const payload = { ...camposBase, password, ...metaSaas, modulos_permitidos: obtenerPresetModulosPorPlan(plan_activo) };
-    let res = await supabaseClient.from('tenants').insert([payload]).select();
-    if (res.error && typeof esErrorColumnaOTablaFaltante === 'function' && esErrorColumnaOTablaFaltante(res.error)) {
-      res = await supabaseClient.from('tenants').insert([{ ...camposBase, password }]).select();
+    const modulosIniciales = obtenerPresetModulosPorPlan(plan_activo);
+    let nuevoId = null;
+
+    // 1) Ruta segura v100 via RPC SECURITY DEFINER (crea tenant + credencial bcrypt aislada)
+    if (supabaseClient) {
+      try {
+        const rpcCreate = await supabaseClient.rpc('crear_tenant_publico_seguro', {
+          p_razon_social: razon_social,
+          p_rif: rif,
+          p_telefono: telefono,
+          p_direccion: direccion || 'VENEZUELA',
+          p_email: email,
+          p_password: password,
+          p_rol: rol,
+          p_plan_activo: plan_activo,
+          p_modulos_permitidos: modulosIniciales,
+          p_codigo_referido: null,
+          p_referido_por_id: null,
+          p_referido_nivel2_id: null,
+          p_referido_nivel3_id: null,
+          p_es_promotor_externo: rol === 'promotor',
+          p_datos_cobro_comision: {},
+          p_auth_user_id: null
+        });
+        if (!rpcCreate.error && rpcCreate.data?.ok && rpcCreate.data?.tenant_id) {
+          nuevoId = rpcCreate.data.tenant_id;
+        }
+      } catch (e) {}
     }
-    if (res.error || !res.data?.[0]) {
-      avisarSaas(`No se pudo crear el inquilino: ${res.error?.message || 'Política RLS en tenants'}`, 'error', 7500);
-      return;
+
+    // 2) Fallback pre-SQL si aún no ejecutan v100 (sin guardar clave en texto plano en localStorage/meta)
+    if (!nuevoId) {
+      const payload = { ...camposBase, ...metaSaas, modulos_permitidos: modulosIniciales };
+      let res = await supabaseClient.from('tenants').insert([payload]).select('id');
+      if (res.error && typeof esErrorColumnaOTablaFaltante === 'function' && esErrorColumnaOTablaFaltante(res.error)) {
+        res = await supabaseClient.from('tenants').insert([camposBase]).select('id');
+      }
+      if (res.error || !res.data?.[0]) {
+        avisarSaas(`No se pudo crear el inquilino: ${res.error?.message || 'Política RLS en tenants'}`, 'error', 7500);
+        return;
+      }
+      nuevoId = res.data[0].id;
+      if (typeof generarHashSha256Salted === 'function') {
+        const hash = await generarHashSha256Salted(password);
+        const credLocal = JSON.parse(localStorage.getItem('mfd_credenciales_fallback') || '{}');
+        credLocal[email] = { id: nuevoId, tenant_id: nuevoId, hash };
+        localStorage.setItem('mfd_credenciales_fallback', JSON.stringify(credLocal));
+      }
     }
-    const nuevoId = res.data[0].id;
-    await guardarMetaYEstadoTenantEnNube(nuevoId, camposBase, { ...metaSaas, modulos_permitidos: obtenerPresetModulosPorPlan(plan_activo) });
+
+    await guardarMetaYEstadoTenantEnNube(nuevoId, {}, { ...metaSaas, modulos_permitidos: modulosIniciales });
     avisarSaas(`Inquilino "${razon_social}" creado y habilitado.`, 'success');
   }
 

@@ -302,12 +302,27 @@ async function cargarTenantsParaReferidos(forceRefresh = false) {
     return saasTenantsCache;
   }
   if (!supabaseClient) return Array.isArray(saasTenantsCache) ? saasTenantsCache : [];
+  const cols = typeof TENANT_SAFE_COLS !== 'undefined'
+    ? TENANT_SAFE_COLS
+    : 'id,razon_social,rif,email,telefono,direccion,rol,plan_activo,activo,created_at';
   try {
-    const [{ data }] = await Promise.all([
-      supabaseClient.from('tenants').select('*').order('created_at', { ascending: false }).limit(500),
+    const [resTen] = await Promise.all([
+      supabaseClient.from('tenants').select(cols).order('created_at', { ascending: false }).limit(500),
       typeof sincronizarMetaSaasNube === 'function' ? sincronizarMetaSaasNube(null) : Promise.resolve({})
     ]);
-    const lista = (data || []).map(t => typeof fusionarTenantConMetaSaas === 'function' ? fusionarTenantConMetaSaas(t) : t);
+    let data = resTen?.data;
+    if (resTen?.error && typeof esErrorColumnaOTablaFaltante === 'function' && esErrorColumnaOTablaFaltante(resTen.error)) {
+      const fallback = await supabaseClient
+        .from('tenants')
+        .select('id,razon_social,rif,email,telefono,direccion,rol,plan_activo,activo,created_at')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      data = fallback.data;
+    }
+    const lista = (data || []).map(t => {
+      const safe = typeof sanitizarTenantSeguro === 'function' ? sanitizarTenantSeguro(t) : t;
+      return typeof fusionarTenantConMetaSaas === 'function' ? fusionarTenantConMetaSaas(safe) : safe;
+    });
     saasTenantsCache = lista;
     return lista;
   } catch (e) {
@@ -318,6 +333,20 @@ async function cargarTenantsParaReferidos(forceRefresh = false) {
 async function resolverReferidorPorCodigoOId(codigoOId) {
   const limpio = String(codigoOId || '').trim();
   if (!limpio) return null;
+
+  if (supabaseClient) {
+    try {
+      const { data: rpcRef, error: rpcErr } = await supabaseClient.rpc('resolver_referidor_publico', { p_codigo_o_id: limpio });
+      if (!rpcErr && rpcRef && rpcRef.encontrado && rpcRef.nivel1?.id) {
+        return {
+          nivel1: rpcRef.nivel1,
+          nivel2Id: rpcRef.nivel2_id || null,
+          nivel3Id: rpcRef.nivel3_id || null
+        };
+      }
+    } catch (e) {}
+  }
+
   const lista = await cargarTenantsParaReferidos();
   const upper = limpio.toUpperCase();
 
@@ -409,8 +438,8 @@ async function registrarCuentaDesdeLanding(e) {
   const metodoCobro = document.getElementById('regMetodoCobro')?.value || 'PAGO MOVIL';
   const datoCobro = (document.getElementById('regDatoCobro')?.value || '').trim();
 
-  if (!razon_social || !rif || !email || password.length < 4) {
-    avisarRef('Completa Nombre/Razón Social, Cédula/RIF, Correo y Contraseña (mín. 4 caracteres).', 'warning');
+  if (!razon_social || !rif || !email || password.length < 6) {
+    avisarRef('Completa Nombre/Razón Social, Cédula/RIF, Correo y Contraseña (mín. 6 caracteres).', 'warning');
     return;
   }
   if (typeof validarRifVzla === 'function' && !validarRifVzla(rif)) {
@@ -423,14 +452,7 @@ async function registrarCuentaDesdeLanding(e) {
   if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
 
   try {
-    // 1. Verificar correo no duplicado
-    const { data: existe } = await supabaseClient.from('tenants').select('id').eq('email', email).maybeSingle();
-    if (existe?.id) {
-      avisarRef('Ya existe una cuenta registrada con ese correo electrónico. Inicia sesión con tus credenciales.', 'warning');
-      return;
-    }
-
-    // 2. Resolver cadena de hasta 3 niveles
+    // 1. Resolver cadena de hasta 3 niveles antes de crear la cuenta
     const atribCodigo = codigoInvitacion || leerAtribucionReferidoLocal()?.codigo || '';
     const cadena = atribCodigo ? await resolverReferidorPorCodigoOId(atribCodigo) : null;
 
@@ -441,19 +463,7 @@ async function registrarCuentaDesdeLanding(e) {
     const datosCobro = esPromotor && datoCobro ? { metodo: metodoCobro, destino: datoCobro } : {};
     const modulosIniciales = esPromotor
       ? ['referidos']
-      : (typeof obtenerPresetModulosPorPlan === 'function' ? obtenerPresetModulosPorPlan('Freemium') : ['pos', 'historial', 'productos', 'clientes', 'referidos', 'suscripcion']);
-
-    const payloadBase = {
-      razon_social,
-      rif,
-      telefono,
-      direccion: esPromotor ? 'PROMOTOR ALIADO EXTERNO' : 'VENEZUELA',
-      email,
-      password,
-      rol: esPromotor ? 'promotor' : 'tenant',
-      plan_activo: esPromotor ? 'Promotor' : 'Freemium',
-      activo: true
-    };
+      : (typeof obtenerPresetModulosPorPlan === 'function' ? obtenerPresetModulosPorPlan('Freemium') : ['pos', 'historial', 'productos', 'clientes', 'usuarios', 'referidos', 'suscripcion']);
 
     const metaSaas = {
       ciclo_facturacion: 'MENSUAL',
@@ -467,29 +477,130 @@ async function registrarCuentaDesdeLanding(e) {
       datos_cobro_comision: datosCobro
     };
 
-    let res = await supabaseClient.from('tenants').insert([{ ...payloadBase, ...metaSaas }]).select();
-    if (res.error && typeof esErrorColumnaOTablaFaltante === 'function' && esErrorColumnaOTablaFaltante(res.error)) {
-      res = await supabaseClient.from('tenants').insert([payloadBase]).select();
+    // 2. Intentar crear sesión JWT real en Supabase Auth
+    let authUserId = null;
+    try {
+      const { data: signUpData } = await supabaseClient.auth.signUp({ email, password });
+      authUserId = signUpData?.user?.id || null;
+    } catch (e) {}
+
+    let nuevoTenant = null;
+
+    // 3. Ruta segura principal v100 via RPC SECURITY DEFINER (crea tenant + credencial bcrypt aislada)
+    try {
+      const { data: rpcRes, error: rpcErr } = await supabaseClient.rpc('crear_tenant_publico_seguro', {
+        p_razon_social: razon_social,
+        p_rif: rif,
+        p_telefono: telefono,
+        p_direccion: esPromotor ? 'PROMOTOR ALIADO EXTERNO' : 'VENEZUELA',
+        p_email: email,
+        p_password: password,
+        p_rol: esPromotor ? 'promotor' : 'tenant',
+        p_plan_activo: esPromotor ? 'Promotor' : 'Freemium',
+        p_modulos_permitidos: modulosIniciales,
+        p_codigo_referido: codigoPropio,
+        p_referido_por_id: metaSaas.referido_por_id,
+        p_referido_nivel2_id: metaSaas.referido_nivel2_id,
+        p_referido_nivel3_id: metaSaas.referido_nivel3_id,
+        p_es_promotor_externo: esPromotor,
+        p_datos_cobro_comision: datosCobro,
+        p_auth_user_id: authUserId
+      });
+
+      if (!rpcErr && rpcRes) {
+        if (!rpcRes.ok) {
+          avisarRef(rpcRes.error || 'Ya existe una cuenta registrada con ese correo electrónico.', 'warning');
+          return;
+        }
+        nuevoTenant = {
+          id: rpcRes.tenant_id,
+          auth_user_id: authUserId,
+          razon_social,
+          rif,
+          telefono,
+          direccion: esPromotor ? 'PROMOTOR ALIADO EXTERNO' : 'VENEZUELA',
+          email,
+          rol: esPromotor ? 'promotor' : 'tenant',
+          plan_activo: esPromotor ? 'Promotor' : 'Freemium',
+          activo: true,
+          ...metaSaas
+        };
+      }
+    } catch (e) {}
+
+    // 4. Fallback pre-SQL si aún no ejecutan migracion_seguridad_usuarios_v100.sql
+    if (!nuevoTenant) {
+      const { data: existe } = await supabaseClient.from('tenants').select('id').eq('email', email).maybeSingle();
+      if (existe?.id) {
+        avisarRef('Ya existe una cuenta registrada con ese correo electrónico. Inicia sesión con tus credenciales.', 'warning');
+        return;
+      }
+
+      const payloadBase = {
+        razon_social,
+        rif,
+        telefono,
+        direccion: esPromotor ? 'PROMOTOR ALIADO EXTERNO' : 'VENEZUELA',
+        email,
+        rol: esPromotor ? 'promotor' : 'tenant',
+        plan_activo: esPromotor ? 'Promotor' : 'Freemium',
+        activo: true
+      };
+
+      const colsRet = typeof TENANT_SAFE_COLS !== 'undefined'
+        ? TENANT_SAFE_COLS
+        : 'id,razon_social,rif,email,telefono,direccion,rol,plan_activo,activo,created_at';
+      let res = await supabaseClient.from('tenants').insert([{ ...payloadBase, ...metaSaas }]).select(colsRet);
+      if (res.error && typeof esErrorColumnaOTablaFaltante === 'function' && esErrorColumnaOTablaFaltante(res.error)) {
+        res = await supabaseClient.from('tenants').insert([payloadBase]).select('id,razon_social,rif,email,telefono,direccion,rol,plan_activo,activo,created_at');
+      }
+
+      if (res.error || !res.data?.[0]) {
+        avisarRef(`No se pudo completar el registro: ${res.error?.message || 'Error en base de datos'}`, 'error', 7000);
+        return;
+      }
+      nuevoTenant = res.data[0];
+
+      if (typeof generarHashSha256Salted === 'function') {
+        const hash = await generarHashSha256Salted(password);
+        const credLocal = JSON.parse(localStorage.getItem('mfd_credenciales_fallback') || '{}');
+        credLocal[email] = { id: nuevoTenant.id, tenant_id: nuevoTenant.id, hash };
+        localStorage.setItem('mfd_credenciales_fallback', JSON.stringify(credLocal));
+      }
     }
 
-    if (res.error || !res.data?.[0]) {
-      avisarRef(`No se pudo completar el registro: ${res.error?.message || 'Error en base de datos'}`, 'error', 7000);
-      return;
-    }
-
-    const nuevoTenant = res.data[0];
     if (typeof guardarMetaYEstadoTenantEnNube === 'function') {
       await guardarMetaYEstadoTenantEnNube(nuevoTenant.id, {}, metaSaas);
     }
 
-    tenantActual = typeof fusionarTenantConMetaSaas === 'function'
-      ? fusionarTenantConMetaSaas({ ...nuevoTenant, ...metaSaas })
+    const safeTenant = typeof sanitizarTenantSeguro === 'function'
+      ? sanitizarTenantSeguro({ ...nuevoTenant, ...metaSaas })
       : { ...nuevoTenant, ...metaSaas };
+    tenantActual = typeof fusionarTenantConMetaSaas === 'function'
+      ? fusionarTenantConMetaSaas(safeTenant)
+      : safeTenant;
+
+    if (typeof usuarioActual !== 'undefined') {
+      usuarioActual = {
+        id: tenantActual.id,
+        tenant_id: tenantActual.id,
+        nombre_completo: tenantActual.razon_social,
+        email: tenantActual.email,
+        rol_interno: 'PROPIETARIO',
+        sucursal_id: null,
+        modulos_permitidos: modulosIniciales,
+        es_propietario: true
+      };
+      localStorage.setItem('mfd_usuario_actual', JSON.stringify(usuarioActual));
+    }
     localStorage.setItem('tenant_actual', JSON.stringify(tenantActual));
 
     cerrarModalRegistroLanding();
     document.getElementById('formRegistroPublicoSaas')?.reset();
 
+    if (typeof registrarEntradaSesion === 'function') {
+      await registrarEntradaSesion();
+    }
     if (typeof activarVistaPrincipal === 'function') {
       activarVistaPrincipal();
     }
