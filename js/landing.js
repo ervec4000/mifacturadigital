@@ -14,6 +14,11 @@ function renderizarLandingPage() {
   if (!contenedor) return;
 
   contenedor.innerHTML = `
+    <!-- BANNER INVITACIÓN REFERIDO (?ref=) -->
+    <div id="landingBannerReferido" class="hidden bg-emerald-950/90 border-b border-emerald-500/40 px-4 py-2 text-center text-xs text-emerald-200 font-medium">
+      <span id="landingBannerReferidoTexto">Invitado con enlace de referido.</span>
+    </div>
+
     <!-- HEADER / NAVBAR -->
     <header class="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-800/80 px-4 lg:px-8 py-4 flex items-center justify-between">
       <div class="flex items-center space-x-3">
@@ -27,16 +32,19 @@ function renderizarLandingPage() {
       </div>
 
       <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-300">
-        <a href="#caracteristicas" class="hover:text-emerald-400 transition-colors">Funcionalidades</a>
         <a href="#modulos" class="hover:text-emerald-400 transition-colors">Módulos Fiscales</a>
+        <a href="#aliados" class="hover:text-emerald-400 transition-colors text-emerald-300">Programa de Aliados</a>
         <a href="#faq" class="hover:text-emerald-400 transition-colors">Preguntas Frecuentes</a>
       </nav>
 
-      <div class="flex items-center space-x-3">
-        <button onclick="abrirModalDemo()" class="hidden sm:inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-emerald-400 bg-emerald-950/50 border border-emerald-500/30 hover:bg-emerald-900/40 transition-all">
-          Solicitar Demo
+      <div class="flex items-center space-x-2.5">
+        <button type="button" onclick="abrirModalRegistroLanding('PROMOTOR')" class="hidden sm:inline-flex items-center px-3.5 py-2 rounded-lg text-xs font-semibold text-emerald-300 bg-emerald-950/50 border border-emerald-500/30 hover:bg-emerald-900/40 transition-all cursor-pointer">
+          Ser Promotor / Afiliado
         </button>
-        <button onclick="mostrarVistaLogin()" class="px-5 py-2 rounded-lg text-sm font-semibold text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 transition-all shadow-md shadow-emerald-500/20">
+        <button type="button" onclick="abrirModalRegistroLanding('COMERCIO')" class="hidden md:inline-flex items-center px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-200 bg-slate-900 border border-slate-700 hover:bg-slate-800 transition-all cursor-pointer">
+          Registrar Comercio
+        </button>
+        <button type="button" onclick="mostrarVistaLogin()" class="px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 transition-all shadow-md shadow-emerald-500/20 cursor-pointer">
           Iniciar Sesión
         </button>
       </div>
@@ -58,11 +66,14 @@ function renderizarLandingPage() {
           Diseñado para comercios, licorerías, supermercados y distribuidores en Venezuela. Emisión instantánea de comprobantes, inventario Kardex PPM, Libros de Compras/Ventas y retenciones IVA en una sola plataforma.
         </p>
 
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto mb-16">
-          <button onclick="abrirModalDemo()" class="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-all shadow-xl shadow-emerald-500/25">
-            Probar Demostración Gratis
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-2xl mx-auto mb-16">
+          <button type="button" onclick="abrirModalRegistroLanding('COMERCIO')" class="w-full sm:w-auto px-7 py-3.5 rounded-xl text-sm font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition-all shadow-xl shadow-emerald-500/25 cursor-pointer">
+            Crear Cuenta Comercial Gratis
           </button>
-          <a href="#modulos" class="w-full sm:w-auto px-8 py-4 rounded-xl text-base font-semibold text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition-all">
+          <button type="button" onclick="abrirModalRegistroLanding('PROMOTOR')" class="w-full sm:w-auto px-7 py-3.5 rounded-xl text-sm font-semibold text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-500/40 transition-all cursor-pointer">
+            Gana Comisiones como Promotor
+          </button>
+          <a href="#modulos" class="w-full sm:w-auto px-6 py-3.5 rounded-xl text-sm font-semibold text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 transition-all">
             Explorar Módulos
           </a>
         </div>
@@ -150,6 +161,46 @@ function renderizarLandingPage() {
       </div>
     </section>
 
+    <!-- PROGRAMA DE ALIADOS Y REFERIDOS (3 NIVELES) -->
+    <section id="aliados" class="py-20 px-4 lg:px-8 bg-slate-950 border-t border-slate-800/80">
+      <div class="max-w-6xl mx-auto space-y-10">
+        <div class="text-center max-w-3xl mx-auto space-y-3">
+          <p class="text-xs font-mono uppercase tracking-widest text-emerald-400">Programa de Embajadores, Contadores y Comercios</p>
+          <h2 class="text-3xl sm:text-4xl font-bold text-white">Multiplica tus Ingresos Refiriendo hasta en 3 Niveles</h2>
+          <p class="text-slate-400 text-sm sm:text-base">
+            No necesitas ser dueño de un comercio para ganar. Regístrate gratis como Promotor o Contador Aliado, comparte tu enlace único y cobra bonos del primer pago más comisiones mensuales recurrentes en USD.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl p-6 space-y-2">
+            <span class="text-xs font-mono font-bold text-emerald-400 uppercase">Nivel 1 · Invitado Directo</span>
+            <h3 class="text-xl font-bold text-white">Bono de Activación + Residual</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">Gana comisión alta sobre el primer pago de cada comercio que traigas con tu enlace <code class="text-emerald-300">?ref=</code> y sigue cobrando mes a mes mientras renueven.</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-2">
+            <span class="text-xs font-mono font-bold text-sky-400 uppercase">Nivel 2 y Nivel 3 · Red de Aliados</span>
+            <h3 class="text-xl font-bold text-white">Ingresos por Tu Equipo</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">Cuando tus referidos o contadores invitan a otros comercios o asesores, también recibes porcentaje automático hasta la 3ra generación.</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-2">
+            <span class="text-xs font-mono font-bold text-amber-300 uppercase">Cobra o Canjea</span>
+            <h3 class="text-xl font-bold text-white">Pago Móvil, Binance o Licencia Gratis</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">Retira tus comisiones acumuladas en USD/Bs. o úsalas como crédito directo para cubrir 100% la mensualidad de tu propio comercio.</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          <button type="button" onclick="abrirModalRegistroLanding('PROMOTOR')" class="px-6 py-3 rounded-xl text-sm font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 transition cursor-pointer">
+            Registrarme como Promotor (Sin Comercio)
+          </button>
+          <button type="button" onclick="abrirModalRegistroLanding('COMERCIO')" class="px-6 py-3 rounded-xl text-sm font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition cursor-pointer">
+            Registrar Mi Comercio Gratis
+          </button>
+        </div>
+      </div>
+    </section>
+
     <!-- FORMULARIO DE CAPTURA DE LEADS -->
     <section id="contacto" class="py-20 px-4 lg:px-8 bg-slate-900 border-t border-slate-800">
       <div class="max-w-3xl mx-auto bg-slate-950 p-8 sm:p-12 rounded-3xl border border-slate-800 shadow-2xl">
@@ -226,6 +277,10 @@ function renderizarLandingPage() {
       <p>© 2026 MiFacturaDigital.com.ve — Sistema Fiscal Integrado SENIAT Enterprise. Todos los derechos reservados.</p>
     </footer>
   `;
+
+  if (typeof actualizarBannersReferidoPublicos === 'function') {
+    actualizarBannersReferidoPublicos();
+  }
 }
 
 function mostrarVistaLogin() {
@@ -254,9 +309,19 @@ function abrirModalRegistroDemo() {
   setTimeout(abrirModalDemo, 100);
 }
 
-function procesarSolicitudDemo(event) {
+async function procesarSolicitudDemo(event) {
   event.preventDefault();
-  const nombre = document.getElementById('leadNombre').value;
-  alert(`¡Gracias ${nombre}! Tu solicitud ha sido registrada con éxito. Un asesor te contactará.`);
+  const nombre = (document.getElementById('leadNombre')?.value || '').trim();
+  const rif = (document.getElementById('leadRif')?.value || '').trim();
+  const telefono = (document.getElementById('leadTelefono')?.value || '').trim();
+  const email = (document.getElementById('leadEmail')?.value || '').trim();
+
+  if (typeof registrarLeadLandingConAtribucion === 'function') {
+    await registrarLeadLandingConAtribucion({ nombre, rif, telefono, email, tipo_interes: 'DEMO_COMERCIO' });
+  }
+
+  if (typeof notificarSistema === 'function') {
+    notificarSistema(`¡Gracias ${nombre}! Tu solicitud de demostración ha sido registrada. Un asesor se pondrá en contacto contigo.`, 'success', 6500);
+  }
   event.target.reset();
 }

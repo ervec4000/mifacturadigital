@@ -4,7 +4,7 @@
  * y Gestión de Pagos (Transferencia Bancaria, Pago Móvil y Pasarela de Tarjetas).
  */
 
-const PLANES_SAAS_CATALOGO = {
+const PLANES_SAAS_DEFECTO = {
   Freemium: {
     nombre: 'Freemium',
     etiqueta: 'Inicial / Emprendedor',
@@ -35,6 +35,16 @@ const PLANES_SAAS_CATALOGO = {
   }
 };
 
+function clonarCatalogoPlanes(base) {
+  const res = {};
+  Object.entries(base || {}).forEach(([k, v]) => {
+    res[k] = { ...v };
+  });
+  return res;
+}
+
+let PLANES_SAAS_CATALOGO = clonarCatalogoPlanes(PLANES_SAAS_DEFECTO);
+
 const MODULOS_ERP_SAAS = [
   { id: 'pos', grupo: 'POS y Facturación', nombre: 'Facturación POS', btnId: 'btnTabPos', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
   { id: 'historial', grupo: 'Historial y Cierres', nombre: 'Historial Comprobantes', btnId: 'btnTabHistorial', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
@@ -57,7 +67,7 @@ const MODULOS_ERP_SAAS = [
   { id: 'unidades', grupo: 'Catálogos y Maestros', nombre: 'Unidades de Medida', btnId: 'btnTabUnidades', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
   { id: 'tiposIva', grupo: 'Catálogos y Maestros', nombre: 'Tipos de IVA', btnId: 'btnTabTiposIva', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
   { id: 'viasPago', grupo: 'Catálogos y Maestros', nombre: 'Vías de Pago', btnId: 'btnTabViasPago', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
-  { id: 'referidos', grupo: 'Catálogos y Maestros', nombre: 'Afiliados', btnId: 'btnTabReferidos', defaultPlans: ['Pyme', 'Enterprise', 'Administración'] },
+  { id: 'referidos', grupo: 'Catálogos y Maestros', nombre: 'Afiliados', btnId: 'btnTabReferidos', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración', 'Promotor'] },
   { id: 'suscripcion', grupo: 'Cuenta y Suscripción', nombre: 'Mi Plan y Pagos', btnId: 'btnTabSuscripcion', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] }
 ];
 
@@ -85,6 +95,7 @@ function marcarBotonSidebarMaster(subtab = 'tenants') {
   const mapa = {
     tenants: 'btnTabMasterTenants',
     pagos: 'btnTabMasterPagos',
+    referidosMaster: 'btnTabMasterReferidos',
     infraestructura: 'btnTabMasterSql'
   };
   Object.entries(mapa).forEach(([k, btnId]) => {
@@ -173,9 +184,13 @@ function fusionarTenantConMetaSaas(tenant) {
   const merged = { ...meta, ...tenant };
   if (Array.isArray(tenant.modulos_permitidos)) merged.modulos_permitidos = tenant.modulos_permitidos;
   else if (Array.isArray(meta.modulos_permitidos)) merged.modulos_permitidos = meta.modulos_permitidos;
-  if (tenant.ciclo_facturacion) merged.ciclo_facturacion = tenant.ciclo_facturacion;
-  if (tenant.fecha_vencimiento_plan) merged.fecha_vencimiento_plan = tenant.fecha_vencimiento_plan;
-  if (tenant.estado_suscripcion) merged.estado_suscripcion = tenant.estado_suscripcion;
+  ['ciclo_facturacion', 'fecha_vencimiento_plan', 'estado_suscripcion', 'codigo_referido', 'referido_por_id', 'referido_nivel2_id', 'referido_nivel3_id', 'datos_cobro_comision'].forEach(k => {
+    if (tenant[k] !== undefined && tenant[k] !== null && tenant[k] !== '') merged[k] = tenant[k];
+    else if (meta[k] !== undefined && meta[k] !== null && meta[k] !== '') merged[k] = meta[k];
+  });
+  if (tenant.es_promotor_externo === true || meta.es_promotor_externo === true || String(tenant.rol || '').toLowerCase() === 'promotor') {
+    merged.es_promotor_externo = true;
+  }
   return merged;
 }
 
@@ -234,6 +249,9 @@ function obtenerPermisosEfectivosTenant(tenant = tenantActual) {
     return MODULOS_ERP_SAAS.map(m => m.id);
   }
   const enriched = fusionarTenantConMetaSaas(tenant);
+  if (String(enriched.rol || '').toLowerCase() === 'promotor' || enriched.es_promotor_externo === true) {
+    return ['referidos'];
+  }
   if (enriched.activo === false) {
     return ['suscripcion'];
   }
@@ -316,9 +334,10 @@ function aplicarPermisosMenuTenant() {
   const planEl = document.getElementById('headerTenantPlan');
   const rolEl = document.getElementById('headerTenantRol');
   if (planEl) {
+    const esPromotor = String(tenantActual.rol || '').toLowerCase() === 'promotor' || tenantActual.es_promotor_externo === true;
     planEl.textContent = esMaster
       ? 'MASTER SAAS'
-      : normalizarNombrePlan(tenantActual.plan_activo || 'Freemium').toUpperCase();
+      : (esPromotor ? 'PROMOTOR ALIADO' : normalizarNombrePlan(tenantActual.plan_activo || 'Freemium').toUpperCase());
   }
   if (rolEl) rolEl.textContent = (tenantActual.rol || 'tenant').toUpperCase();
 }
@@ -406,6 +425,158 @@ async function guardarConfigBancosMaster() {
   }
 
   avisarSaas('Datos bancarios receptores del Master actualizados para todos los clientes.', 'success');
+}
+
+function fusionarCatalogoPlanes(raw) {
+  const base = clonarCatalogoPlanes(PLANES_SAAS_DEFECTO);
+  if (!raw || typeof raw !== 'object') return base;
+  ['Freemium', 'Pyme', 'Enterprise', 'Administración'].forEach(key => {
+    if (raw[key] && typeof raw[key] === 'object') {
+      const pm = Number(raw[key].precioMensual);
+      const pa = Number(raw[key].precioAnual);
+      base[key] = {
+        ...base[key],
+        etiqueta: String(raw[key].etiqueta ?? base[key].etiqueta).trim() || base[key].etiqueta,
+        precioMensual: Number.isFinite(pm) && pm >= 0 ? pm : base[key].precioMensual,
+        precioAnual: Number.isFinite(pa) && pa >= 0 ? pa : base[key].precioAnual,
+        descripcion: String(raw[key].descripcion ?? base[key].descripcion).trim() || base[key].descripcion
+      };
+    }
+  });
+  if (!raw['Administración'] && raw.Enterprise) {
+    base['Administración'].precioMensual = base.Enterprise.precioMensual;
+    base['Administración'].precioAnual = base.Enterprise.precioAnual;
+  }
+  return base;
+}
+
+async function cargarConfigPlanesMaster() {
+  let cfg = null;
+  try {
+    const local = JSON.parse(localStorage.getItem('saas_config_planes_master') || 'null');
+    if (local && typeof local === 'object') cfg = local;
+  } catch (e) {}
+
+  if (supabaseClient) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('saas_config_pagos')
+        .select('valor_json')
+        .eq('clave', 'catalogo_planes')
+        .maybeSingle();
+      if (!error && data?.valor_json) {
+        cfg = data.valor_json;
+      }
+    } catch (e) {}
+
+    if (!cfg) {
+      try {
+        const { data, error } = await supabaseClient
+          .from('audit_logs')
+          .select('detalle')
+          .eq('accion', 'SAAS_CONFIG_PLANES')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (!error && data && data[0]?.detalle) {
+          cfg = JSON.parse(data[0].detalle);
+        }
+      } catch (e) {}
+    }
+  }
+
+  PLANES_SAAS_CATALOGO = fusionarCatalogoPlanes(cfg);
+  try {
+    localStorage.setItem('saas_config_planes_master', JSON.stringify(PLANES_SAAS_CATALOGO));
+  } catch (e) {}
+  return PLANES_SAAS_CATALOGO;
+}
+
+async function guardarConfigPlanesMaster() {
+  if (!esUsuarioMaster()) {
+    avisarSaas('Solo el usuario Master puede modificar los precios de los planes.', 'error');
+    return;
+  }
+
+  const leerNumero = (id, fallback) => {
+    const raw = document.getElementById(id)?.value;
+    const n = parseFloat(raw);
+    return Number.isFinite(n) && n >= 0 ? Number(n.toFixed(2)) : fallback;
+  };
+  const leerTexto = (id, fallback) => {
+    const txt = (document.getElementById(id)?.value || '').trim();
+    return txt || fallback;
+  };
+
+  const freeM = leerNumero('masterPlanFreeMensual', 0);
+  const freeA = leerNumero('masterPlanFreeAnual', 0);
+  const pymeM = leerNumero('masterPlanPymeMensual', PLANES_SAAS_CATALOGO.Pyme.precioMensual);
+  const pymeA = leerNumero('masterPlanPymeAnual', PLANES_SAAS_CATALOGO.Pyme.precioAnual);
+  const entM = leerNumero('masterPlanEntMensual', PLANES_SAAS_CATALOGO.Enterprise.precioMensual);
+  const entA = leerNumero('masterPlanEntAnual', PLANES_SAAS_CATALOGO.Enterprise.precioAnual);
+
+  const nuevoCatalogo = {
+    Freemium: {
+      nombre: 'Freemium',
+      etiqueta: leerTexto('masterPlanFreeEtiqueta', PLANES_SAAS_DEFECTO.Freemium.etiqueta),
+      precioMensual: freeM,
+      precioAnual: freeA,
+      descripcion: leerTexto('masterPlanFreeDesc', PLANES_SAAS_DEFECTO.Freemium.descripcion)
+    },
+    Pyme: {
+      nombre: 'Pyme',
+      etiqueta: leerTexto('masterPlanPymeEtiqueta', PLANES_SAAS_DEFECTO.Pyme.etiqueta),
+      precioMensual: pymeM,
+      precioAnual: pymeA,
+      descripcion: leerTexto('masterPlanPymeDesc', PLANES_SAAS_DEFECTO.Pyme.descripcion)
+    },
+    Enterprise: {
+      nombre: 'Enterprise',
+      etiqueta: leerTexto('masterPlanEntEtiqueta', PLANES_SAAS_DEFECTO.Enterprise.etiqueta),
+      precioMensual: entM,
+      precioAnual: entA,
+      descripcion: leerTexto('masterPlanEntDesc', PLANES_SAAS_DEFECTO.Enterprise.descripcion)
+    },
+    'Administración': {
+      ...PLANES_SAAS_CATALOGO['Administración'],
+      precioMensual: entM,
+      precioAnual: entA
+    }
+  };
+
+  PLANES_SAAS_CATALOGO = fusionarCatalogoPlanes(nuevoCatalogo);
+  localStorage.setItem('saas_config_planes_master', JSON.stringify(PLANES_SAAS_CATALOGO));
+
+  let guardadoNativo = false;
+  if (supabaseClient) {
+    try {
+      const { error } = await supabaseClient
+        .from('saas_config_pagos')
+        .upsert([{ clave: 'catalogo_planes', valor_json: PLANES_SAAS_CATALOGO, updated_at: new Date().toISOString() }], { onConflict: 'clave' });
+      if (!error) guardadoNativo = true;
+    } catch (e) {}
+
+    if (!guardadoNativo && tenantActual?.id) {
+      try {
+        await supabaseClient.from('audit_logs').insert([{
+          tenant_id: tenantActual.id,
+          accion: 'SAAS_CONFIG_PLANES',
+          detalle: JSON.stringify(PLANES_SAAS_CATALOGO)
+        }]);
+      } catch (e) {}
+    }
+  }
+
+  recalcularResumenPreciosMasterUI();
+  renderizarTablaSuscripcionesMaster();
+  renderizarTarjetasPlanesCliente();
+  actualizarSelectPlanesClienteUI();
+  actualizarCalculoPagoSuscripcion();
+
+  avisarSaas(
+    `Precios actualizados · Pyme ($${pymeM.toFixed(2)}/mes · $${pymeA.toFixed(2)}/año) y Enterprise ($${entM.toFixed(2)}/mes · $${entA.toFixed(2)}/año).`,
+    'success',
+    6500
+  );
 }
 
 async function cargarPagosSuscripcion(soloTenantId = null) {
@@ -498,7 +669,7 @@ async function registrarPagoEnNube(pagoObj) {
 // ==========================================
 
 function cambiarSubtabMaster(subtab) {
-  ['tenants', 'pagos', 'infraestructura'].forEach(st => {
+  ['tenants', 'pagos', 'referidosMaster', 'infraestructura'].forEach(st => {
     const panel = document.getElementById(`masterSubPanel_${st}`);
     const btn = document.getElementById(`btnMasterSub_${st}`);
     if (panel) {
@@ -516,6 +687,9 @@ function cambiarSubtabMaster(subtab) {
     }
   });
   marcarBotonSidebarMaster(subtab);
+  if (subtab === 'referidosMaster' && typeof cargarPanelReferidosMaster === 'function') {
+    cargarPanelReferidosMaster();
+  }
   if (subtab === 'infraestructura') {
     if (typeof verificarEstadoEsquemaContable === 'function') verificarEstadoEsquemaContable();
     verificarEstadoEsquemaSaas();
@@ -526,13 +700,15 @@ async function verificarEstadoEsquemaSaas() {
   const el = document.getElementById('saasEstadoEsquemaBadge');
   if (!el || !supabaseClient) return;
   try {
-    const [r1, r2] = await Promise.all([
+    const [r1, r2, r3, r4] = await Promise.all([
       supabaseClient.from('saas_pagos_suscripcion').select('id').limit(1),
-      supabaseClient.from('saas_config_pagos').select('clave').limit(1)
+      supabaseClient.from('saas_config_pagos').select('clave').limit(1),
+      supabaseClient.from('saas_comisiones_referidos').select('id').limit(1),
+      supabaseClient.from('saas_retiros_referidos').select('id').limit(1)
     ]);
-    if (!r1.error && !r2.error) {
+    if (!r1.error && !r2.error && !r3.error && !r4.error) {
       el.className = 'px-3 py-1 rounded-lg text-[11px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-700/50';
-      el.textContent = 'BD SaaS Suscripciones: ACTIVA (Tablas Nativas)';
+      el.textContent = 'BD SaaS Suscripciones & Referidos: ACTIVA (Tablas Nativas)';
     } else {
       el.className = 'px-3 py-1 rounded-lg text-[11px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-700/50';
       el.textContent = 'Modo Respaldo Activo · Ejecuta migracion_saas_suscripciones.sql';
@@ -552,6 +728,7 @@ async function cargarPanelMasterCompleto() {
   await Promise.all([
     sincronizarMetaSaasNube(null),
     cargarConfigBancosMaster(),
+    cargarConfigPlanesMaster(),
     cargarPagosSuscripcion(null)
   ]);
 
@@ -578,9 +755,13 @@ async function cargarPanelMasterCompleto() {
   setTxt('masterKpiPagosPendientes', pagosPendientes);
 
   pintarConfigBancosEnMasterUI();
+  pintarConfigPlanesEnMasterUI();
   renderizarTablaInquilinosMaster();
   renderizarTablaSuscripcionesMaster();
   renderizarBandejaPagosMaster();
+  if (typeof cargarPanelReferidosMaster === 'function') {
+    cargarPanelReferidosMaster();
+  }
 }
 
 function pintarConfigBancosEnMasterUI() {
@@ -595,6 +776,68 @@ function pintarConfigBancosEnMasterUI() {
   setVal('masterCfgPmRif', c.pagomovil_rif);
   setVal('masterCfgZelle', c.zelle_correo);
   setVal('masterCfgBinance', c.binance_id);
+}
+
+function calcularPorcentajeAhorroAnual(mensual, anual) {
+  const m = Number(mensual || 0);
+  const a = Number(anual || 0);
+  if (m <= 0 || a <= 0 || a >= m * 12) return 0;
+  return Math.round((1 - a / (m * 12)) * 100);
+}
+
+function pintarConfigPlanesEnMasterUI() {
+  const setVal = (id, v) => { const e = document.getElementById(id); if (e) e.value = v ?? ''; };
+  const f = PLANES_SAAS_CATALOGO.Freemium;
+  const p = PLANES_SAAS_CATALOGO.Pyme;
+  const e = PLANES_SAAS_CATALOGO.Enterprise;
+
+  setVal('masterPlanFreeMensual', Number(f.precioMensual).toFixed(2));
+  setVal('masterPlanFreeAnual', Number(f.precioAnual).toFixed(2));
+  setVal('masterPlanFreeEtiqueta', f.etiqueta);
+  setVal('masterPlanFreeDesc', f.descripcion);
+
+  setVal('masterPlanPymeMensual', Number(p.precioMensual).toFixed(2));
+  setVal('masterPlanPymeAnual', Number(p.precioAnual).toFixed(2));
+  setVal('masterPlanPymeEtiqueta', p.etiqueta);
+  setVal('masterPlanPymeDesc', p.descripcion);
+
+  setVal('masterPlanEntMensual', Number(e.precioMensual).toFixed(2));
+  setVal('masterPlanEntAnual', Number(e.precioAnual).toFixed(2));
+  setVal('masterPlanEntEtiqueta', e.etiqueta);
+  setVal('masterPlanEntDesc', e.descripcion);
+
+  recalcularResumenPreciosMasterUI();
+}
+
+function recalcularResumenPreciosMasterUI() {
+  const tasa = obtenerTasaBcvVigenteSaas();
+  const leer = id => {
+    const n = parseFloat(document.getElementById(id)?.value || '0');
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  };
+  const actualizarInfo = (idInfo, mensual, anual) => {
+    const el = document.getElementById(idInfo);
+    if (!el) return;
+    const dto = calcularPorcentajeAhorroAnual(mensual, anual);
+    const bsMes = (mensual * tasa).toFixed(2);
+    const bsAno = (anual * tasa).toFixed(2);
+    el.textContent = dto > 0
+      ? `Bs. ${bsMes}/mes · Bs. ${bsAno}/año (Ahorro anual -${dto}%)`
+      : `Ref. BCV: Bs. ${bsMes}/mes · Bs. ${bsAno}/año`;
+  };
+  actualizarInfo('masterPlanFreeAhorroInfo', leer('masterPlanFreeMensual'), leer('masterPlanFreeAnual'));
+  actualizarInfo('masterPlanPymeAhorroInfo', leer('masterPlanPymeMensual'), leer('masterPlanPymeAnual'));
+  actualizarInfo('masterPlanEntAhorroInfo', leer('masterPlanEntMensual'), leer('masterPlanEntAnual'));
+}
+
+function aplicarDescuentoAnual20Master(prefijo) {
+  const elM = document.getElementById(`masterPlan${prefijo}Mensual`);
+  const elA = document.getElementById(`masterPlan${prefijo}Anual`);
+  if (!elM || !elA) return;
+  const mensual = parseFloat(elM.value || '0');
+  if (!Number.isFinite(mensual) || mensual < 0) return;
+  elA.value = (mensual * 12 * 0.8).toFixed(2);
+  recalcularResumenPreciosMasterUI();
 }
 
 function calcularEstadoVigenciaPlan(tenant) {
@@ -1007,7 +1250,13 @@ async function aprobarPagoSuscripcionMaster(pagoId) {
     metaAct
   );
 
-  avisarSaas(`Pago aprobado. Plan ${nuevoPlan} (${pago.ciclo}) activado hasta ${nuevaFechaVenc}.`, 'success', 6500);
+  let comisionesGeneradas = [];
+  if (typeof procesarComisionesPorPagoAprobado === 'function') {
+    comisionesGeneradas = await procesarComisionesPorPagoAprobado(pagoActualizado, tenant || { id: pago.tenant_id, razon_social: pago.tenant_nombre });
+  }
+
+  const msgExtra = comisionesGeneradas.length > 0 ? ` · ${comisionesGeneradas.length} comisión(es) acreditadas en red de referidos.` : '';
+  avisarSaas(`Pago aprobado. Plan ${nuevoPlan} (${pago.ciclo}) activado hasta ${nuevaFechaVenc}.${msgExtra}`, 'success', 7000);
   await cargarPanelMasterCompleto();
 }
 
@@ -1068,15 +1317,31 @@ async function cargarModuloSuscripcion() {
   await Promise.all([
     sincronizarMetaSaasTenantActual(),
     cargarConfigBancosMaster(),
+    cargarConfigPlanesMaster(),
+    typeof cargarConfigReferidosMaster === 'function' ? cargarConfigReferidosMaster() : Promise.resolve(),
     cargarPagosSuscripcion(tenantActual.id),
     consultarEstadoPasarelaServidor()
   ]);
 
   pintarResumenSuscripcionCliente();
+  actualizarSelectPlanesClienteUI();
   renderizarTarjetasPlanesCliente();
   pintarDatosBancosEnClienteUI();
   renderizarHistorialPagosCliente();
   actualizarCalculoPagoSuscripcion();
+}
+
+function actualizarSelectPlanesClienteUI() {
+  const sel = document.getElementById('pagoSuscPlan');
+  if (!sel) return;
+  const valorActual = sel.value || 'Pyme';
+  const pyme = PLANES_SAAS_CATALOGO.Pyme;
+  const ent = PLANES_SAAS_CATALOGO.Enterprise;
+  sel.innerHTML = `
+    <option value="Pyme">Plan Pyme ($${Number(pyme.precioMensual).toFixed(2)}/mes · $${Number(pyme.precioAnual).toFixed(2)}/año)</option>
+    <option value="Enterprise">Plan Enterprise ($${Number(ent.precioMensual).toFixed(2)}/mes · $${Number(ent.precioAnual).toFixed(2)}/año)</option>
+  `;
+  sel.value = (valorActual === 'Enterprise' || valorActual === 'Pyme') ? valorActual : 'Pyme';
 }
 
 function pintarResumenSuscripcionCliente() {
@@ -1139,7 +1404,10 @@ function renderizarTarjetasPlanesCliente() {
     const esActual = planActual === key;
     const precioUsd = saasCicloSeleccionadoUI === 'ANUAL' ? p.precioAnual : p.precioMensual;
     const precioBs = precioUsd * tasa;
-    const periodoTxt = saasCicloSeleccionadoUI === 'ANUAL' ? '/ año (-20%)' : '/ mes';
+    const dtoAnual = calcularPorcentajeAhorroAnual(p.precioMensual, p.precioAnual);
+    const periodoTxt = saasCicloSeleccionadoUI === 'ANUAL'
+      ? (dtoAnual > 0 ? `/ año (-${dtoAnual}%)` : '/ año')
+      : '/ mes';
 
     return `
       <div class="bg-slate-900 border ${esActual ? 'border-emerald-500/70' : 'border-slate-800'} rounded-2xl p-5 flex flex-col justify-between space-y-4">
@@ -1194,13 +1462,21 @@ function actualizarCalculoPagoSuscripcion() {
   const ciclo = document.getElementById('pagoSuscCiclo')?.value || 'MENSUAL';
   const p = PLANES_SAAS_CATALOGO[plan] || PLANES_SAAS_CATALOGO.Pyme;
   const tasa = obtenerTasaBcvVigenteSaas();
-  const usd = ciclo === 'ANUAL' ? p.precioAnual : p.precioMensual;
+  const baseUsd = ciclo === 'ANUAL' ? p.precioAnual : p.precioMensual;
+  const dtoPct = typeof obtenerDescuentoBienvenidaParaTenant === 'function' ? obtenerDescuentoBienvenidaParaTenant(tenantActual) : 0;
+  const dtoUsd = Number(((baseUsd * dtoPct) / 100).toFixed(2));
+  const usd = Number(Math.max(0, baseUsd - dtoUsd).toFixed(2));
   const bs = usd * tasa;
 
   const setTxt = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
   setTxt('pagoSuscTotalUsd', `$ ${usd.toFixed(2)}`);
   setTxt('pagoSuscTotalBs', `Bs. ${bs.toFixed(2)}`);
-  setTxt('pagoSuscTasaInfo', `Tasa BCV: ${tasa.toFixed(4)} Bs./$`);
+  setTxt(
+    'pagoSuscTasaInfo',
+    dtoPct > 0
+      ? `Tasa BCV: ${tasa.toFixed(4)} Bs./$ · Dto. Bienvenida Referido (-${dtoPct}% = -$${dtoUsd.toFixed(2)}) aplicado`
+      : `Tasa BCV: ${tasa.toFixed(4)} Bs./$`
+  );
 }
 
 function cambiarMetodoPagoSuscTab(tab) {
@@ -1244,7 +1520,9 @@ async function enviarReportePagoSuscripcion(e) {
 
   const p = PLANES_SAAS_CATALOGO[plan] || PLANES_SAAS_CATALOGO.Pyme;
   const tasa = obtenerTasaBcvVigenteSaas();
-  const montoUsd = ciclo === 'ANUAL' ? p.precioAnual : p.precioMensual;
+  const baseUsd = ciclo === 'ANUAL' ? p.precioAnual : p.precioMensual;
+  const dtoPct = typeof obtenerDescuentoBienvenidaParaTenant === 'function' ? obtenerDescuentoBienvenidaParaTenant(tenantActual) : 0;
+  const montoUsd = Number(Math.max(0, baseUsd - (baseUsd * dtoPct) / 100).toFixed(2));
   const montoBs = Number((montoUsd * tasa).toFixed(2));
 
   const pagoObj = {

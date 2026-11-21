@@ -112,6 +112,8 @@ function activarVistaPrincipal() {
   let pestanaInicial = 'pos';
   if (typeof esUsuarioMaster === 'function' && esUsuarioMaster(tenantActual)) {
     pestanaInicial = 'inquilinosMaster';
+  } else if (typeof esPromotorExterno === 'function' && esPromotorExterno(tenantActual)) {
+    pestanaInicial = 'referidos';
   } else if (typeof puedeAccederModuloErp === 'function' && !puedeAccederModuloErp('pos')) {
     const permitidos = typeof obtenerPermisosEfectivosTenant === 'function' ? obtenerPermisosEfectivosTenant(tenantActual) : ['suscripcion'];
     pestanaInicial = permitidos[0] || 'suscripcion';

@@ -2051,19 +2051,8 @@ async function cargarViasPagoSelectPos() {
 
 // ==========================================
 // 11. AFILIADOS Y PANEL MASTER SAAS (MAS-001)
+// (Lógica completa gestionada por /js/referidos.js y /js/suscripciones.js)
 // ==========================================
-
-function cargarDatosReferidos() {
-  if (!tenantActual) return;
-  const base = String(tenantActual.rif || tenantActual.id || 'VE2026').replace(/[^A-Z0-9]/gi, '').slice(0, 8).toUpperCase();
-  const codigo = `MFD-${base}`;
-  const enlace = `${window.location.origin}/?ref=${encodeURIComponent(codigo)}`;
-
-  const elCod = document.getElementById('refCodigoMiEmpresa');
-  const elUrl = document.getElementById('refEnlaceCompartir');
-  if (elCod) elCod.textContent = codigo;
-  if (elUrl) elUrl.value = enlace;
-}
 
 async function copiarCodigoReferido() {
   const elUrl = document.getElementById('refEnlaceCompartir');

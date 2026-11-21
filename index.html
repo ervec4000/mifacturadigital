@@ -216,6 +216,14 @@
           <button onclick="iniciarSesionTenant()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3.5 rounded-xl transition cursor-pointer text-sm">
             Iniciar Sesión en MiFacturaDigital
           </button>
+          <div class="pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span class="text-slate-400">¿No tienes cuenta?</span>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" onclick="abrirModalRegistroLanding('COMERCIO')" class="text-emerald-400 hover:text-emerald-300 font-semibold cursor-pointer">Registrar Comercio</button>
+              <span class="text-slate-600">·</span>
+              <button type="button" onclick="abrirModalRegistroLanding('PROMOTOR')" class="text-sky-400 hover:text-sky-300 font-semibold cursor-pointer">Ser Promotor / Afiliado</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -258,9 +266,13 @@
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2"/></svg>
             <span class="sidebar-label truncate">Inquilinos y Menús</span>
           </button>
-          <button type="button" onclick="abrirSubModuloMaster('pagos')" id="btnTabMasterPagos" title="Planes de Suscripción y Pagos" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+          <button type="button" onclick="abrirSubModuloMaster('pagos')" id="btnTabMasterPagos" title="Precios de Planes, Suscripciones y Pagos" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-            <span class="sidebar-label truncate">Suscripciones y Pagos</span>
+            <span class="sidebar-label truncate">Precios, Planes y Pagos</span>
+          </button>
+          <button type="button" onclick="abrirSubModuloMaster('referidosMaster')" id="btnTabMasterReferidos" title="Reglas 3 Niveles, Promotores y Retiros" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <span class="sidebar-label truncate">Referidos y Comisiones</span>
           </button>
           <button type="button" onclick="abrirSubModuloMaster('infraestructura')" id="btnTabMasterSql" title="Implantación SQL y Base de Datos" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/></svg>
@@ -1564,20 +1576,230 @@
         <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">RIF</th><th class="p-3">Razón Social</th><th class="p-3">Teléfono</th><th class="p-3">Correo</th><th class="p-3">Contacto</th><th class="p-3 text-center">Contrib. Esp.</th><th class="p-3 text-center">Acciones</th></tr></thead><tbody id="tablaClientesGestion" class="divide-y divide-slate-800/60"></tbody></table></div>
       </div>
 
-      <!-- Programa de Afiliados -->
+      <!-- Programa de Afiliados y Red 3 Niveles (Clientes y Promotores Externos) -->
       <div id="seccionReferidos" class="hidden space-y-6">
-        <div>
-          <h3 class="text-base font-bold text-white tracking-tight">Programa de Afiliados</h3>
-          <p class="text-xs text-slate-400">Comparte tu enlace de referido con otros comercios venezolanos.</p>
+        <div id="refBannerPromotorExterno" class="hidden bg-emerald-950/60 border border-emerald-500/40 rounded-2xl p-4 text-xs text-emerald-100">
+          <strong>Cuenta de Promotor / Contador Aliado Activa:</strong> Estás en el portal exclusivo de afiliados (sin costo de licencia). Comparte tu enlace único y cobra comisiones hasta en 3 niveles por cada comercio que se suscriba.
         </div>
-        <div class="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-4 max-w-2xl">
+
+        <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p class="text-xs text-slate-400">Tu Código de Referido</p>
-            <p id="refCodigoMiEmpresa" class="text-xl font-bold font-mono text-emerald-400 mt-1">MFD-VE</p>
+            <h3 class="text-base font-bold text-white tracking-tight">Programa de Afiliados y Promotores (3 Niveles)</h3>
+            <p class="text-xs text-slate-400">Comparte tu enlace único (?ref=), consulta tu red hasta 3 niveles y retira tus comisiones o canjéalas por suscripción.</p>
           </div>
-          <div class="flex flex-col sm:flex-row gap-2">
-            <input type="text" id="refEnlaceCompartir" readonly class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs font-mono text-slate-200">
-            <button type="button" onclick="copiarCodigoReferido()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2.5 rounded-xl cursor-pointer whitespace-nowrap">Copiar Enlace</button>
+          <button type="button" onclick="cargarDatosReferidos()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Actualizar Saldo</button>
+        </div>
+
+        <!-- KPIs Billetera y Red -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Saldo Disponible</p>
+            <p id="refKpiSaldoUsd" class="text-xl font-bold font-mono text-emerald-400 tabular-nums mt-1">$ 0.00</p>
+            <p id="refKpiSaldoBs" class="text-[11px] font-mono text-slate-400 tabular-nums mt-0.5">Bs. 0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Total Ganado Histórico</p>
+            <p id="refKpiTotalGanadoUsd" class="text-xl font-bold font-mono text-white tabular-nums mt-1">$ 0.00</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">Comisiones y bonos acreditados</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Red 3 Niveles</p>
+            <p id="refKpiRedTotales" class="text-xl font-bold font-mono text-white tabular-nums mt-1">0</p>
+            <p id="refKpiRedDetalle" class="text-[11px] font-mono text-slate-400 mt-0.5">N1: 0 · N2: 0 · N3: 0</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Rango / Tier Actual</p>
+            <p id="refKpiTierNombre" class="text-sm font-bold font-mono text-amber-300 mt-1.5">Bronce</p>
+            <p id="refKpiTierDetalle" class="text-[11px] text-slate-400 mt-0.5">--</p>
+          </div>
+        </div>
+
+        <!-- Enlace + QR + Reglas Vigentes -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <div class="lg:col-span-7 bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p class="text-xs text-slate-400">Tu Código de Referido</p>
+                <p id="refCodigoMiEmpresa" class="text-xl font-bold font-mono text-emerald-400 mt-0.5">MFD-VE</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" onclick="copiarCodigoReferido()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Copiar Enlace</button>
+                <button type="button" onclick="compartirReferidoWhatsapp()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Enviar por WhatsApp</button>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="block text-[11px] text-slate-400">Enlace de Invitación Principal (<code class="text-emerald-400">?ref=CODIGO</code>)</label>
+              <input type="text" id="refEnlaceCompartir" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-200">
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+              <input type="text" id="refEnlaceUuid" readonly class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-[11px] font-mono text-slate-400">
+              <button type="button" onclick="copiarEnlaceReferidoUuid()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-semibold px-3 py-1.5 rounded-lg cursor-pointer whitespace-nowrap">Copiar ?ref=TENANT_ID</button>
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 bg-slate-900 p-5 rounded-2xl border border-slate-800 flex items-center gap-4">
+            <div id="refQrContenedor" class="bg-white p-2 rounded-xl shrink-0"></div>
+            <div class="space-y-1.5 text-xs">
+              <p class="font-bold text-white">Código QR de Invitación</p>
+              <p class="text-slate-400 leading-relaxed">Muéstralo en tu teléfono o imprímelo para que comercios y contadores escaneen y queden vinculados automáticamente en tu Nivel 1.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reglas Configuradas por Master -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Esquema de Comisiones y Bonos Vigente</h4>
+          <div id="refReglasResumenGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+        </div>
+
+        <!-- Canje de Saldo y Solicitud de Retiro -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div id="refBloqueCanjeComercio" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Canjear Saldo por Licencia (Sistema Gratis)</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">Usa tus comisiones acumuladas para activar o renovar tu propio comercio sin desembolsar dinero.</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Plan a Activar</label>
+                <select id="refCanjePlanSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+                  <option value="Pyme">Plan Pyme</option>
+                  <option value="Enterprise">Plan Enterprise</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Ciclo</label>
+                <select id="refCanjeCicloSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+                  <option value="MENSUAL">Mensual (30 días)</option>
+                  <option value="ANUAL">Anual (365 días)</option>
+                </select>
+              </div>
+            </div>
+            <button type="button" id="refBtnCanjearSuscripcion" onclick="canjearSaldoPorSuscripcion()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold py-2.5 rounded-xl cursor-pointer">Aplicar Saldo a Mi Suscripción</button>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-200">Solicitar Retiro de Comisiones</h4>
+                <p id="refMinimoRetiroInfo" class="text-[11px] text-slate-400 mt-0.5">Mínimo de retiro: $ 20.00 USD</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Monto a Retirar ($ USD)</label>
+                <input type="number" step="0.01" min="1" id="refRetiroMontoUsd" placeholder="20.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono tabular-nums text-white">
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Método de Liquidación</label>
+                <select id="refRetiroMetodo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+                  <option value="PAGO MOVIL">Pago Móvil (Bs. BCV)</option>
+                  <option value="TRANSFERENCIA">Transferencia Bancaria (Bs.)</option>
+                  <option value="BINANCE USDT">Binance Pay / USDT</option>
+                  <option value="ZELLE">Zelle ($ USD)</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Datos de Cobro (Banco, Teléfono, Cédula o Correo)</label>
+              <input type="text" id="refRetiroDatosDestino" placeholder="Ej. Banesco 0414-0000000 V-18000000" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+            </div>
+            <button type="button" onclick="solicitarRetiroComisiones()" class="w-full bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 text-xs font-semibold py-2.5 rounded-xl cursor-pointer">Solicitar Liquidación</button>
+          </div>
+        </div>
+
+        <!-- Historial Cronológico por Fecha y Estado de Cuenta Imprimible del Afiliado -->
+        <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl p-5 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+            <div>
+              <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Historial Cronológico y Estado de Cuenta Imprimible</h4>
+              <p class="text-[11px] text-slate-400 mt-0.5">Filtra tus movimientos por rango de fechas y genera tu Estado de Cuenta oficial en PDF o Excel.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" onclick="imprimirEstadoCuentaUsuario()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Imprimir Estado de Cuenta (PDF)</button>
+              <button type="button" onclick="exportarEstadoCuentaUsuarioExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Exportar Excel</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Desde Fecha</label>
+              <input type="date" id="refMovDesde" onchange="renderizarEstadoCuentaUsuario()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Hasta Fecha</label>
+              <input type="date" id="refMovHasta" onchange="renderizarEstadoCuentaUsuario()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white">
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Tipo de Movimiento</label>
+              <select id="refMovTipo" onchange="renderizarEstadoCuentaUsuario()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white">
+                <option value="TODOS">Todos los Movimientos</option>
+                <option value="COMISION">Solo Comisiones</option>
+                <option value="BONO">Solo Bonos</option>
+                <option value="PAGO">Solo Pagos / Retiros</option>
+                <option value="CANJE">Solo Canjes de Licencia</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button type="button" onclick="document.getElementById('refMovDesde').value='';document.getElementById('refMovHasta').value='';document.getElementById('refMovTipo').value='TODOS';renderizarEstadoCuentaUsuario();" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold py-2 rounded-xl cursor-pointer">Ver Todo el Historial</button>
+            </div>
+          </div>
+
+          <div id="refEstadoCuentaResumenStrip" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+
+          <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr>
+                  <th class="p-3">Fecha</th>
+                  <th class="p-3">Concepto / Evento</th>
+                  <th class="p-3">Origen / Referencia</th>
+                  <th class="p-3 text-right">Crédito (+$)</th>
+                  <th class="p-3 text-right">Débito (-$)</th>
+                  <th class="p-3 text-right">Saldo ($)</th>
+                  <th class="p-3">Estado</th>
+                </tr>
+              </thead>
+              <tbody id="tablaMovimientosReferidoUsuario" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tablas Red, Comisiones y Retiros -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Mi Red de Referidos (Niveles 1, 2 y 3)</h4>
+          <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr><th class="p-3">Nivel</th><th class="p-3">Comercio / Promotor</th><th class="p-3">Tipo</th><th class="p-3">Plan</th><th class="p-3">Estado</th></tr>
+              </thead>
+              <tbody id="tablaMiRedReferidos" class="divide-y divide-slate-800/60"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Historial de Comisiones</h4>
+            <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                  <tr><th class="p-3">Fecha</th><th class="p-3">Origen</th><th class="p-3">Nivel / Tipo</th><th class="p-3 text-right">%</th><th class="p-3 text-right">Comisión</th><th class="p-3">Detalle</th></tr>
+                </thead>
+                <tbody id="tablaMisComisionesReferidos" class="divide-y divide-slate-800/60"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Mis Retiros y Canjes</h4>
+            <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                  <tr><th class="p-3">Fecha</th><th class="p-3">Método</th><th class="p-3">Destino</th><th class="p-3 text-right">Monto</th><th class="p-3">Estado</th></tr>
+                </thead>
+                <tbody id="tablaMisRetirosReferidos" class="divide-y divide-slate-800/60"></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -1618,7 +1840,8 @@
         <!-- Sub-navegación Master -->
         <div class="flex flex-wrap items-center gap-2 border-b border-slate-800 pb-3">
           <button type="button" id="btnMasterSub_tenants" onclick="cambiarSubtabMaster('tenants')" class="px-3.5 py-2 rounded-xl text-xs font-semibold border bg-emerald-600 text-white border-emerald-500 cursor-pointer whitespace-nowrap">Directorio y Menús por Tenant</button>
-          <button type="button" id="btnMasterSub_pagos" onclick="cambiarSubtabMaster('pagos')" class="px-3.5 py-2 rounded-xl text-xs font-semibold border bg-slate-900 text-slate-300 border-slate-800 cursor-pointer whitespace-nowrap">Suscripciones y Verificación de Pagos</button>
+          <button type="button" id="btnMasterSub_pagos" onclick="cambiarSubtabMaster('pagos')" class="px-3.5 py-2 rounded-xl text-xs font-semibold border bg-slate-900 text-slate-300 border-slate-800 cursor-pointer whitespace-nowrap">Precios de Planes, Suscripciones y Pagos</button>
+          <button type="button" id="btnMasterSub_referidosMaster" onclick="cambiarSubtabMaster('referidosMaster')" class="px-3.5 py-2 rounded-xl text-xs font-semibold border bg-slate-900 text-slate-300 border-slate-800 cursor-pointer whitespace-nowrap">Referidos, Bonos y Comisiones</button>
           <button type="button" id="btnMasterSub_infraestructura" onclick="cambiarSubtabMaster('infraestructura')" class="px-3.5 py-2 rounded-xl text-xs font-semibold border bg-slate-900 text-slate-300 border-slate-800 cursor-pointer whitespace-nowrap">Implantación SQL y Base de Datos</button>
         </div>
 
@@ -1664,8 +1887,101 @@
           </div>
         </div>
 
-        <!-- SUBPANEL 2: SUSCRIPCIONES POR TENANT, BANDEJA DE PAGOS Y CUENTAS RECEPTORAS -->
+        <!-- SUBPANEL 2: PRECIOS DE PLANES SAAS, SUSCRIPCIONES POR TENANT, BANDEJA DE PAGOS Y CUENTAS RECEPTORAS -->
         <div id="masterSubPanel_pagos" class="hidden space-y-6">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Configuración de Precios y Planes SaaS (Mensual y Anual)</h4>
+                <p class="text-[11px] text-slate-400">Define las tarifas en USD para Freemium, Pyme y Enterprise. Se actualizan al instante en las tarjetas de planes y calculadora de pagos del cliente.</p>
+              </div>
+              <button type="button" onclick="guardarConfigPlanesMaster()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer whitespace-nowrap">Guardar Precios de Planes</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <!-- Plan Freemium -->
+              <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                  <span class="text-xs font-bold text-white uppercase tracking-wider">Plan Freemium</span>
+                  <span class="text-[11px] font-mono text-slate-400">Base</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Mensual ($ USD)</label>
+                    <input type="number" step="0.01" min="0" id="masterPlanFreeMensual" oninput="recalcularResumenPreciosMasterUI()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono tabular-nums text-emerald-400">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Anual ($ USD)</label>
+                    <input type="number" step="0.01" min="0" id="masterPlanFreeAnual" oninput="recalcularResumenPreciosMasterUI()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono tabular-nums text-white">
+                  </div>
+                </div>
+                <p id="masterPlanFreeAhorroInfo" class="text-[11px] font-mono text-slate-400 tabular-nums">Ref. BCV: Bs. 0.00</p>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Etiqueta Comercial</label>
+                  <input type="text" id="masterPlanFreeEtiqueta" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Descripción</label>
+                  <textarea id="masterPlanFreeDesc" rows="2" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 resize-none"></textarea>
+                </div>
+              </div>
+
+              <!-- Plan Pyme -->
+              <div class="bg-slate-950 border border-emerald-500/40 rounded-xl p-4 space-y-3">
+                <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                  <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Plan Pyme</span>
+                  <button type="button" onclick="aplicarDescuentoAnual20Master('Pyme')" class="text-[11px] font-mono text-emerald-300 hover:text-emerald-200 underline cursor-pointer">Auto -20% Anual</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Mensual ($ USD)</label>
+                    <input type="number" step="0.01" min="0" id="masterPlanPymeMensual" oninput="recalcularResumenPreciosMasterUI()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono tabular-nums text-emerald-400 font-bold">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Anual ($ USD)</label>
+                    <input type="number" step="0.01" min="0" id="masterPlanPymeAnual" oninput="recalcularResumenPreciosMasterUI()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono tabular-nums text-white font-bold">
+                  </div>
+                </div>
+                <p id="masterPlanPymeAhorroInfo" class="text-[11px] font-mono text-emerald-300/90 tabular-nums">--</p>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Etiqueta Comercial</label>
+                  <input type="text" id="masterPlanPymeEtiqueta" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Descripción</label>
+                  <textarea id="masterPlanPymeDesc" rows="2" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 resize-none"></textarea>
+                </div>
+              </div>
+
+              <!-- Plan Enterprise -->
+              <div class="bg-slate-950 border border-emerald-500/40 rounded-xl p-4 space-y-3">
+                <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                  <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Plan Enterprise</span>
+                  <button type="button" onclick="aplicarDescuentoAnual20Master('Ent')" class="text-[11px] font-mono text-emerald-300 hover:text-emerald-200 underline cursor-pointer">Auto -20% Anual</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Mensual ($ USD)</label>
+                    <input type="number" step="0.01" min="0" id="masterPlanEntMensual" oninput="recalcularResumenPreciosMasterUI()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono tabular-nums text-emerald-400 font-bold">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Anual ($ USD)</label>
+                    <input type="number" step="0.01" min="0" id="masterPlanEntAnual" oninput="recalcularResumenPreciosMasterUI()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono tabular-nums text-white font-bold">
+                  </div>
+                </div>
+                <p id="masterPlanEntAhorroInfo" class="text-[11px] font-mono text-emerald-300/90 tabular-nums">--</p>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Etiqueta Comercial</label>
+                  <input type="text" id="masterPlanEntEtiqueta" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white">
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Descripción</label>
+                  <textarea id="masterPlanEntDesc" rows="2" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-slate-200 resize-none"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
             <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Estado de Suscripción por Inquilino</h4>
             <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
@@ -1726,7 +2042,275 @@
           </div>
         </div>
 
-        <!-- SUBPANEL 3: IMPLANTACIÓN TÉCNICA Y SCRIPTS SQL (EXCLUSIVO MASTER) -->
+        <!-- SUBPANEL 3: MODELO HÍBRIDO DE REFERIDOS, PORCENTAJES EDITABLES, RETIROS Y LEADS -->
+        <div id="masterSubPanel_referidosMaster" class="hidden tab-master space-y-6">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+              <p class="text-xs text-slate-400">Promotores Externos</p>
+              <p id="masterRefKpiPromotores" class="text-lg font-bold font-mono text-emerald-400 tabular-nums mt-1">0</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+              <p class="text-xs text-slate-400">Comercios Referidos</p>
+              <p id="masterRefKpiComerciosRef" class="text-lg font-bold font-mono text-white tabular-nums mt-1">0</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+              <p class="text-xs text-slate-400">Comisiones Acreditadas</p>
+              <p id="masterRefKpiComisionesUsd" class="text-lg font-bold font-mono text-emerald-400 tabular-nums mt-1">$ 0.00</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+              <p class="text-xs text-slate-400">Retiros por Pagar</p>
+              <p id="masterRefKpiRetirosPendUsd" class="text-lg font-bold font-mono text-amber-300 tabular-nums mt-1">$ 0.00</p>
+            </div>
+          </div>
+
+          <!-- Editor de Porcentajes, Tiers y Bonos (100% Editable por Master) -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Reglas y Porcentajes Editables del Plan Híbrido (3 Niveles)</h4>
+                <p id="masterRefMargenResumen" class="text-xs font-mono text-emerald-400 mt-1">--</p>
+              </div>
+              <div class="flex items-center gap-4">
+                <label class="flex items-center gap-2 text-xs text-slate-200 cursor-pointer">
+                  <input type="checkbox" id="masterRefActivo" class="accent-emerald-500 rounded" checked>
+                  <span>Programa Activo</span>
+                </label>
+                <button type="button" onclick="guardarConfigReferidosMaster()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-4 py-2 rounded-xl cursor-pointer whitespace-nowrap">Guardar Reglas de Referidos</button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <!-- Bloque 1: Bono Primer Pago -->
+              <div class="bg-slate-950 border border-emerald-500/30 rounded-xl p-4 space-y-3">
+                <p class="text-xs font-bold text-emerald-400 uppercase tracking-wider">1. Bono Primer Pago (%)</p>
+                <div class="grid grid-cols-3 gap-2">
+                  <div><label class="block text-[11px] text-slate-400 mb-1">Nivel 1 %</label><input type="number" step="0.5" min="0" max="100" id="masterRefP1N1" oninput="recalcularMargenReferidosMasterUI()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-emerald-400"></div>
+                  <div><label class="block text-[11px] text-slate-400 mb-1">Nivel 2 %</label><input type="number" step="0.5" min="0" max="100" id="masterRefP1N2" oninput="recalcularMargenReferidosMasterUI()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-white"></div>
+                  <div><label class="block text-[11px] text-slate-400 mb-1">Nivel 3 %</label><input type="number" step="0.5" min="0" max="100" id="masterRefP1N3" oninput="recalcularMargenReferidosMasterUI()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-white"></div>
+                </div>
+                <div>
+                  <label class="block text-[11px] text-slate-400 mb-1">Regla cuando el 1er Pago es Anual</label>
+                  <select id="masterRefModoAnual" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white">
+                    <option value="RECURRENTE">Usar % Recurrente (Protege margen anual)</option>
+                    <option value="PRIMER_PAGO">Usar % Bono Primer Pago</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Bloque 2: Recurrente Mensual + Tiers -->
+              <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                <p class="text-xs font-bold text-white uppercase tracking-wider">2. Recurrente Mes 2+ & Tiers N1</p>
+                <div class="grid grid-cols-3 gap-2">
+                  <div><label class="block text-[11px] text-slate-400 mb-1">N1 Base %</label><input type="number" step="0.5" min="0" max="100" id="masterRefRecN1" oninput="recalcularMargenReferidosMasterUI()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-emerald-400"></div>
+                  <div><label class="block text-[11px] text-slate-400 mb-1">Nivel 2 %</label><input type="number" step="0.5" min="0" max="100" id="masterRefRecN2" oninput="recalcularMargenReferidosMasterUI()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-white"></div>
+                  <div><label class="block text-[11px] text-slate-400 mb-1">Nivel 3 %</label><input type="number" step="0.5" min="0" max="100" id="masterRefRecN3" oninput="recalcularMargenReferidosMasterUI()" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-white"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div><label class="block text-[11px] text-slate-400 mb-1">Plata: Mín. Activos</label><input type="number" min="1" id="masterRefTier2Min" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-white"></div>
+                  <div><label class="block text-[11px] text-slate-400 mb-1">Plata: N1 %</label><input type="number" step="0.5" min="0" max="100" id="masterRefTier2Pct" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-amber-300"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div><label class="block text-[11px] text-slate-400 mb-1">Oro: Mín. Activos</label><input type="number" min="2" id="masterRefTier3Min" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-white"></div>
+                  <div><label class="block text-[11px] text-slate-400 mb-1">Oro: N1 %</label><input type="number" step="0.5" min="0" max="100" id="masterRefTier3Pct" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-amber-300"></div>
+                </div>
+              </div>
+
+              <!-- Bloque 3: Incentivos y Metas -->
+              <div class="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                <p class="text-xs font-bold text-sky-300 uppercase tracking-wider">3. Bonos, Descuentos y Retiros</p>
+                <div class="grid grid-cols-2 gap-2">
+                  <div><label class="block text-[11px] text-slate-400 mb-1">Dto. Bienvenida %</label><input type="number" step="1" min="0" max="90" id="masterRefDescuentoBienv" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-white"></div>
+                  <div><label class="block text-[11px] text-slate-400 mb-1">Mín. Retiro ($ USD)</label><input type="number" step="1" min="1" id="masterRefMinRetiro" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-white"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div><label class="block text-[11px] text-slate-400 mb-1">Cada X Pagos Meta</label><input type="number" min="1" id="masterRefMetaClientes" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-white"></div>
+                  <div><label class="block text-[11px] text-slate-400 mb-1">Bono Meta ($ USD)</label><input type="number" step="0.5" min="0" id="masterRefBonoMetaUsd" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs font-mono text-emerald-400"></div>
+                </div>
+                <label class="flex items-start gap-2 text-[11px] text-slate-300 cursor-pointer pt-1">
+                  <input type="checkbox" id="masterRefReqActivoN2N3" class="accent-emerald-500 rounded mt-0.5">
+                  <span>Exigir plan pago propio o 1 referido pago activo para cobrar N2 y N3</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cargar Pago Directo o Bono Manual a Referido (Master) -->
+          <div class="bg-slate-900 border border-emerald-500/40 rounded-2xl p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Cargar Pago / Liquidación o Bono Directo a Referido</h4>
+                <p class="text-[11px] text-slate-400 mt-0.5">Registra pagos realizados directamente a un promotor/comercio (descuenta saldo y queda en su Estado de Cuenta) o acredita bonos manuales.</p>
+              </div>
+              <span id="masterCargaPagoSaldoInfo" class="text-xs font-mono text-emerald-300">--</span>
+            </div>
+
+            <form id="formMasterCargarPagoReferido" onsubmit="cargarPagoAReferidoMaster(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div class="lg:col-span-2">
+                <label class="block text-[11px] text-slate-400 mb-1">Referido / Promotor Beneficiario *</label>
+                <select id="masterCargaPagoBeneficiario" required onchange="pintarSaldoCargaPagoMaster()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white"></select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Tipo de Movimiento *</label>
+                <select id="masterCargaPagoTipo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+                  <option value="PAGO_LIQUIDACION">Pago / Liquidación (- Saldo)</option>
+                  <option value="BONO_MANUAL">Bono / Ajuste Manual (+ Saldo)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Fecha del Movimiento *</label>
+                <input type="date" id="masterCargaPagoFecha" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-white">
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-[11px] text-slate-400">Monto ($ USD) *</label>
+                  <button type="button" onclick="usarSaldoCompletoCargaMaster()" class="text-[10px] font-mono text-emerald-400 hover:text-emerald-300 underline cursor-pointer">Usar Saldo</button>
+                </div>
+                <input type="number" step="0.01" min="0.01" id="masterCargaPagoMontoUsd" required oninput="actualizarPreviewCargaPagoMaster()" placeholder="0.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono tabular-nums text-emerald-400 font-bold">
+                <p id="masterCargaPagoBsInfo" class="text-[10px] font-mono text-slate-400 mt-1">Equivalente BCV: Bs. 0.00</p>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Método de Pago</label>
+                <select id="masterCargaPagoMetodo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+                  <option value="PAGO MOVIL">Pago Móvil (Bs. BCV)</option>
+                  <option value="TRANSFERENCIA">Transferencia Bancaria (Bs.)</option>
+                  <option value="BINANCE USDT">Binance Pay / USDT</option>
+                  <option value="ZELLE">Zelle ($ USD)</option>
+                  <option value="EFECTIVO USD">Efectivo ($ USD)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Referencia / Comprobante *</label>
+                <input type="text" id="masterCargaPagoReferencia" placeholder="Ej. 00459182 / TX-USDT" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Observación / Destino</label>
+                <input type="text" id="masterCargaPagoNota" placeholder="Banco destino o motivo del bono" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+              </div>
+
+              <div class="sm:col-span-2 lg:col-span-4 flex justify-end pt-1">
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-5 py-2.5 rounded-xl cursor-pointer whitespace-nowrap">Cargar Pago / Movimiento al Historial</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Bandeja de Retiros por Liquidar -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-amber-300">Solicitudes de Retiro y Liquidación de Comisiones</h4>
+              <input type="text" id="masterRefPagoRetiroInput" placeholder="Referencia de pago opcional al liquidar..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs font-mono text-white w-64">
+            </div>
+            <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                  <tr><th class="p-3">Afiliado</th><th class="p-3">Método</th><th class="p-3">Datos Destino</th><th class="p-3 text-right">Monto</th><th class="p-3">Estado</th><th class="p-3 text-center">Acción Master</th></tr>
+                </thead>
+                <tbody id="tablaMasterRetirosReferidos" class="divide-y divide-slate-800/60"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Estado de Cuenta Imprimible por Referido e Historial Cronológico por Fecha (Master) -->
+          <div id="cardMasterEstadoCuentaReferido" class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-400">Historial Cronológico y Estado de Cuenta Imprimible por Referido</h4>
+                <p class="text-[11px] text-slate-400 mt-0.5">Consulta todos los movimientos por fecha con saldo corrido, imprime el Estado de Cuenta individual o consolidado en PDF o expórtalo a Excel.</p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="imprimirEstadoCuentaMaster()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Imprimir Estado de Cuenta (PDF)</button>
+                <button type="button" onclick="exportarEstadoCuentaMasterExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Exportar Excel</button>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div class="lg:col-span-2">
+                <label class="block text-[11px] text-slate-400 mb-1">Afiliado / Referidor</label>
+                <select id="masterRefFiltroBeneficiario" onchange="renderizarEstadoCuentaMaster()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white"></select>
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Desde Fecha</label>
+                <input type="date" id="masterRefMovDesde" onchange="renderizarEstadoCuentaMaster()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Hasta Fecha</label>
+                <input type="date" id="masterRefMovHasta" onchange="renderizarEstadoCuentaMaster()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs font-mono text-white">
+              </div>
+              <div>
+                <label class="block text-[11px] text-slate-400 mb-1">Tipo</label>
+                <select id="masterRefMovTipo" onchange="renderizarEstadoCuentaMaster()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-white">
+                  <option value="TODOS">Todos</option>
+                  <option value="COMISION">Comisiones</option>
+                  <option value="BONO">Bonos</option>
+                  <option value="PAGO">Pagos / Retiros</option>
+                  <option value="CANJE">Canjes Licencia</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="masterRefEstadoCuentaResumenStrip" class="grid grid-cols-2 lg:grid-cols-4 gap-3"></div>
+
+            <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800 max-h-96 overflow-y-auto">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-mono sticky top-0">
+                  <tr>
+                    <th class="p-3">Fecha</th>
+                    <th class="p-3">Afiliado</th>
+                    <th class="p-3">Concepto / Evento</th>
+                    <th class="p-3">Origen / Referencia</th>
+                    <th class="p-3 text-right">Crédito (+$)</th>
+                    <th class="p-3 text-right">Débito (-$)</th>
+                    <th class="p-3 text-right">Saldo ($)</th>
+                    <th class="p-3">Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="tablaMasterEstadoCuentaReferido" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Leads Landing y Ranking -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Top Promotores y Comercios Referidores</h4>
+              <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+                <table class="w-full text-left text-xs text-slate-300">
+                  <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                    <tr><th class="p-3">Afiliado</th><th class="p-3">Tipo</th><th class="p-3">Tier</th><th class="p-3 text-right">Directos</th><th class="p-3 text-right">Ganado</th><th class="p-3 text-right">Saldo</th><th class="p-3 text-center">Acción</th></tr>
+                  </thead>
+                  <tbody id="tablaMasterRankingReferidores" class="divide-y divide-slate-800/60"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Leads de Landing con Atribución (?ref=)</h4>
+              <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+                <table class="w-full text-left text-xs text-slate-300">
+                  <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                    <tr><th class="p-3">Fecha</th><th class="p-3">Prospecto</th><th class="p-3">Contacto</th><th class="p-3">Referido Por</th><th class="p-3">Estado</th></tr>
+                  </thead>
+                  <tbody id="tablaMasterLeadsLanding" class="divide-y divide-slate-800/60"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Auditoría Comisiones -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Libro Mayor de Comisiones Generadas (N1 · N2 · N3)</h4>
+            <div class="overflow-x-auto bg-slate-950/60 rounded-xl border border-slate-800">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                  <tr><th class="p-3">Fecha</th><th class="p-3">Beneficiario</th><th class="p-3">Comercio Pagador</th><th class="p-3">Nivel / Evento</th><th class="p-3 text-right">Base</th><th class="p-3 text-right">Comisión</th></tr>
+                </thead>
+                <tbody id="tablaMasterHistorialComisiones" class="divide-y divide-slate-800/60"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBPANEL 4: IMPLANTACIÓN TÉCNICA Y SCRIPTS SQL (EXCLUSIVO MASTER) -->
         <div id="masterSubPanel_infraestructura" class="hidden tab-master space-y-4">
           <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
             <div>
@@ -2247,6 +2831,80 @@
     </div>
   </div>
 
+  <!-- MODAL REGISTRO PÚBLICO DESDE LANDING / LOGIN (COMERCIO O PROMOTOR SIN COMERCIO) -->
+  <div id="modalRegistroSaasPublico" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[105] overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-700 text-slate-100 w-full max-w-lg rounded-2xl p-6 space-y-4 shadow-2xl my-8">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-base font-bold text-white">Crear Cuenta en MiFacturaDigital</h3>
+          <p id="regSubtituloModal" class="text-xs text-slate-400 mt-1">Elige si deseas facturar para tu comercio o ganar comisiones como Promotor Aliado.</p>
+        </div>
+        <button type="button" onclick="cerrarModalRegistroLanding()" class="text-slate-400 hover:text-white font-bold text-sm cursor-pointer">✕</button>
+      </div>
+
+      <div id="regBannerInvitado" class="hidden bg-emerald-950/70 border border-emerald-500/40 rounded-xl p-3 text-xs text-emerald-200">
+        <span id="regBannerInvitadoTexto">Código de invitación detectado.</span>
+      </div>
+
+      <div class="flex gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-xl">
+        <button type="button" id="btnRegTabComercio" onclick="cambiarTipoRegistroPublico('COMERCIO')" class="flex-1 py-2 px-3 rounded-lg text-xs font-semibold bg-emerald-600 text-white cursor-pointer">Soy Comercio (ERP POS)</button>
+        <button type="button" id="btnRegTabPromotor" onclick="cambiarTipoRegistroPublico('PROMOTOR')" class="flex-1 py-2 px-3 rounded-lg text-xs font-semibold bg-slate-950 text-slate-300 hover:text-white cursor-pointer">Soy Promotor / Contador</button>
+      </div>
+
+      <form id="formRegistroPublicoSaas" onsubmit="registrarCuentaDesdeLanding(event)" class="space-y-3">
+        <input type="hidden" id="regTipoCuenta" value="COMERCIO">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label id="regRazonSocialLabel" class="block text-[11px] font-semibold text-slate-300 mb-1">Razón Social del Comercio *</label>
+            <input type="text" id="regRazonSocial" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+          </div>
+          <div>
+            <label id="regRifLabel" class="block text-[11px] font-semibold text-slate-300 mb-1">RIF del Comercio *</label>
+            <input type="text" id="regRif" required placeholder="J-12345678-0" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-white uppercase">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Teléfono / WhatsApp *</label>
+            <input type="tel" id="regTelefono" required placeholder="0414-0000000" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-white">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Correo Electrónico *</label>
+            <input type="email" id="regEmail" required placeholder="correo@ejemplo.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-white">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Contraseña *</label>
+            <input type="password" id="regPassword" required minlength="4" placeholder="Mín. 4 caracteres" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-white">
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Código de Quien Te Invitó (Opcional)</label>
+            <input type="text" id="regCodigoReferidor" placeholder="Ej. MFD-... o PRM-..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-emerald-400">
+          </div>
+        </div>
+
+        <div id="regBloqueCobroPromotor" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Método Preferido de Cobro</label>
+            <select id="regMetodoCobro" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white">
+              <option value="PAGO MOVIL">Pago Móvil (Bs. BCV)</option>
+              <option value="BINANCE USDT">Binance Pay / USDT</option>
+              <option value="ZELLE">Zelle ($ USD)</option>
+              <option value="TRANSFERENCIA">Transferencia Bancaria</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Dato para Liquidaciones</label>
+            <input type="text" id="regDatoCobro" placeholder="Banco/Telf/Cédula o Correo" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-xs text-white">
+          </div>
+        </div>
+
+        <button type="submit" id="btnSubmitRegistroPublico" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl text-xs sm:text-sm cursor-pointer transition">Crear Cuenta Comercial Gratis</button>
+      </form>
+    </div>
+  </div>
+
   <!-- CONTENEDOR DE NOTIFICACIONES TOAST EN PÁGINA (COMPATIBLE CON IFRAME) -->
   <div id="toastSistema" class="fixed top-4 right-4 z-[100] flex flex-col gap-2 max-w-md w-full pointer-events-none px-4 sm:px-0"></div>
 
@@ -2462,6 +3120,7 @@
   <script src="./js/landing.js"></script>
   <script src="./js/auth.js"></script>
   <script src="./js/suscripciones.js"></script>
+  <script src="./js/referidos.js"></script>
   <script src="./js/contabilidad.js"></script>
   <script src="./js/pos.js"></script>
   <script src="./js/kardex.js"></script>
