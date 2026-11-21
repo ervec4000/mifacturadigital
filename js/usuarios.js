@@ -10,9 +10,9 @@ const ROLES_INTERNOS_DEF = {
     nombre: 'Administrador de Empresa',
     badge: 'bg-emerald-950 text-emerald-300 border-emerald-700/50',
     modulos: [
-      'pos', 'historial', 'notasFiscales', 'cierrez', 'cuentas',
+      'dashboard', 'pos', 'caja', 'historial', 'notasFiscales', 'cierrez', 'reportesVentas', 'cuentas',
       'kardex', 'fisico', 'transferencias', 'lotes', 'etiquetas',
-      'compras', 'retenciones', 'contabilidad', 'productos', 'clientes',
+      'compras', 'cxp', 'retenciones', 'contabilidad', 'productos', 'clientes',
       'proveedores', 'sucursales', 'almacenes', 'unidades', 'tiposIva',
       'viasPago', 'usuarios', 'referidos', 'suscripcion'
     ]
@@ -20,22 +20,22 @@ const ROLES_INTERNOS_DEF = {
   SUPERVISOR: {
     nombre: 'Supervisor Operativo',
     badge: 'bg-sky-950 text-sky-300 border-sky-700/50',
-    modulos: ['pos', 'historial', 'notasFiscales', 'cierrez', 'cuentas', 'kardex', 'fisico', 'etiquetas', 'compras', 'productos', 'clientes', 'proveedores']
+    modulos: ['dashboard', 'pos', 'caja', 'historial', 'notasFiscales', 'cierrez', 'reportesVentas', 'cuentas', 'kardex', 'fisico', 'etiquetas', 'compras', 'cxp', 'productos', 'clientes', 'proveedores']
   },
   CAJERO_POS: {
     nombre: 'Cajero / Facturador POS',
     badge: 'bg-amber-950 text-amber-300 border-amber-700/50',
-    modulos: ['pos', 'historial', 'clientes', 'etiquetas']
+    modulos: ['dashboard', 'pos', 'caja', 'historial', 'clientes', 'etiquetas']
   },
   ALMACENISTA: {
     nombre: 'Almacenista / Inventario',
     badge: 'bg-indigo-950 text-indigo-300 border-indigo-700/50',
-    modulos: ['kardex', 'fisico', 'transferencias', 'lotes', 'etiquetas', 'compras', 'productos', 'almacenes']
+    modulos: ['dashboard', 'kardex', 'fisico', 'transferencias', 'lotes', 'etiquetas', 'compras', 'productos', 'almacenes']
   },
   CONTADOR: {
     nombre: 'Contador / Auditor Fiscal',
     badge: 'bg-purple-950 text-purple-300 border-purple-700/50',
-    modulos: ['historial', 'notasFiscales', 'cierrez', 'cuentas', 'compras', 'retenciones', 'contabilidad']
+    modulos: ['dashboard', 'historial', 'notasFiscales', 'cierrez', 'reportesVentas', 'cuentas', 'compras', 'cxp', 'retenciones', 'contabilidad']
   }
 };
 

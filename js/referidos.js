@@ -1235,7 +1235,11 @@ function compartirReferidoWhatsapp() {
   const texto = dto > 0
     ? `Te invito a usar MiFacturaDigital.com.ve (Facturación POS SENIAT, Inventario Kardex y Contabilidad). Regístrate con mi enlace y obtén ${dto}% de descuento en tu primer plan: ${enlace}`
     : `Te invito a usar MiFacturaDigital.com.ve (Facturación POS SENIAT, Inventario Kardex y Contabilidad). Regístrate con mi enlace: ${enlace}`;
-  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`, '_blank');
+  const a = document.createElement('a');
+  a.href = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.click();
 }
 
 function copiarEnlaceReferidoUuid() {

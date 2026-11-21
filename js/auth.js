@@ -10,7 +10,7 @@ const TENANT_SAFE_COLS = [
   'estado_suscripcion', 'modulos_permitidos', 'codigo_referido', 'referido_por_id',
   'referido_nivel2_id', 'referido_nivel3_id', 'es_promotor_externo', 'datos_cobro_comision',
   'imprenta_nombre', 'imprenta_rif', 'imprenta_providencia', 'imprenta_rango',
-  'max_usuarios', 'permisos_manuales', 'created_at'
+  'max_usuarios', 'permisos_manuales', 'caja_arqueo_ciego', 'protocolo_fiscal', 'created_at'
 ].join(',');
 
 let tenantActual = null;
@@ -549,6 +549,8 @@ function activarVistaPrincipal() {
     pestanaInicial = 'inquilinosMaster';
   } else if (typeof esPromotorExterno === 'function' && esPromotorExterno(tenantActual)) {
     pestanaInicial = 'referidos';
+  } else if (actor.rolInterno !== 'CAJERO_POS' && typeof puedeAccederModuloErp === 'function' && puedeAccederModuloErp('dashboard')) {
+    pestanaInicial = 'dashboard';
   } else if (typeof puedeAccederModuloErp === 'function' && !puedeAccederModuloErp('pos')) {
     const permitidos = typeof obtenerPermisosEfectivosTenant === 'function' ? obtenerPermisosEfectivosTenant(tenantActual) : ['suscripcion'];
     pestanaInicial = permitidos[0] || 'suscripcion';
@@ -629,10 +631,13 @@ function toggleSidebarMovil(forzarCerrar = false) {
 }
 
 const TITULOS_MODULOS_ERP = {
-  pos: 'POS y Facturación / Ventas POS (POS-001 · POS-009)',
+  dashboard: 'Resumen Ejecutivo / Dashboard Gerencial (DSH-001)',
+  pos: 'POS y Facturación / Ventas POS (POS-001 · POS-018)',
+  caja: 'POS y Facturación / Caja, Turnos, Ingresos/Egresos y Arqueo (CAJ-001 · CAJ-002)',
   historial: 'Historial y Cierres / Comprobantes SENIAT (SEN-001 · SEN-006)',
   notasFiscales: 'Historial y Cierres / Notas de Crédito y Débito (SEN-004 · SEN-005)',
   cierrez: 'Historial y Cierres / Reporte Z y Libros Oficiales (CIE-001 · CIE-003)',
+  reportesVentas: 'Historial y Cierres / Reportes Gerenciales de Ventas (RPT-001)',
   cuentas: 'Historial y Cierres / Cuentas por Cobrar y Alertas (CIE-005 · CAT-007)',
   kardex: 'Inventario y Kardex / Trazabilidad Kardex PPM (INV-001)',
   fisico: 'Inventario y Kardex / Conteo Físico y Conciliación (INV-002 · INV-008)',
@@ -640,7 +645,8 @@ const TITULOS_MODULOS_ERP = {
   lotes: 'Inventario y Kardex / Lotes y Vencimientos',
   etiquetas: 'Inventario y Kardex / Etiquetas QR Tamaño Carta (CAT-004)',
   compras: 'Compras y Tributos / Registro de Compras y PPM (COM-001 · COM-003)',
-  retenciones: 'Compras y Tributos / Retenciones IVA SENIAT (IMP-001 · IMP-002)',
+  cxp: 'Compras y Tributos / Cuentas por Pagar y Conciliación Bancaria (CXP-001)',
+  retenciones: 'Compras y Tributos / Retenciones IVA SENIAT (IMP-001 · IMP-003)',
   contabilidad: 'Contabilidad y ERP / Plan de Cuentas, Libro Diario e Integración VEN-NIF',
   productos: 'Catálogos y Maestros / Gestión de Artículos (CAT-001 · CAT-003)',
   clientes: 'Catálogos y Maestros / Maestro de Clientes (CAT-006)',
@@ -669,9 +675,9 @@ function cambiarPestana(pestana) {
   }
 
   const tabs = [
-    'pos', 'historial', 'notasFiscales', 'cierrez', 'cuentas',
+    'dashboard', 'pos', 'caja', 'historial', 'notasFiscales', 'cierrez', 'reportesVentas', 'cuentas',
     'kardex', 'fisico', 'transferencias', 'lotes', 'etiquetas',
-    'compras', 'retenciones', 'contabilidad',
+    'compras', 'cxp', 'retenciones', 'contabilidad',
     'productos', 'clientes', 'proveedores', 'sucursales', 'almacenes',
     'unidades', 'tiposIva', 'viasPago', 'usuarios', 'referidos', 'suscripcion', 'inquilinosMaster'
   ];
@@ -699,6 +705,9 @@ function cambiarPestana(pestana) {
 
   toggleSidebarMovil(true);
 
+  if (pestana === 'dashboard' && typeof cargarDashboardEjecutivo === 'function') cargarDashboardEjecutivo();
+  if (pestana === 'caja' && typeof cargarModuloCaja === 'function') cargarModuloCaja();
+  if (pestana === 'reportesVentas' && typeof cargarReportesVentasGerenciales === 'function') cargarReportesVentasGerenciales();
   if (pestana === 'historial') cargarHistorial();
   if (pestana === 'notasFiscales') {
     if (typeof inicializarModuloNotasFiscales === 'function') inicializarModuloNotasFiscales();
@@ -720,6 +729,7 @@ function cambiarPestana(pestana) {
     }
   }
   if (pestana === 'proveedores' && typeof cargarProveedoresGestion === 'function') cargarProveedoresGestion();
+  if (pestana === 'cxp' && typeof cargarModuloCxpYBancos === 'function') cargarModuloCxpYBancos();
   if (pestana === 'retenciones') cargarRetenciones();
   if (pestana === 'contabilidad' && typeof cargarModuloContabilidad === 'function') cargarModuloContabilidad();
   if (pestana === 'kardex') cargarKardexMovimientos();
@@ -851,5 +861,11 @@ function enviarFormularioContactoLanding() {
   const nom = document.getElementById('contactoNombre')?.value || 'Interesado';
   const tel = document.getElementById('contactoTelefono')?.value || '';
   const urlW = `https://api.whatsapp.com/send?text=Hola,%20mi%20nombre%20es%20${encodeURIComponent(nom)}%20y%20mi%20teléfono%20es%20${encodeURIComponent(tel)}. Deseo solicitar más información y demo de MiFacturaDigital.`;
-  window.open(urlW, '_blank');
+  const a = document.createElement('a');
+  a.href = urlW;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
 }

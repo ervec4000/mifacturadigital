@@ -12,6 +12,8 @@ let posSucursalesCache = [];
 let posAlmacenesCache = [];
 let posDocumentosCache = [];
 let posViasPagoCache = [];
+let posPagosMixtos = [];
+let posPagoMixtoActivo = false;
 let clienteIdSeleccionado = null;
 
 async function insertarFilaCompatible(tabla, baseRow, extRow = {}) {
@@ -59,8 +61,14 @@ async function inicializarModuloPos() {
     cargarSucursalesYAlmacenesPos(),
     calcularProximoDocumentoVenta(),
     cargarDocumentosPos(),
+    typeof obtenerTurnoCajaActivo === 'function' ? obtenerTurnoCajaActivo(tenantId) : Promise.resolve(),
     !editId ? consultarTasaBcvApi(true) : Promise.resolve()
   ]);
+
+  poblarSelectViasPagoMixto();
+  if (typeof sincronizarSelectorProtocoloFiscalPos === 'function') {
+    sincronizarSelectorProtocoloFiscalPos();
+  }
 
   setTimeout(() => {
     if (typeof enfocarEscanerPos === 'function') enfocarEscanerPos();
@@ -387,6 +395,31 @@ function eliminarItemCarrito(index) {
   renderizarYRecalcularPos();
 }
 
+function cambiarCantidadItemCarrito(index, delta) {
+  const it = carritoItems[index];
+  if (!it) return;
+  const nueva = Number((Number(it.cantidad || 0) + Number(delta || 0)).toFixed(3));
+  if (nueva <= 0) {
+    carritoItems.splice(index, 1);
+  } else {
+    it.cantidad = nueva;
+  }
+  renderizarYRecalcularPos();
+}
+
+function actualizarCantidadItemInput(index, valorRaw) {
+  const it = carritoItems[index];
+  if (!it) return;
+  const cant = parseFloat(valorRaw);
+  if (!Number.isFinite(cant) || cant <= 0) {
+    avisarPos('La cantidad debe ser mayor a 0.', 'warning', 3000);
+    renderizarYRecalcularPos();
+    return;
+  }
+  it.cantidad = Number(cant.toFixed(3));
+  renderizarYRecalcularPos();
+}
+
 function renderizarYRecalcularPos() {
   actualizarTablaYCalculos();
 }
@@ -422,7 +455,13 @@ function actualizarTablaYCalculos() {
         <tr class="hover:bg-slate-900 border-b border-slate-800/40">
           <td class="p-3 font-mono text-emerald-400">${esc(item.sku)}</td>
           <td class="p-3 font-medium text-white">${esc(item.descripcion)}${pct === 0 ? ' <span class="text-sky-400 font-bold">(E)</span>' : ''}</td>
-          <td class="p-3 font-mono">${item.cantidad}</td>
+          <td class="p-3 font-mono">
+            <div class="inline-flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg px-1 py-0.5">
+              <button type="button" onclick="cambiarCantidadItemCarrito(${idx}, -1)" class="w-5 h-5 rounded hover:bg-slate-800 text-slate-300 font-bold cursor-pointer">-</button>
+              <input type="number" step="0.001" min="0.001" value="${item.cantidad}" onchange="actualizarCantidadItemInput(${idx}, this.value)" class="w-12 bg-transparent text-center text-white text-xs font-mono focus:outline-none">
+              <button type="button" onclick="cambiarCantidadItemCarrito(${idx}, 1)" class="w-5 h-5 rounded hover:bg-slate-800 text-emerald-400 font-bold cursor-pointer">+</button>
+            </div>
+          </td>
           <td class="p-3">${esc(item.unidad)}</td>
           <td class="p-3 font-mono">$ ${item.precio.toFixed(2)}</td>
           <td class="p-3">${badge}</td>
@@ -443,6 +482,7 @@ function actualizarTablaYCalculos() {
   document.getElementById('igtfBs').innerText = `$ ${igtf.toFixed(2)} | Bs. ${(igtf * tasa).toFixed(2)}`;
   document.getElementById('totalBs').innerText = `$ ${totalUsd.toFixed(2)} | Bs. ${(totalUsd * tasa).toFixed(2)}`;
   calcularVuelto();
+  if (posPagoMixtoActivo) renderizarPagosMixtosPos();
 }
 
 function recalcularTodo() { actualizarTablaYCalculos(); }
@@ -476,9 +516,145 @@ function calcularVuelto() {
   if (diffBs >= 0) {
     document.getElementById('vueltoBs').innerText = `Bs. ${diffBs.toFixed(2)}`;
     document.getElementById('vueltoUsd').innerText = `$ ${(diffBs / tasa).toFixed(2)}`;
-  } else {
-    document.getElementById('vueltoBs').innerText = `Bs. 0.00`;
-    document.getElementById('vueltoUsd').innerText = `$ 0.00`;
+    return { vueltoBs: Number(diffBs.toFixed(2)), vueltoUsd: Number((diffBs / tasa).toFixed(2)), faltaBs: 0 };
+  }
+  document.getElementById('vueltoBs').innerText = `Bs. 0.00`;
+  document.getElementById('vueltoUsd').innerText = `$ 0.00`;
+  return { vueltoBs: 0, vueltoUsd: 0, faltaBs: Number(Math.abs(diffBs).toFixed(2)) };
+}
+
+function poblarSelectViasPagoMixto() {
+  const orig = document.getElementById('metodoPagoSelect');
+  const dst = document.getElementById('mixtoViaSelect');
+  if (!orig || !dst) return;
+  dst.innerHTML = orig.innerHTML;
+}
+
+function togglePagoMixtoPos() {
+  posPagoMixtoActivo = !posPagoMixtoActivo;
+  const panel = document.getElementById('panelPagoMixtoPos');
+  const btn = document.getElementById('btnTogglePagoMixtoPos');
+  if (panel) {
+    if (posPagoMixtoActivo) panel.classList.remove('hidden');
+    else panel.classList.add('hidden');
+  }
+  if (btn) {
+    btn.textContent = posPagoMixtoActivo ? 'Ocultar Pago Mixto' : '+ Pago Mixto (Multi-Vía)';
+    btn.className = posPagoMixtoActivo
+      ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40 px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer whitespace-nowrap'
+      : 'bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer whitespace-nowrap';
+  }
+  poblarSelectViasPagoMixto();
+  renderizarPagosMixtosPos();
+}
+
+function esMetodoDivisaIgtf(metodoRaw) {
+  const m = String(metodoRaw || '').toUpperCase();
+  const viaObj = posViasPagoCache.find(v => String(v.nombre || '').toUpperCase() === m);
+  if (viaObj && viaObj.es_divisa_igtf !== undefined) return Boolean(viaObj.es_divisa_igtf);
+  return /DIVISA|USD|ZELLE|BINANCE|USDT|EFECTIVO\s*\$/.test(m);
+}
+
+function agregarLineaPagoMixto() {
+  const metodo = document.getElementById('mixtoViaSelect')?.value || 'EFECTIVO DIVISAS';
+  const moneda = document.getElementById('mixtoMonedaSelect')?.value || 'USD';
+  const monto = parseFloat(document.getElementById('mixtoMontoInput')?.value) || 0;
+  const referencia = (document.getElementById('mixtoRefInput')?.value || '').trim();
+  const tasa = parseFloat(document.getElementById('tasaBcv')?.value) || 1;
+
+  if (monto <= 0) {
+    avisarPos('Ingresa un monto mayor a 0 para añadir al pago mixto.', 'warning');
+    return;
+  }
+
+  const montoUsd = moneda === 'USD' ? monto : monto / tasa;
+  const montoBs = moneda === 'VES' ? monto : monto * tasa;
+
+  posPagosMixtos.push({
+    metodo,
+    moneda,
+    montoOriginal: Number(monto.toFixed(2)),
+    montoUsd: Number(montoUsd.toFixed(2)),
+    montoBs: Number(montoBs.toFixed(2)),
+    referencia
+  });
+
+  if (document.getElementById('mixtoMontoInput')) document.getElementById('mixtoMontoInput').value = '';
+  if (document.getElementById('mixtoRefInput')) document.getElementById('mixtoRefInput').value = '';
+
+  const selIgtf = document.getElementById('aplicaIgtfSelect');
+  if (selIgtf) {
+    selIgtf.value = posPagosMixtos.some(p => esMetodoDivisaIgtf(p.metodo)) ? 'SI' : 'NO';
+  }
+
+  recalcularTodo();
+  renderizarPagosMixtosPos();
+}
+
+function eliminarLineaPagoMixto(idx) {
+  posPagosMixtos.splice(idx, 1);
+  const selIgtf = document.getElementById('aplicaIgtfSelect');
+  if (selIgtf && posPagosMixtos.length > 0) {
+    selIgtf.value = posPagosMixtos.some(p => esMetodoDivisaIgtf(p.metodo)) ? 'SI' : 'NO';
+  }
+  recalcularTodo();
+  renderizarPagosMixtosPos();
+}
+
+function renderizarPagosMixtosPos() {
+  const tbody = document.getElementById('tablaPagosMixtosPos');
+  const resumenEl = document.getElementById('resumenPagosMixtosPos');
+  if (!tbody) return;
+
+  if (!posPagosMixtos || posPagosMixtos.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" class="p-2.5 text-center text-slate-500 text-xs">Sin líneas agregadas. Añade 2 o más formas de pago si el cliente combina métodos.</td></tr>`;
+    if (resumenEl) resumenEl.textContent = 'Pago único según selector superior';
+    return;
+  }
+
+  const tasa = parseFloat(document.getElementById('tasaBcv')?.value) || 1;
+  const totalUsdText = document.getElementById('totalBs')?.innerText || '$ 0.00';
+  const totalFacturaUsd = parseFloat(totalUsdText.split('|')[0].replace('$', '').trim()) || 0;
+
+  let sumaUsd = 0;
+  let sumaBs = 0;
+  let recUsd = 0;
+  let recBs = 0;
+
+  tbody.innerHTML = posPagosMixtos.map((p, idx) => {
+    const mUsd = p.moneda === 'USD' ? p.montoOriginal : p.montoOriginal / tasa;
+    const mBs = p.moneda === 'VES' ? p.montoOriginal : p.montoOriginal * tasa;
+    p.montoUsd = Number(mUsd.toFixed(2));
+    p.montoBs = Number(mBs.toFixed(2));
+    sumaUsd += mUsd;
+    sumaBs += mBs;
+    if (p.moneda === 'USD') recUsd += p.montoOriginal;
+    else recBs += p.montoOriginal;
+    return `
+      <tr class="border-b border-slate-800/40">
+        <td class="p-2 font-semibold text-white">${esc(p.metodo)} ${p.referencia ? `<span class="text-slate-400 font-mono text-[10px]">(${esc(p.referencia)})</span>` : ''}</td>
+        <td class="p-2 font-mono text-slate-300">${esc(p.moneda)}</td>
+        <td class="p-2 text-right font-mono text-emerald-400 font-bold">${p.moneda === 'USD' ? '$ ' : 'Bs. '}${p.montoOriginal.toFixed(2)}</td>
+        <td class="p-2 text-center"><button type="button" onclick="eliminarLineaPagoMixto(${idx})" class="text-rose-400 hover:underline text-xs cursor-pointer">Quitar</button></td>
+      </tr>
+    `;
+  }).join('');
+
+  if (posPagoMixtoActivo && posPagosMixtos.length > 0) {
+    if (document.getElementById('pagoRecibidoUsd')) document.getElementById('pagoRecibidoUsd').value = recUsd.toFixed(2);
+    if (document.getElementById('pagoRecibidoBs')) document.getElementById('pagoRecibidoBs').value = recBs.toFixed(2);
+    calcularVuelto();
+  }
+
+  const diffUsd = sumaUsd - totalFacturaUsd;
+  if (resumenEl) {
+    if (Math.abs(diffUsd) <= 0.02) {
+      resumenEl.innerHTML = `<span class="text-emerald-400 font-bold">Cubierto exacto: $ ${sumaUsd.toFixed(2)} (Bs. ${sumaBs.toFixed(2)})</span>`;
+    } else if (diffUsd > 0) {
+      resumenEl.innerHTML = `<span class="text-sky-300 font-bold">Recibido: $ ${sumaUsd.toFixed(2)} · Vuelto: $ ${diffUsd.toFixed(2)} (Bs. ${(diffUsd * tasa).toFixed(2)})</span>`;
+    } else {
+      resumenEl.innerHTML = `<span class="text-amber-300 font-bold">Recibido: $ ${sumaUsd.toFixed(2)} · Falta: $ ${Math.abs(diffUsd).toFixed(2)} (Bs. ${(Math.abs(diffUsd) * tasa).toFixed(2)})</span>`;
+    }
   }
 }
 
@@ -517,7 +693,11 @@ function cancelarEdicionFactura(silencioso = false) {
   if (titulo) titulo.textContent = '🛒 Facturación Fiscal Digital (POS)';
 
   carritoItems = [];
+  posPagosMixtos = [];
+  if (posPagoMixtoActivo) togglePagoMixtoPos();
   if (document.getElementById('posReferenciaPago')) document.getElementById('posReferenciaPago').value = '';
+  if (document.getElementById('pagoRecibidoUsd')) document.getElementById('pagoRecibidoUsd').value = '0';
+  if (document.getElementById('pagoRecibidoBs')) document.getElementById('pagoRecibidoBs').value = '0';
   if (document.getElementById('posFecha')) document.getElementById('posFecha').value = new Date().toISOString().slice(0, 10);
   if (document.getElementById('posMoneda')) document.getElementById('posMoneda').value = 'USD';
 
@@ -660,14 +840,34 @@ async function emitirFactura() {
   const igtfBs = aplicaIgtf ? (subtotalBs + ivaBs) * 0.03 : 0;
   const totalBs = subtotalBs + ivaBs + igtfBs;
 
+  const usarPagoMixto = posPagoMixtoActivo && posPagosMixtos.length > 0;
+  const metodoResumen = usarPagoMixto
+    ? `MIXTO (${posPagosMixtos.map(p => p.metodo).join(' + ')})`
+    : metodoPagoBase;
+
   const monTag = `MON:${moneda}`;
   const maxViaLen = Math.max(0, 50 - monTag.length - 3);
-  const viaTrim = metodoPagoBase.slice(0, maxViaLen);
+  const viaTrim = metodoResumen.slice(0, maxViaLen);
   let metodoCompuesto = viaTrim ? `${viaTrim} | ${monTag}` : monTag;
   if (metodoCompuesto.length + (` | ${condicionPago}`).length <= 50) {
     metodoCompuesto += ` | ${condicionPago}`;
   }
   metodoCompuesto = metodoCompuesto.slice(0, 50);
+
+  const infoVuelto = calcularVuelto();
+  const vueltoUsdFinal = Number(infoVuelto?.vueltoUsd || 0);
+  const vueltoBsFinal = Number(infoVuelto?.vueltoBs || 0);
+  const turnoCajaId = typeof cajaTurnoActivoCache !== 'undefined' && cajaTurnoActivoCache?.id ? cajaTurnoActivoCache.id : null;
+  const pagosMixtosGuardar = usarPagoMixto
+    ? posPagosMixtos.map(p => ({ ...p }))
+    : [{
+        metodo: condicionPago === 'CRÉDITO' ? 'CRÉDITO' : metodoPagoBase,
+        moneda,
+        montoOriginal: Number((moneda === 'VES' ? totalBs : totalBs / tasa).toFixed(2)),
+        montoUsd: Number((totalBs / tasa).toFixed(2)),
+        montoBs: Number(totalBs.toFixed(2)),
+        referencia: referenciaPago
+      }];
 
   const btnEmitir = document.getElementById('btnEmitirFacturaPos');
   if (btnEmitir) {
@@ -803,7 +1003,11 @@ async function emitirFactura() {
       costo_total_bs: Number(costoTotalBs.toFixed(2)),
       periodo_contable: periodoContable,
       usuario_id: actorPosUuid,
-      usuario_nombre: actorPos?.usuarioNombre || tenantActual?.razon_social || null
+      usuario_nombre: actorPos?.usuarioNombre || tenantActual?.razon_social || null,
+      turno_caja_id: turnoCajaId,
+      vuelto_usd: vueltoUsdFinal,
+      vuelto_bs: vueltoBsFinal,
+      pago_mixto_json: pagosMixtosGuardar
     };
 
     if (typeof guardarRegistroConCompatibilidadContable === 'function') {
@@ -838,8 +1042,13 @@ async function emitirFactura() {
       clienteCuentaContable: cliObj?.cuenta_contable || null,
       viaPagoCuentaContable: viaObj?.cuenta_contable || null,
       condicionPago,
-      metodoPago: metodoPagoBase,
+      metodoPago: metodoResumen,
       referenciaPago,
+      turnoCajaId,
+      vueltoUsd: vueltoUsdFinal,
+      vueltoBs: vueltoBsFinal,
+      pagoMixto: pagosMixtosGuardar,
+      usuarioNombre: actorPos?.usuarioNombre || tenantActual?.razon_social || null,
       sucursalId: sucId,
       almacenId: almId,
       sucursalNombre: sucObj?.nombre || 'Sede Principal',
@@ -921,6 +1130,27 @@ async function emitirFactura() {
       }
     }
 
+    // Registrar desglose en invoice_pagos (soporte nativo v110 con fallback silencioso)
+    try {
+      if (editId) {
+        await supabaseClient.from('invoice_pagos').delete().eq('invoice_id', invoiceId);
+      }
+      const filasPagos = pagosMixtosGuardar.map(p => ({
+        tenant_id: tenantId,
+        invoice_id: invoiceId,
+        turno_id: turnoCajaId,
+        metodo_pago: p.metodo,
+        moneda: p.moneda,
+        monto_original: Number(p.montoOriginal || 0),
+        monto_usd: Number(p.montoUsd || 0),
+        monto_bs: Number(p.montoBs || 0),
+        referencia: p.referencia || null
+      }));
+      if (filasPagos.length > 0) {
+        await supabaseClient.from('invoice_pagos').insert(filasPagos);
+      }
+    } catch (e) {}
+
     if (typeof registrarAsientoAutomaticoVenta === 'function') {
       await registrarAsientoAutomaticoVenta(invResult, carritoItems, {
         fechaEmision,
@@ -949,6 +1179,7 @@ async function emitirFactura() {
       cargarProductosSelect(),
       cargarDocumentosPos(),
       calcularProximoDocumentoVenta(),
+      typeof obtenerTurnoCajaActivo === 'function' ? obtenerTurnoCajaActivo(tenantId) : Promise.resolve(),
       typeof cargarHistorial === 'function' ? cargarHistorial() : Promise.resolve(),
       typeof cargarKardexMovimientos === 'function' ? cargarKardexMovimientos() : Promise.resolve()
     ]);
@@ -1320,6 +1551,7 @@ async function eliminarFacturaPorId(id) {
     cargarDocumentosPos(),
     calcularProximoDocumentoVenta(),
     cargarProductosSelect(),
+    typeof obtenerTurnoCajaActivo === 'function' ? obtenerTurnoCajaActivo(tenantId) : Promise.resolve(),
     typeof cargarHistorial === 'function' ? cargarHistorial() : Promise.resolve(),
     typeof cargarKardexMovimientos === 'function' ? cargarKardexMovimientos() : Promise.resolve()
   ]);
@@ -1458,14 +1690,167 @@ async function eliminarClienteRapidoPos() {
 }
 
 // ==========================================
-// POS-010: CONEXIÓN E IMPRESIÓN EN IMPRESORA FISCAL WEBSERIAL
+// POS-010 / POS-019: IMPRESORA FISCAL VENEZUELA (TFHKA / EPSON VE / ESC-POS)
 // ==========================================
 
 let puertoSerialFiscal = null;
 
+function obtenerProtocoloFiscalTenant() {
+  const raw = tenantActual?.protocolo_fiscal
+    || (tenantActual?.id ? localStorage.getItem(`mfd_protocolo_fiscal_${tenantActual.id}`) : null)
+    || 'GENERICO_ESCPOS';
+  const norm = String(raw).toUpperCase();
+  if (norm === 'TFHKA_VENEZUELA' || norm === 'EPSON_VE') return norm;
+  return 'GENERICO_ESCPOS';
+}
+
+function sincronizarSelectorProtocoloFiscalPos() {
+  const sel = document.getElementById('posProtocoloFiscalSelect');
+  if (sel) sel.value = obtenerProtocoloFiscalTenant();
+}
+
+async function cambiarProtocoloFiscalPos(nuevoProtocolo) {
+  const tenantId = obtenerTenantPos();
+  const proto = ['TFHKA_VENEZUELA', 'EPSON_VE', 'GENERICO_ESCPOS'].includes(String(nuevoProtocolo).toUpperCase())
+    ? String(nuevoProtocolo).toUpperCase()
+    : 'GENERICO_ESCPOS';
+
+  if (tenantId) {
+    try { localStorage.setItem(`mfd_protocolo_fiscal_${tenantId}`, proto); } catch (e) {}
+  }
+  if (tenantActual) {
+    tenantActual.protocolo_fiscal = proto;
+    try { localStorage.setItem('tenant_actual', JSON.stringify(tenantActual)); } catch (e) {}
+  }
+  if (supabaseClient && tenantId) {
+    try {
+      await supabaseClient.from('tenants').update({ protocolo_fiscal: proto }).eq('id', tenantId);
+    } catch (e) {}
+  }
+
+  const nombres = {
+    TFHKA_VENEZUELA: 'The Factory HKA Venezuela (STX/ETX+LRC)',
+    EPSON_VE: 'Epson Fiscal VE (TM-T81F / PF-220)',
+    GENERICO_ESCPOS: 'Térmica ESC/POS Estándar 80mm'
+  };
+  avisarPos(`Protocolo de impresora fiscal configurado: ${nombres[proto] || proto}.`, 'success');
+}
+
+function calcularLrcTfhka(bytesSinStx) {
+  let lrc = 0;
+  for (let i = 0; i < bytesSinStx.length; i++) {
+    lrc ^= bytesSinStx[i] & 0xFF;
+  }
+  return lrc & 0xFF;
+}
+
+function empaquetarTramaStxEtxLrc(comandoStr) {
+  const enc = new TextEncoder();
+  const payload = enc.encode(String(comandoStr || ''));
+  const body = new Uint8Array(payload.length + 1);
+  body.set(payload, 0);
+  body[payload.length] = 0x03; // ETX
+  const lrc = calcularLrcTfhka(body);
+
+  const frame = new Uint8Array(1 + body.length + 1);
+  frame[0] = 0x02; // STX
+  frame.set(body, 1);
+  frame[frame.length - 1] = lrc;
+  return frame;
+}
+
+function limpiarAsciiFiscal(txt, maxLen = 40) {
+  return String(txt || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7E]/g, ' ')
+    .trim()
+    .slice(0, maxLen);
+}
+
+function formatearMontoTfhka10(montoBs) {
+  const centavos = Math.max(0, Math.round(Number(montoBs || 0) * 100));
+  return String(centavos).padStart(10, '0');
+}
+
+function formatearCantTfhka8(cant) {
+  const miles = Math.max(1, Math.round(Number(cant || 1) * 1000));
+  return String(miles).padStart(8, '0');
+}
+
+function construirTramaTfhkaFactura(d) {
+  if (!d) return { comandos: [], paqueteBytes: new Uint8Array(0), comandosTexto: '' };
+  const esNc = String(d.tituloDoc || '').toUpperCase().includes('CREDITO') || String(d.numDoc || '').startsWith('REV-') || String(d.numDoc || '').startsWith('NC-');
+  const tasa = Math.max(1, Number(d.tasa || 1));
+  const cmds = [];
+
+  // Cabecera de cliente TFHKA Venezuela (iR* / iS* / i01..)
+  cmds.push(`iR*${limpiarAsciiFiscal(d.cliRif || 'V-00000000', 18)}`);
+  cmds.push(`iS*${limpiarAsciiFiscal(d.cliNombre || 'CONTADO', 40)}`);
+  cmds.push(`i01DIRECCION: ${limpiarAsciiFiscal(d.cliDir || 'VENEZUELA', 36)}`);
+  cmds.push(`i02DOC DIGITAL: ${limpiarAsciiFiscal(d.numDoc || '', 24)}`);
+
+  (d.items || []).forEach(it => {
+    const alic = Number(it.alicuota || 0);
+    let pref = ' '; // Exento
+    if (alic >= 30) pref = '#'; // Alícuota adicional 31%
+    else if (alic >= 15) pref = '!'; // General 16%
+    else if (alic > 0) pref = '"'; // Reducida 8%
+    if (esNc) pref = 'd' + (pref === ' ' ? '0' : (pref === '!' ? '1' : (pref === '"' ? '2' : '3')));
+
+    const cant = Number(it.cant || 1);
+    const totBs = Number(it.totBs || 0);
+    const precioUnitBs = totBs > 0 ? totBs / Math.max(0.001, cant) : Number(it.precio || 0) * tasa;
+    const desc = limpiarAsciiFiscal(it.desc || 'PRODUCTO', 38);
+    cmds.push(`${pref}${formatearMontoTfhka10(precioUnitBs)}${formatearCantTfhka8(cant)}${desc}`);
+  });
+
+  cmds.push('3'); // Subtotal
+  if (Number(d.igtfBs || 0) > 0) {
+    cmds.push(`i03IGTF 3% ART.27: Bs. ${Number(d.igtfBs).toFixed(2)}`);
+  }
+  cmds.push('101'); // Pago directo total efectivo/vía principal
+  cmds.push('199'); // Cierre comprobante fiscal
+
+  const frames = cmds.map(c => empaquetarTramaStxEtxLrc(c));
+  const totalBytes = frames.reduce((acc, f) => acc + f.length, 0);
+  const paqueteBytes = new Uint8Array(totalBytes);
+  let offset = 0;
+  frames.forEach(f => {
+    paqueteBytes.set(f, offset);
+    offset += f.length;
+  });
+
+  return {
+    comandos: cmds,
+    paqueteBytes,
+    comandosTexto: cmds.join('\r\n')
+  };
+}
+
+function construirComandosEpsonVeFactura(d) {
+  const enc = new TextEncoder();
+  const lines = [
+    `@FACTURA|${limpiarAsciiFiscal(d.cliRif || 'V-00000000', 18)}|${limpiarAsciiFiscal(d.cliNombre || 'CONTADO', 40)}`,
+    ...(d.items || []).map(it => {
+      const pUnitBs = Number(it.totBs || 0) / Math.max(0.001, Number(it.cant || 1));
+      return `@ITEM|${limpiarAsciiFiscal(it.desc, 36)}|${Number(it.cant || 1).toFixed(3)}|${pUnitBs.toFixed(2)}|${Number(it.alicuota || 0).toFixed(2)}`;
+    }),
+    `@SUBTOTAL`,
+    `@PAGO|${limpiarAsciiFiscal(d.metodo || 'EFECTIVO', 16)}|${Number(d.totalBs || 0).toFixed(2)}`,
+    `@CIERRE\r\n`
+  ];
+  const texto = lines.join('\r\n');
+  return {
+    comandos: lines,
+    paqueteBytes: enc.encode(texto),
+    comandosTexto: texto
+  };
+}
+
 async function conectarImpresoraFiscalWebSerial() {
   if (!('serial' in navigator)) {
-    avisarPos('Tu navegador o visor embebido no soporta WebSerial API. Usa Chrome o Edge en ventana principal para impresoras seriales USB/RS-232.', 'warning', 7000);
+    avisarPos('Tu navegador o visor embebido no soporta WebSerial API. Usa Chrome o Edge en ventana principal, o descarga la Trama TFHKA/Spooler.', 'warning', 7000);
     return null;
   }
 
@@ -1475,16 +1860,22 @@ async function conectarImpresoraFiscalWebSerial() {
       return puertoSerialFiscal;
     }
 
+    const proto = obtenerProtocoloFiscalTenant();
     const puerto = await navigator.serial.requestPort();
-    await puerto.open({ baudRate: 9600, dataBits: 8, stopBits: 1, parity: 'none' });
+    await puerto.open({
+      baudRate: 9600,
+      dataBits: 8,
+      stopBits: 1,
+      parity: proto === 'TFHKA_VENEZUELA' ? 'even' : 'none'
+    });
     puertoSerialFiscal = puerto;
 
     const badge = document.getElementById('posEstadoWebSerial');
     if (badge) {
-      badge.textContent = 'Serial Conectada';
+      badge.textContent = `Serial (${proto === 'TFHKA_VENEZUELA' ? 'TFHKA' : (proto === 'EPSON_VE' ? 'Epson VE' : 'ESC/POS')})`;
       badge.className = 'text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40';
     }
-    avisarPos('Impresora fiscal conectada vía WebSerial (9600 bps).', 'success');
+    avisarPos(`Impresora fiscal conectada vía WebSerial (${proto}).`, 'success');
     return puertoSerialFiscal;
   } catch (e) {
     if (e?.name !== 'NotFoundError') {
@@ -1495,42 +1886,103 @@ async function conectarImpresoraFiscalWebSerial() {
 }
 
 async function imprimirTicketWebSerial() {
-  const puerto = await conectarImpresoraFiscalWebSerial();
-  if (!puerto || !puerto.writable) return;
-
   const d = typeof comprobanteRenderCache !== 'undefined' ? comprobanteRenderCache : null;
   if (!d) {
     avisarPos('Abre un comprobante fiscal antes de enviarlo a la impresora WebSerial.', 'warning');
     return;
   }
 
+  const puerto = await conectarImpresoraFiscalWebSerial();
+  if (!puerto || !puerto.writable) return;
+
+  const proto = obtenerProtocoloFiscalTenant();
   const writer = puerto.writable.getWriter();
   try {
-    const encoder = new TextEncoder();
-    const lineas = [
-      '\x1B@',
-      `${String(d.emisorNombre || '').toUpperCase()}\n`,
-      `RIF: ${d.emisorRif || ''}\n`,
-      `--------------------------------\n`,
-      `${d.tituloDoc || 'FACTURA'}: ${d.numDoc || ''}\n`,
-      `CONTROL: ${d.nroControl || ''}\n`,
-      `FECHA: ${d.fechaMostrar || ''}\n`,
-      `CLIENTE: ${d.cliNombre || ''}\n`,
-      `RIF/CI: ${d.cliRif || ''}\n`,
-      `--------------------------------\n`,
-      ...(d.items || []).map(it => `${Number(it.cant)} x ${String(it.desc).slice(0, 20)}  ${Number(it.totBs).toFixed(2)}\n`),
-      `--------------------------------\n`,
-      `EXENTO:    Bs. ${Number(d.montoExentoBs || 0).toFixed(2)}\n`,
-      `IGTF 3%:   Bs. ${Number(d.igtfBs || 0).toFixed(2)}\n`,
-      `TOTAL:     Bs. ${Number(d.totalBs || 0).toFixed(2)}\n`,
-      `REF USD:   $ ${(Number(d.totalBs || 0) / Math.max(1, Number(d.tasa || 1))).toFixed(2)}\n`,
-      `\n\n\n\x1DV\x00`
-    ];
-    await writer.write(encoder.encode(lineas.join('')));
-    avisarPos(`Documento ${d.numDoc} enviado a impresora WebSerial.`, 'success');
+    if (proto === 'TFHKA_VENEZUELA') {
+      const trama = construirTramaTfhkaFactura(d);
+      await writer.write(trama.paqueteBytes);
+      avisarPos(`Trama fiscal TFHKA (${trama.comandos.length} comandos STX/ETX+LRC) enviada para ${d.numDoc}.`, 'success');
+    } else if (proto === 'EPSON_VE') {
+      const trama = construirComandosEpsonVeFactura(d);
+      await writer.write(trama.paqueteBytes);
+      avisarPos(`Comandos fiscales Epson VE enviados para ${d.numDoc}.`, 'success');
+    } else {
+      const encoder = new TextEncoder();
+      const lineas = [
+        '\x1B@',
+        `${String(d.emisorNombre || '').toUpperCase()}\n`,
+        `RIF: ${d.emisorRif || ''}\n`,
+        `--------------------------------\n`,
+        `${d.tituloDoc || 'FACTURA'}: ${d.numDoc || ''}\n`,
+        `CONTROL: ${d.nroControl || ''}\n`,
+        `FECHA: ${d.fechaMostrar || ''}\n`,
+        `CLIENTE: ${d.cliNombre || ''}\n`,
+        `RIF/CI: ${d.cliRif || ''}\n`,
+        `--------------------------------\n`,
+        ...(d.items || []).map(it => `${Number(it.cant)} x ${String(it.desc).slice(0, 20)}  ${Number(it.totBs).toFixed(2)}\n`),
+        `--------------------------------\n`,
+        `EXENTO:    Bs. ${Number(d.montoExentoBs || 0).toFixed(2)}\n`,
+        `IGTF 3%:   Bs. ${Number(d.igtfBs || 0).toFixed(2)}\n`,
+        `TOTAL:     Bs. ${Number(d.totalBs || 0).toFixed(2)}\n`,
+        `REF USD:   $ ${(Number(d.totalBs || 0) / Math.max(1, Number(d.tasa || 1))).toFixed(2)}\n`,
+        `\n\n\n\x1DV\x00`
+      ];
+      await writer.write(encoder.encode(lineas.join('')));
+      avisarPos(`Documento ${d.numDoc} enviado a impresora ESC/POS WebSerial.`, 'success');
+    }
   } catch (e) {
     avisarPos(`Error enviando datos WebSerial: ${e?.message || e}`, 'error');
   } finally {
     writer.releaseLock();
   }
+}
+
+async function imprimirReporteFiscalWebSerial(tipo = 'X') {
+  const t = String(tipo || 'X').toUpperCase() === 'Z' ? 'Z' : 'X';
+  if (t === 'Z' && typeof pedirConfirmacion === 'function') {
+    const ok = await pedirConfirmacion('Emitir Reporte Z Fiscal', 'El Reporte Z cierra la jornada fiscal en la memoria de la impresora física. ¿Deseas enviar el comando a la impresora?');
+    if (!ok) return;
+  }
+  const puerto = await conectarImpresoraFiscalWebSerial();
+  if (!puerto || !puerto.writable) return;
+
+  const proto = obtenerProtocoloFiscalTenant();
+  const writer = puerto.writable.getWriter();
+  try {
+    if (proto === 'TFHKA_VENEZUELA') {
+      const cmd = t === 'Z' ? 'I0Z' : 'I0X';
+      await writer.write(empaquetarTramaStxEtxLrc(cmd));
+    } else if (proto === 'EPSON_VE') {
+      const enc = new TextEncoder();
+      await writer.write(enc.encode(t === 'Z' ? '@REPORTE_Z\r\n' : '@REPORTE_X\r\n'));
+    } else {
+      const enc = new TextEncoder();
+      await writer.write(enc.encode(`\x1B@\nCORTE ${t} - ${tenantActual?.razon_social || ''}\n${new Date().toLocaleString()}\n\n\n\x1DV\x00`));
+    }
+    avisarPos(`Comando Corte ${t} (${proto}) enviado a impresora fiscal.`, 'success');
+  } catch (e) {
+    avisarPos(`Error enviando Corte ${t}: ${e?.message || e}`, 'error');
+  } finally {
+    writer.releaseLock();
+  }
+}
+
+function descargarComandosTfhkaTxt() {
+  const d = typeof comprobanteRenderCache !== 'undefined' ? comprobanteRenderCache : null;
+  if (!d) {
+    avisarPos('Abre un comprobante fiscal para descargar su trama de comandos TFHKA/Spooler.', 'warning');
+    return;
+  }
+  const proto = obtenerProtocoloFiscalTenant();
+  const trama = proto === 'EPSON_VE' ? construirComandosEpsonVeFactura(d) : construirTramaTfhkaFactura(d);
+  const blob = new Blob([trama.comandosTexto], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Trama_Fiscal_${d.numDoc || 'FAC'}_${proto}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  avisarPos(`Archivo de comandos ${proto} descargado para spooler fiscal.`, 'success');
 }

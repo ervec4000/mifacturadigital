@@ -1772,28 +1772,154 @@ async function cargarTablaNotasFiscalesRecientes() {
   });
 }
 
+let ultimoReporteZCache = null;
+
 async function generarReporteZ() {
   if (!tenantActual) return;
+  await sincronizarMetasNotasNube(tenantActual.id);
   const fDesde = document.getElementById('filtroFechaDesde')?.value || '';
   const fHasta = document.getElementById('filtroFechaHasta')?.value || '';
 
-  const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id);
+  const { data } = await supabaseClient.from('invoices').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: true });
   const filtradas = (data || []).filter(f => {
-    const fIso = f.created_at ? String(f.created_at).slice(0, 10) : '';
+    const meta = obtenerMetaFacturaLocal(tenantActual.id, f);
+    const fRaw = f.fecha_emision || meta?.fechaEmision || (f.created_at ? String(f.created_at).slice(0, 10) : '');
+    const fIso = String(fRaw).slice(0, 10);
     if (fDesde && fIso && fIso < fDesde) return false;
     if (fHasta && fIso && fIso > fHasta) return false;
     return true;
   });
 
-  document.getElementById('zTotalFacturas').innerText = filtradas.length;
-  let total = 0;
+  let totalBs = 0;
+  let totalUsd = 0;
+  let baseBs = 0;
+  let ivaBs = 0;
+  let igtfBs = 0;
+  let cantFacturas = 0;
+  let cantNc = 0;
+  let cantNd = 0;
+  let cantAnuladas = 0;
+  const porCanal = {};
+
   filtradas.forEach(f => {
-    const numUpper = (f.factura_nro || '').toUpperCase();
-    const val = Number(f.total_bs || 0);
-    if (numUpper.startsWith('NC')) total -= Math.abs(val);
-    else total += val;
+    const estUpper = String(f.estado || 'EMITIDA').toUpperCase();
+    if (estUpper === 'ANULADA') {
+      cantAnuladas++;
+      return;
+    }
+    const numUpper = String(f.factura_nro || '').toUpperCase();
+    const esNc = numUpper.startsWith('NC') || numUpper.startsWith('REV-') || estUpper === 'REVERSO';
+    const signo = esNc ? -1 : 1;
+
+    if (numUpper.startsWith('NC')) cantNc++;
+    else if (numUpper.startsWith('ND')) cantNd++;
+    else if (!numUpper.startsWith('REV-')) cantFacturas++;
+
+    const tasa = Math.max(0.0001, Number(f.tasa_bcv || 1));
+    const valBs = Math.abs(Number(f.total_bs || 0));
+    const valUsd = valBs / tasa;
+
+    totalBs += signo * valBs;
+    totalUsd += signo * valUsd;
+    baseBs += signo * Math.abs(Number(f.subtotal_bs || 0));
+    ivaBs += signo * Math.abs(Number(f.iva_bs || 0));
+    igtfBs += signo * Math.abs(Number(f.igtf_bs || 0));
+
+    const meta = obtenerMetaFacturaLocal(tenantActual.id, f);
+    const pagos = Array.isArray(f.pago_mixto_json) && f.pago_mixto_json.length > 0
+      ? f.pago_mixto_json
+      : (Array.isArray(meta?.pagoMixto) && meta.pagoMixto.length > 0 ? meta.pagoMixto : null);
+
+    if (pagos) {
+      pagos.forEach(p => {
+        const ch = String(p.metodo || 'OTROS').toUpperCase();
+        if (!porCanal[ch]) porCanal[ch] = { usd: 0, bs: 0, count: 0 };
+        porCanal[ch].usd += signo * Number(p.montoUsd || 0);
+        porCanal[ch].bs += signo * Number(p.montoBs || 0);
+        porCanal[ch].count += 1;
+      });
+    } else {
+      const ch = String(f.metodo_pago || 'EFECTIVO').split('|')[0].trim().toUpperCase();
+      if (!porCanal[ch]) porCanal[ch] = { usd: 0, bs: 0, count: 0 };
+      porCanal[ch].usd += signo * valUsd;
+      porCanal[ch].bs += signo * valBs;
+      porCanal[ch].count += 1;
+    }
   });
-  document.getElementById('totalGavetaEfectivo').innerText = `Bs. ${total.toFixed(2)}`;
+
+  ultimoReporteZCache = {
+    fDesde, fHasta, filtradas, totalBs, totalUsd, baseBs, ivaBs, igtfBs,
+    cantFacturas, cantNc, cantNd, cantAnuladas, porCanal
+  };
+
+  const elTotFac = document.getElementById('zTotalFacturas');
+  const elTotGav = document.getElementById('totalGavetaEfectivo');
+  const elDetalle = document.getElementById('zDesgloseCanales');
+  if (elTotFac) elTotFac.innerText = `${cantFacturas} Fac · ${cantNc} NC · ${cantNd} ND${cantAnuladas > 0 ? ` (${cantAnuladas} Anul.)` : ''}`;
+  if (elTotGav) elTotGav.innerText = `Bs. ${totalBs.toFixed(2)} | $ ${totalUsd.toFixed(2)}`;
+  if (elDetalle) {
+    const entries = Object.entries(porCanal);
+    elDetalle.innerHTML = entries.length === 0
+      ? `<p class="text-xs text-slate-500">Sin operaciones en este rango.</p>`
+      : entries.map(([ch, v]) => `
+          <div class="flex items-center justify-between text-xs py-1.5 border-b border-slate-800/60">
+            <span class="text-slate-300 font-semibold">${esc(ch)} <span class="text-slate-500 font-normal">(${v.count})</span></span>
+            <span class="font-mono text-emerald-400 font-bold">$ ${v.usd.toFixed(2)} <span class="text-slate-400 font-normal">/ Bs. ${v.bs.toFixed(2)}</span></span>
+          </div>
+        `).join('');
+  }
+}
+
+function imprimirReporteZFiscalPdf() {
+  if (!ultimoReporteZCache) {
+    avisarReporte('Genera primero el Reporte Z antes de imprimir.', 'warning');
+    return;
+  }
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    avisarReporte('jsPDF no disponible.', 'error');
+    return;
+  }
+  const z = ultimoReporteZCache;
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'mm', format: [80, 190] });
+  let y = 8;
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(9.5);
+  pdf.text(String(tenantActual?.razon_social || 'EMPRESA').toUpperCase(), 40, y, { align: 'center', maxWidth: 72 });
+  y += 5;
+  pdf.setFontSize(7.5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`RIF: ${tenantActual?.rif || ''}`, 40, y, { align: 'center' });
+  y += 4;
+  pdf.line(4, y, 76, y);
+  y += 4.5;
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(9);
+  pdf.text('REPORTE Z FISCAL CONSOLIDADO', 40, y, { align: 'center' });
+  y += 4.5;
+  pdf.setFontSize(7.5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`Desde: ${z.fDesde || 'Inicio'} | Hasta: ${z.fHasta || 'Hoy'}`, 4, y); y += 4;
+  pdf.text(`Facturas: ${z.cantFacturas} | NC: ${z.cantNc} | ND: ${z.cantNd} | Anul: ${z.cantAnuladas}`, 4, y); y += 4;
+  pdf.line(4, y, 76, y); y += 4;
+  pdf.text(`Base + Exento:`, 4, y); pdf.text(`Bs. ${z.baseBs.toFixed(2)}`, 76, y, { align: 'right' }); y += 3.8;
+  pdf.text(`IVA Cobrado:`, 4, y); pdf.text(`Bs. ${z.ivaBs.toFixed(2)}`, 76, y, { align: 'right' }); y += 3.8;
+  pdf.text(`IGTF (3%):`, 4, y); pdf.text(`Bs. ${z.igtfBs.toFixed(2)}`, 76, y, { align: 'right' }); y += 4;
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(`VENTA NETA Bs.:`, 4, y); pdf.text(`Bs. ${z.totalBs.toFixed(2)}`, 76, y, { align: 'right' }); y += 4;
+  pdf.text(`REF. DIVISAS ($):`, 4, y); pdf.text(`$ ${z.totalUsd.toFixed(2)}`, 76, y, { align: 'right' }); y += 5;
+  pdf.line(4, y, 76, y); y += 4;
+  pdf.text('DESGLOSE POR VIA DE PAGO:', 4, y); y += 4;
+  pdf.setFont('helvetica', 'normal');
+  Object.entries(z.porCanal).forEach(([ch, v]) => {
+    pdf.text(`${ch.slice(0, 18)} (${v.count})`, 4, y);
+    pdf.text(`$ ${v.usd.toFixed(2)}`, 76, y, { align: 'right' });
+    y += 3.6;
+  });
+
+  const fileName = `Reporte_Z_${z.fDesde || 'Todo'}_${z.fHasta || 'Hoy'}.pdf`;
+  if (typeof abrirVisorImpresionPdf === 'function') abrirVisorImpresionPdf(pdf, fileName, 'Reporte Z Fiscal');
+  else pdf.save(fileName);
 }
 
 function descargarExcelMatriz(matrizDatos, nombreArchivo, nombreHoja) {
@@ -1915,19 +2041,144 @@ async function descargarLibroComprasOficialExcel() {
   descargarExcelMatriz(matriz, 'Libro_de_Compras', 'LibroCompras');
 }
 
+function escapeXmlStr(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+async function exportarResumenFiscalXml() {
+  if (!tenantActual) return;
+  if (!ultimoReporteZCache) {
+    await generarReporteZ();
+  }
+  const z = ultimoReporteZCache;
+  if (!z) {
+    avisarReporte('No hay datos fiscales en el período para exportar XML.', 'warning');
+    return;
+  }
+
+  const fDesde = z.fDesde || new Date().toISOString().slice(0, 10);
+  const fHasta = z.fHasta || fDesde;
+  const periodo = fDesde.slice(0, 7).replace('-', '');
+  const rifAgente = String(tenantActual.rif || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
+
+  const docsXml = (z.filtradas || []).map(doc => {
+    const nro = String(doc.factura_nro || '');
+    const tipo = /^NC/i.test(nro) ? '02' : (/^ND/i.test(nro) ? '03' : (/^REV/i.test(nro) ? '04' : '01'));
+    const fDoc = String(doc.fecha_emision || doc.created_at || '').slice(0, 10);
+    return [
+      '    <Documento>',
+      `      <TipoDocumento>${tipo}</TipoDocumento>`,
+      `      <NumeroDocumento>${escapeXmlStr(nro)}</NumeroDocumento>`,
+      `      <NumeroControl>${escapeXmlStr(doc.nro_control || '00-00000000')}</NumeroControl>`,
+      `      <FechaEmision>${escapeXmlStr(fDoc)}</FechaEmision>`,
+      `      <ClienteRif>${escapeXmlStr(doc.cliente_rif || 'V-0')}</ClienteRif>`,
+      `      <ClienteNombre>${escapeXmlStr(doc.cliente_nombre || 'CONSUMIDOR FINAL')}</ClienteNombre>`,
+      `      <TasaBCV>${Number(doc.tasa_bcv || 1).toFixed(4)}</TasaBCV>`,
+      `      <BaseImponibleBs>${Number(doc.subtotal_bs || 0).toFixed(2)}</BaseImponibleBs>`,
+      `      <IvaBs>${Number(doc.iva_bs || 0).toFixed(2)}</IvaBs>`,
+      `      <IgtfBs>${Number(doc.igtf_bs || 0).toFixed(2)}</IgtfBs>`,
+      `      <TotalBs>${Number(doc.total_bs || 0).toFixed(2)}</TotalBs>`,
+      `      <Estado>${escapeXmlStr(doc.estado || 'EMITIDA')}</Estado>`,
+      '    </Documento>'
+    ].join('\n');
+  }).join('\n');
+
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    `<DeclaracionFiscalIVA RifContribuyente="${escapeXmlStr(rifAgente)}" PeriodoImpositivo="${escapeXmlStr(periodo)}">`,
+    '  <Contribuyente>',
+    `    <RazonSocial>${escapeXmlStr(tenantActual.razon_social || '')}</RazonSocial>`,
+    `    <RIF>${escapeXmlStr(rifAgente)}</RIF>`,
+    `    <Desde>${escapeXmlStr(fDesde)}</Desde>`,
+    `    <Hasta>${escapeXmlStr(fHasta)}</Hasta>`,
+    '  </Contribuyente>',
+    '  <ResumenPeriodo>',
+    `    <CantidadFacturas>${z.cantFacturas}</CantidadFacturas>`,
+    `    <CantidadNotasCredito>${z.cantNc}</CantidadNotasCredito>`,
+    `    <CantidadNotasDebito>${z.cantNd}</CantidadNotasDebito>`,
+    `    <CantidadAnuladas>${z.cantAnuladas}</CantidadAnuladas>`,
+    `    <TotalBaseGravadaYExentaBs>${z.baseBs.toFixed(2)}</TotalBaseGravadaYExentaBs>`,
+    `    <TotalDebitoFiscalIvaBs>${z.ivaBs.toFixed(2)}</TotalDebitoFiscalIvaBs>`,
+    `    <TotalIgtfPercibidoBs>${z.igtfBs.toFixed(2)}</TotalIgtfPercibidoBs>`,
+    `    <TotalFacturacionNetaBs>${z.totalBs.toFixed(2)}</TotalFacturacionNetaBs>`,
+    `    <ReferenciaDivisasUsd>${z.totalUsd.toFixed(2)}</ReferenciaDivisasUsd>`,
+    '  </ResumenPeriodo>',
+    '  <Documentos>',
+    docsXml,
+    '  </Documentos>',
+    '</DeclaracionFiscalIVA>'
+  ].join('\n');
+
+  const blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Declaracion_IVA_${rifAgente || 'SENIAT'}_${periodo}.xml`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  avisarReporte(`Archivo XML fiscal SENIAT (${periodo}) descargado.`, 'success');
+}
+
+let retencionesProveedoresCache = [];
+let retencionesCache = [];
+
+async function cargarProveedoresSelectRetencion() {
+  if (!tenantActual || !supabaseClient) return;
+  const sel = document.getElementById('retProveedorSelect');
+  if (!sel) return;
+  try {
+    const { data } = await supabaseClient
+      .from('proveedores')
+      .select('id, rif, razon_social, porcentaje_retencion_iva')
+      .eq('tenant_id', tenantActual.id)
+      .order('razon_social', { ascending: true });
+    retencionesProveedoresCache = data || [];
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">-- Seleccionar Proveedor (Opcional) --</option>';
+    retencionesProveedoresCache.forEach(p => {
+      sel.innerHTML += `<option value="${esc(p.id)}">${esc(p.razon_social)} (${esc(p.rif)})</option>`;
+    });
+    if (prev) sel.value = prev;
+  } catch (e) {}
+}
+
+function onSeleccionarProveedorRetencion() {
+  const id = document.getElementById('retProveedorSelect')?.value || '';
+  const prov = retencionesProveedoresCache.find(p => String(p.id) === String(id));
+  if (!prov) return;
+  const inpRif = document.getElementById('retProveedorRif');
+  const selPct = document.getElementById('retPorcentaje');
+  if (inpRif) inpRif.value = prov.rif || '';
+  if (selPct && Number(prov.porcentaje_retencion_iva) > 0) {
+    selPct.value = String(prov.porcentaje_retencion_iva);
+  }
+}
+
 async function generarComprobanteRetencion() {
-  const facRef = document.getElementById('retFacturaRef')?.value.trim() || 'FAC-0001';
+  const facRef = (document.getElementById('retFacturaRef')?.value || 'FAC-0001').trim().toUpperCase();
+  const nroControl = (document.getElementById('retNroControl')?.value || '00-00000001').trim().toUpperCase();
+  const provId = document.getElementById('retProveedorSelect')?.value || '';
+  const provObj = retencionesProveedoresCache.find(p => String(p.id) === String(provId));
+  const provRif = (document.getElementById('retProveedorRif')?.value || provObj?.rif || 'J-00000000-0').trim().toUpperCase();
+  const provNombre = provObj?.razon_social || 'PROVEEDOR CONTRIBUYENTE';
+  const fechaFactura = document.getElementById('retFechaFactura')?.value || new Date().toISOString().slice(0, 10);
   const baseUsd = parseFloat(document.getElementById('retBaseUsd')?.value) || 0;
+  const exentoUsd = Math.max(0, parseFloat(document.getElementById('retMontoExentoUsd')?.value) || 0);
   const porcentaje = parseFloat(document.getElementById('retPorcentaje')?.value) || 100;
-  if (baseUsd <= 0) { avisarReporte('Complete los datos de la retención.', 'warning'); return; }
+  if (baseUsd <= 0) { avisarReporte('Ingresa una Base Imponible mayor a 0.', 'warning'); return; }
 
-  const tasa = parseFloat(document.getElementById('tasaBcv').value) || 1;
-  const baseBs = baseUsd * tasa;
-  const ivaBs = baseBs * 0.16;
-  const ivaRetenidoBs = ivaBs * (porcentaje / 100);
-  const nroComp = 'RET-' + new Date().getFullYear() + '-' + Math.floor(10000 + Math.random() * 90000);
-
+  const tasa = parseFloat(document.getElementById('tasaBcv')?.value) || 1;
+  const baseBs = Number((baseUsd * tasa).toFixed(2));
+  const exentoBs = Number((exentoUsd * tasa).toFixed(2));
+  const ivaBs = Number((baseBs * 0.16).toFixed(2));
+  const ivaRetenidoBs = Number((ivaBs * (porcentaje / 100)).toFixed(2));
   const hoyIso = new Date().toISOString().slice(0, 10);
+  const periodoYm = hoyIso.slice(0, 7).replace('-', '');
+  const seq = String(Math.floor(10000000 + Math.random() * 89999999));
+  const nroComp = `${periodoYm}${seq}`;
+
   const payloadRetBase = {
     tenant_id: tenantActual.id,
     nro_comprobante: nroComp,
@@ -1940,11 +2191,15 @@ async function generarComprobanteRetencion() {
   const payloadRetContable = {
     tipo_retencion: 'COMPRA',
     periodo_impositivo: hoyIso.slice(0, 7),
-    fecha_comprobante: hoyIso
+    fecha_comprobante: hoyIso,
+    proveedor_rif: provRif,
+    proveedor_nombre: provNombre,
+    nro_control_factura: nroControl,
+    monto_exento_bs: exentoBs
   };
 
   if (typeof guardarRegistroConCompatibilidadContable === 'function') {
-    const resRet = await guardarRegistroConCompatibilidadContable('retenciones_iva', null, tenantActual.id, payloadRetBase, payloadRetContable);
+    let resRet = await guardarRegistroConCompatibilidadContable('retenciones_iva', null, tenantActual.id, payloadRetBase, payloadRetContable);
     if (!resRet.ok) {
       avisarReporte(resRet.message, 'error', 9000);
       return;
@@ -1962,6 +2217,20 @@ async function generarComprobanteRetencion() {
     }
   }
 
+  // Guardar metadata extendida local por si aún no se corre SQL v120
+  try {
+    const key = `mfd_ret_meta_${tenantActual.id}`;
+    const map = JSON.parse(localStorage.getItem(key) || '{}');
+    map[nroComp] = {
+      proveedor_rif: provRif,
+      proveedor_nombre: provNombre,
+      nro_control_factura: nroControl,
+      monto_exento_bs: exentoBs,
+      fecha_factura: fechaFactura
+    };
+    localStorage.setItem(key, JSON.stringify(map));
+  } catch (e) {}
+
   if (typeof registrarAsientoAutomaticoRetencion === 'function') {
     await registrarAsientoAutomaticoRetencion({
       nroComprobante: nroComp,
@@ -1978,6 +2247,7 @@ async function generarComprobanteRetencion() {
 
 async function cargarRetenciones() {
   if (!tenantActual) return;
+  await cargarProveedoresSelectRetencion();
   const { data, error } = await supabaseClient.from('retenciones_iva').select('*').eq('tenant_id', tenantActual.id).order('created_at', { ascending: false });
   const tbody = document.getElementById('tablaRetenciones');
   if (!tbody) return;
@@ -1986,22 +2256,186 @@ async function cargarRetenciones() {
     tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-400">Error al consultar retenciones: ${esc(error.message)}</td></tr>`;
     return;
   }
-  if (!data || data.length === 0) {
+
+  let metaLocal = {};
+  try { metaLocal = JSON.parse(localStorage.getItem(`mfd_ret_meta_${tenantActual.id}`) || '{}'); } catch (e) {}
+  retencionesCache = (data || []).map(r => ({
+    ...r,
+    ...(metaLocal[r.nro_comprobante] || {}),
+    proveedor_rif: r.proveedor_rif || metaLocal[r.nro_comprobante]?.proveedor_rif || 'J-00000000-0',
+    proveedor_nombre: r.proveedor_nombre || metaLocal[r.nro_comprobante]?.proveedor_nombre || 'PROVEEDOR',
+    nro_control_factura: r.nro_control_factura || metaLocal[r.nro_comprobante]?.nro_control_factura || '00-00000000',
+    monto_exento_bs: Number(r.monto_exento_bs ?? metaLocal[r.nro_comprobante]?.monto_exento_bs ?? 0)
+  }));
+
+  if (!retencionesCache.length) {
     tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-500">Sin comprobantes de retención registrados.</td></tr>`;
     return;
   }
-  data.forEach(r => {
+
+  retencionesCache.forEach(r => {
     tbody.innerHTML += `
       <tr class="hover:bg-slate-900 border-b border-slate-800/40">
-        <td class="p-3 font-mono text-emerald-400 font-bold">${esc(r.nro_comprobante)}</td>
-        <td class="p-3 font-mono">${esc(r.factura_ref)}</td>
-        <td class="p-3 font-mono">Bs. ${(r.base_imponible_bs || 0).toFixed(2)}</td>
-        <td class="p-3 font-mono">Bs. ${(r.iva_bs || 0).toFixed(2)}</td>
-        <td class="p-3 font-mono text-emerald-300 font-bold">Bs. ${(r.iva_retenido_bs || 0).toFixed(2)} (${r.porcentaje_retencion}%)</td>
-        <td class="p-3 text-center"><button onclick="avisarReporte('Comprobante ${esc(r.nro_comprobante)} | Factura: ${esc(r.factura_ref)} | IVA Retenido: Bs. ${(r.iva_retenido_bs || 0).toFixed(2)}', 'info', 7000)" class="text-sky-400 hover:underline cursor-pointer">Ver</button></td>
+        <td class="p-3 font-mono text-emerald-400 font-bold">${esc(r.nro_comprobante)}<div class="text-[10px] text-slate-400 font-normal">${esc(r.proveedor_rif)} · ${esc(r.proveedor_nombre)}</div></td>
+        <td class="p-3 font-mono">${esc(r.factura_ref)}<div class="text-[10px] text-slate-500">Ctrl: ${esc(r.nro_control_factura)}</div></td>
+        <td class="p-3 font-mono">Bs. ${Number(r.base_imponible_bs || 0).toFixed(2)}</td>
+        <td class="p-3 font-mono">Bs. ${Number(r.iva_bs || 0).toFixed(2)}</td>
+        <td class="p-3 font-mono text-emerald-300 font-bold">Bs. ${Number(r.iva_retenido_bs || 0).toFixed(2)} (${r.porcentaje_retencion}%)</td>
+        <td class="p-3 text-center whitespace-nowrap space-x-1.5">
+          <button type="button" onclick='imprimirComprobanteRetencionPdf("${esc(r.id)}")' class="bg-slate-800 hover:bg-slate-700 text-sky-300 px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer">Comprobante PDF</button>
+        </td>
       </tr>
     `;
   });
+}
+
+function construirSeniatTxtRetenciones(registros, agenteRif = '') {
+  const rifAg = String(agenteRif || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return (registros || []).map(r => {
+    const fechaIso = String(r.fecha_comprobante || r.created_at || new Date().toISOString()).slice(0, 10);
+    const periodo = String(r.periodo_impositivo || fechaIso.slice(0, 7)).replace('-', '');
+    const rifSujeto = String(r.proveedor_rif || 'J000000000').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const base = Number(r.base_imponible_bs || 0);
+    const iva = Number(r.iva_bs || 0);
+    const exento = Number(r.monto_exento_bs || 0);
+    const totalDoc = base + iva + exento;
+    const retBs = Number(r.iva_retenido_bs || 0);
+    const nroComp = String(r.nro_comprobante || '').replace(/[^0-9]/g, '').padStart(14, '0').slice(-14);
+    const fac = String(r.factura_ref || '0').replace(/\s+/g, '');
+    const ctrl = String(r.nro_control_factura || '0').replace(/\s+/g, '');
+
+    return [
+      rifAg,
+      periodo,
+      fechaIso,
+      'C',
+      '01',
+      rifSujeto,
+      fac,
+      ctrl,
+      totalDoc.toFixed(2),
+      base.toFixed(2),
+      retBs.toFixed(2),
+      '0',
+      nroComp,
+      exento.toFixed(2),
+      '16.00',
+      '0'
+    ].join('\t');
+  }).join('\n');
+}
+
+function exportarRetencionesSeniatTxt() {
+  if (!tenantActual || !retencionesCache.length) {
+    avisarReporte('No hay comprobantes de retención para generar el archivo TXT SENIAT.', 'warning');
+    return;
+  }
+  const contenido = construirSeniatTxtRetenciones(retencionesCache, tenantActual.rif || '');
+  const periodo = new Date().toISOString().slice(0, 7).replace('-', '');
+  const rifClean = String(tenantActual.rif || 'AGENTE').replace(/[^A-Za-z0-9]/g, '');
+  const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Retenciones_IVA_SENIAT_${rifClean}_${periodo}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  avisarReporte(`Archivo TXT SENIAT generado con ${retencionesCache.length} comprobante(s) listos para declarar en portal.`, 'success');
+}
+
+function imprimirComprobanteRetencionPdf(retId) {
+  const r = retencionesCache.find(x => String(x.id) === String(retId));
+  if (!r || !window.jspdf?.jsPDF) {
+    avisarReporte('No se pudo generar el comprobante PDF de retención.', 'warning');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'landscape' });
+  const pageW = pdf.internal.pageSize.getWidth();
+  const margin = 14;
+  let y = 16;
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(11);
+  pdf.text('COMPROBANTE DE RETENCIÓN DE IMPUESTO AL VALOR AGREGADO (IVA)', pageW / 2, y, { align: 'center' });
+  y += 5;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7.5);
+  pdf.text('Providencia Administrativa N° SNAT/2015/0049 (Art. 16 - Ley IVA Art. 11)', pageW / 2, y, { align: 'center' });
+  y += 8;
+
+  pdf.setDrawColor(15, 23, 42);
+  pdf.rect(margin, y, 165, 24);
+  pdf.rect(margin + 170, y, pageW - margin * 2 - 170, 24);
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8.5);
+  pdf.text(`AGENTE DE RETENCIÓN: ${String(tenantActual?.razon_social || '').toUpperCase()}`, margin + 3, y + 5.5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`RIF Agente: ${tenantActual?.rif || ''}`, margin + 3, y + 11);
+  pdf.text(`Domicilio: ${String(tenantActual?.direccion || 'VENEZUELA').slice(0, 70)}`, margin + 3, y + 16.5);
+
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(`N° COMPROBANTE: ${r.nro_comprobante}`, margin + 173, y + 6);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`Fecha Emisión: ${String(r.fecha_comprobante || r.created_at || '').slice(0, 10)}`, margin + 173, y + 12);
+  pdf.text(`Período Fiscal: ${String(r.periodo_impositivo || String(r.created_at || '').slice(0, 7))}`, margin + 173, y + 18);
+  y += 29;
+
+  pdf.rect(margin, y, pageW - margin * 2, 16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(`SUJETO RETENIDO (PROVEEDOR): ${r.proveedor_nombre}`, margin + 3, y + 6);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text(`RIF Proveedor: ${r.proveedor_rif}`, margin + 3, y + 12);
+  y += 22;
+
+  pdf.setFillColor(15, 23, 42);
+  pdf.rect(margin, y, pageW - margin * 2, 8, 'F');
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7.5);
+  pdf.text('N° Factura', margin + 3, y + 5.2);
+  pdf.text('N° Control', margin + 40, y + 5.2);
+  pdf.text('Total Doc (Bs.)', margin + 100, y + 5.2, { align: 'right' });
+  pdf.text('Exento (Bs.)', margin + 132, y + 5.2, { align: 'right' });
+  pdf.text('Base Imp. (Bs.)', margin + 168, y + 5.2, { align: 'right' });
+  pdf.text('IVA 16% (Bs.)', margin + 202, y + 5.2, { align: 'right' });
+  pdf.text('% Ret.', margin + 220, y + 5.2, { align: 'right' });
+  pdf.text('IVA Retenido (Bs.)', pageW - margin - 3, y + 5.2, { align: 'right' });
+  y += 8;
+
+  const base = Number(r.base_imponible_bs || 0);
+  const iva = Number(r.iva_bs || 0);
+  const exento = Number(r.monto_exento_bs || 0);
+  const totDoc = base + iva + exento;
+  const retBs = Number(r.iva_retenido_bs || 0);
+
+  pdf.setTextColor(15, 23, 42);
+  pdf.setFont('helvetica', 'normal');
+  pdf.rect(margin, y, pageW - margin * 2, 9);
+  pdf.text(String(r.factura_ref || ''), margin + 3, y + 6);
+  pdf.text(String(r.nro_control_factura || 'N/A'), margin + 40, y + 6);
+  pdf.text(totDoc.toFixed(2), margin + 100, y + 6, { align: 'right' });
+  pdf.text(exento.toFixed(2), margin + 132, y + 6, { align: 'right' });
+  pdf.text(base.toFixed(2), margin + 168, y + 6, { align: 'right' });
+  pdf.text(iva.toFixed(2), margin + 202, y + 6, { align: 'right' });
+  pdf.text(`${r.porcentaje_retencion}%`, margin + 220, y + 6, { align: 'right' });
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(retBs.toFixed(2), pageW - margin - 3, y + 6, { align: 'right' });
+  y += 28;
+
+  pdf.setFont('helvetica', 'normal');
+  pdf.line(margin + 15, y, margin + 85, y);
+  pdf.line(pageW - margin - 85, y, pageW - margin - 15, y);
+  pdf.text('Firma y Sello Agente de Retención', margin + 50, y + 5, { align: 'center' });
+  pdf.text('Recibido Conforme (Proveedor)', pageW - margin - 50, y + 5, { align: 'center' });
+
+  const fname = `Retencion_IVA_${r.nro_comprobante}.pdf`;
+  if (typeof abrirVisorImpresionPdf === 'function') abrirVisorImpresionPdf(pdf, fname, `Comprobante Retención ${r.nro_comprobante}`);
+  else pdf.save(fname);
 }
 
 // ==========================================
@@ -2096,276 +2530,26 @@ async function exportarComprasExcel() {
 }
 
 // ==========================================
-// CIE-005 / CAT-007: CUENTAS POR COBRAR Y ALERTAS
+// POS-011: ENVIAR COMPROBANTE POR WHATSAPP (+PDF) Y CORREO ELECTRÓNICO (PDF)
 // ==========================================
 
-let cuentasPorCobrarCache = [];
-
-function leerAbonosCxcLocal(tenantId) {
-  try {
-    return JSON.parse(localStorage.getItem(`cxc_abonos_${tenantId}`) || '{}');
-  } catch (e) {
-    return {};
-  }
-}
-
-function guardarAbonoCxcLocal(tenantId, invoiceId, abonoObj) {
-  try {
-    const store = leerAbonosCxcLocal(tenantId);
-    if (!store[String(invoiceId)]) store[String(invoiceId)] = [];
-    store[String(invoiceId)].push(abonoObj);
-    localStorage.setItem(`cxc_abonos_${tenantId}`, JSON.stringify(store));
-  } catch (e) {}
-}
-
-async function cargarCuentasPorCobrar() {
-  if (!tenantActual) return;
-  const tenantId = tenantActual.id;
-
-  const [resInv, resAudit, resAbonos] = await Promise.all([
-    supabaseClient.from('invoices').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false }),
-    supabaseClient.from('audit_logs').select('*').eq('tenant_id', tenantId).eq('accion', 'ABONO_CXC'),
-    supabaseClient.from('abonos_cxc').select('invoice_id, monto_usd').eq('tenant_id', tenantId)
-  ]);
-
-  const abonosPorFactura = {};
-  const localStore = leerAbonosCxcLocal(tenantId);
-  Object.keys(localStore).forEach(invId => {
-    abonosPorFactura[invId] = (localStore[invId] || []).reduce((acc, a) => acc + Number(a.montoUsd || 0), 0);
-  });
-
-  if (!resAudit.error && Array.isArray(resAudit.data)) {
-    const nubeSum = {};
-    resAudit.data.forEach(log => {
-      try {
-        const det = JSON.parse(log.detalle || '{}');
-        if (det.invoiceId && Number(det.montoUsd) > 0) {
-          nubeSum[String(det.invoiceId)] = (nubeSum[String(det.invoiceId)] || 0) + Number(det.montoUsd);
-        }
-      } catch (e) {}
-    });
-    Object.keys(nubeSum).forEach(invId => {
-      abonosPorFactura[invId] = Math.max(abonosPorFactura[invId] || 0, nubeSum[invId]);
-    });
-  }
-
-  if (!resAbonos.error && Array.isArray(resAbonos.data)) {
-    const nativoSum = {};
-    resAbonos.data.forEach(a => {
-      if (a.invoice_id && Number(a.monto_usd) > 0) {
-        nativoSum[String(a.invoice_id)] = (nativoSum[String(a.invoice_id)] || 0) + Number(a.monto_usd);
-      }
-    });
-    Object.keys(nativoSum).forEach(invId => {
-      abonosPorFactura[invId] = Math.max(abonosPorFactura[invId] || 0, nativoSum[invId]);
-    });
-  }
-
-  await sincronizarMetasNotasNube(tenantId);
-
-  const ajusteNotasPorFactura = {};
-  (resInv.data || []).forEach(doc => {
-    const nro = String(doc.factura_nro || '').toUpperCase();
-    if (!nro.startsWith('NC') && !nro.startsWith('ND')) return;
-    const metaDoc = obtenerMetaFacturaLocal(tenantId, doc);
-    const facRef = metaDoc?.facturaAfectadaNro || '';
-    if (!facRef) return;
-    const tasaN = Number(doc.tasa_bcv || 1);
-    const totUsdN = Number(doc.total_bs || 0) / tasaN;
-    ajusteNotasPorFactura[facRef] = (ajusteNotasPorFactura[facRef] || 0) + (nro.startsWith('NC') ? -totUsdN : totUsdN);
-  });
-
-  const creditoList = (resInv.data || []).filter(inv => {
-    const nro = String(inv.factura_nro || '').toUpperCase();
-    const est = String(inv.estado || '').toUpperCase();
-    if (nro.startsWith('NC') || nro.startsWith('ND') || nro.startsWith('REV-') || est === 'ANULADA' || est === 'REVERSO') return false;
-    const meta = obtenerMetaFacturaLocal(tenantId, inv);
-    const cond = String(meta?.condicionPago || '').toUpperCase();
-    const met = String(inv.metodo_pago || '').toUpperCase();
-    return cond.includes('CRÉDITO') || cond.includes('CREDITO') || met.includes('CRÉDITO') || met.includes('CREDITO');
-  });
-
-  const hoyMs = Date.now();
-  let totalCarteraUsd = 0;
-  let pendienteTotalUsd = 0;
-  let vencidasCount = 0;
-
-  cuentasPorCobrarCache = creditoList.map(inv => {
-    const tasa = Number(inv.tasa_bcv || 1);
-    const baseUsd = Number(inv.total_bs ? (Number(inv.total_bs) / tasa) : (inv.monto_usd || 0));
-    const ajusteNotaUsd = ajusteNotasPorFactura[inv.factura_nro] || 0;
-    const totalUsd = Math.max(0, baseUsd + ajusteNotaUsd);
-    const abonadoUsd = Math.min(totalUsd, abonosPorFactura[String(inv.id)] || 0);
-    const saldoUsd = Math.max(0, totalUsd - abonadoUsd);
-    const diasTranscurridos = Math.max(0, Math.floor((hoyMs - new Date(inv.created_at).getTime()) / 86400000));
-    const vencida = saldoUsd > 0.01 && diasTranscurridos > 15;
-    if (vencida) vencidasCount += 1;
-    totalCarteraUsd += totalUsd;
-    pendienteTotalUsd += saldoUsd;
-
-    return {
-      ...inv,
-      tasa,
-      totalUsd,
-      abonadoUsd,
-      saldoUsd,
-      diasTranscurridos,
-      vencida
-    };
-  });
-
-  const elTot = document.getElementById('cxcTotalCartera');
-  const elPen = document.getElementById('cxcPendienteCobro');
-  const elVen = document.getElementById('cxcVencidasAlerta');
-  if (elTot) elTot.textContent = `$ ${totalCarteraUsd.toFixed(2)}`;
-  if (elPen) elPen.textContent = `$ ${pendienteTotalUsd.toFixed(2)}`;
-  if (elVen) elVen.textContent = `${vencidasCount} factura(s) > 15 días`;
-
-  const tbody = document.getElementById('tablaCuentasPorCobrar');
-  if (!tbody) return;
-  tbody.innerHTML = '';
-
-  if (cuentasPorCobrarCache.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="p-5 text-center text-slate-500">No existen facturas emitidas a CRÉDITO pendientes de cobro.</td></tr>`;
-    return;
-  }
-
-  cuentasPorCobrarCache.forEach(c => {
-    const estatus = c.saldoUsd <= 0.01
-      ? '<span class="text-emerald-400 font-semibold">SOLVENTE</span>'
-      : (c.vencida
-          ? `<span class="text-rose-400 font-semibold">VENCIDA (${c.diasTranscurridos}d)</span>`
-          : `<span class="text-amber-300 font-semibold">VIGENTE (${c.diasTranscurridos}d)</span>`);
-
-    const accionHtml = c.saldoUsd <= 0.01
-      ? `<span class="text-xs text-slate-500 font-mono">Liquidada</span>`
-      : `<div class="flex items-center justify-center gap-1.5">
-           <input type="number" step="0.01" min="0.01" max="${c.saldoUsd.toFixed(2)}" id="abonoInput_${esc(c.id)}" value="${c.saldoUsd.toFixed(2)}" class="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-white tabular-nums">
-           <button type="button" onclick='abonarCuentaPorCobrar("${esc(c.id)}")' class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap">Registrar Abono</button>
-         </div>`;
-
-    tbody.innerHTML += `
-      <tr class="hover:bg-slate-900 border-b border-slate-800/40">
-        <td class="p-3 font-mono font-bold text-white">${esc(c.factura_nro)}<div class="text-[11px] text-slate-500">${formatearFecha8Digitos(c.created_at)}</div></td>
-        <td class="p-3 text-slate-200">${esc(c.cliente_nombre)}<div class="text-[11px] font-mono text-slate-500">${esc(c.cliente_rif)}</div></td>
-        <td class="p-3 font-mono tabular-nums text-slate-300">$ ${c.totalUsd.toFixed(2)}</td>
-        <td class="p-3 font-mono tabular-nums text-emerald-400">$ ${c.abonadoUsd.toFixed(2)}</td>
-        <td class="p-3 font-mono tabular-nums font-bold ${c.saldoUsd > 0.01 ? 'text-amber-300' : 'text-emerald-400'}">$ ${c.saldoUsd.toFixed(2)}</td>
-        <td class="p-3 text-xs">${estatus}</td>
-        <td class="p-3 text-center">${accionHtml}</td>
-      </tr>
-    `;
-  });
-}
-
-async function abonarCuentaPorCobrar(invoiceId) {
-  if (!tenantActual) return;
-  const tenantId = tenantActual.id;
-  const item = cuentasPorCobrarCache.find(c => String(c.id) === String(invoiceId));
-  if (!item) return;
-
-  const input = document.getElementById(`abonoInput_${invoiceId}`);
-  const montoUsd = parseFloat(input?.value || item.saldoUsd) || 0;
-  if (montoUsd <= 0) {
-    avisarReporte('Ingresa un monto de abono mayor a 0.', 'warning');
-    return;
-  }
-  const actorCxc = typeof obtenerActorActual === 'function' ? obtenerActorActual() : null;
-  const actorCxcUuid = actorCxc?.usuarioId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(actorCxc.usuarioId))
-    ? actorCxc.usuarioId
-    : null;
-
-  const montoAplicado = Math.min(montoUsd, item.saldoUsd);
-  const abonoObj = {
-    invoiceId,
-    facturaNro: item.factura_nro,
-    montoUsd: Number(montoAplicado.toFixed(2)),
-    fecha: new Date().toISOString(),
-    usuarioNombre: actorCxc?.usuarioNombre || null
-  };
-
-  guardarAbonoCxcLocal(tenantId, invoiceId, abonoObj);
-  try {
-    await supabaseClient.from('abonos_cxc').insert([{
-      tenant_id: tenantId,
-      invoice_id: invoiceId,
-      factura_nro: item.factura_nro,
-      cliente_rif: item.cliente_rif,
-      cliente_nombre: item.cliente_nombre,
-      monto_usd: Number(montoAplicado.toFixed(2)),
-      tasa_bcv: item.tasa || 1,
-      metodo_pago: 'ABONO',
-      usuario_id: actorCxcUuid,
-      usuario_nombre: actorCxc?.usuarioNombre || null,
-      fecha: abonoObj.fecha
-    }]);
-  } catch (e) {}
-
-  await supabaseClient.from('audit_logs').insert([{
-    tenant_id: tenantId,
-    accion: 'ABONO_CXC',
-    detalle: JSON.stringify(abonoObj)
-  }]);
-
-  if (typeof registrarAsientoAutomaticoAbonoCxc === 'function') {
-    await registrarAsientoAutomaticoAbonoCxc({
-      invoiceId,
-      facturaNro: item.factura_nro,
-      clienteRif: item.cliente_rif,
-      clienteNombre: item.cliente_nombre,
-      montoUsd: montoAplicado,
-      tasaBcv: item.tasa || 1,
-      fecha: abonoObj.fecha
-    });
-  }
-
-  avisarReporte(`Abono de $ ${montoAplicado.toFixed(2)} registrado y contabilizado en factura ${item.factura_nro}.`, 'success');
-  await cargarCuentasPorCobrar();
-}
-
-function exportarCuentasPorCobrarExcel() {
-  if (!tenantActual) return;
-  if (!cuentasPorCobrarCache || cuentasPorCobrarCache.length === 0) {
-    avisarReporte('No hay cuentas por cobrar para exportar.', 'warning');
-    return;
-  }
-  const matriz = [
-    ['EMPRESA:', tenantActual.razon_social || '', 'REPORTE:', 'CUENTAS POR COBRAR (CXC)'],
-    [],
-    ['Factura', 'Fecha Emisión', 'Cliente', 'RIF', 'Total USD', 'Abonado USD', 'Saldo Pendiente USD', 'Días', 'Estado']
-  ];
-  cuentasPorCobrarCache.forEach(c => {
-    matriz.push([
-      c.factura_nro,
-      formatearFecha8Digitos(c.created_at),
-      c.cliente_nombre,
-      c.cliente_rif,
-      Number(c.totalUsd.toFixed(2)),
-      Number(c.abonadoUsd.toFixed(2)),
-      Number(c.saldoUsd.toFixed(2)),
-      c.diasTranscurridos,
-      c.saldoUsd <= 0.01 ? 'SOLVENTE' : (c.vencida ? 'VENCIDA' : 'VIGENTE')
-    ]);
-  });
-  descargarExcelMatriz(matriz, 'Cuentas_Por_Cobrar', 'CxC');
-}
-
-// ==========================================
-// POS-011: ENVIAR COMPROBANTE POR WHATSAPP
-// ==========================================
-
-function enviarWhatsApp() {
+function enviarWhatsApp(descargarPdf = false) {
   const d = comprobanteRenderCache;
   if (!d) {
     avisarReporte('Abre primero un comprobante fiscal para enviarlo por WhatsApp.', 'warning');
     return;
   }
+
+  if (descargarPdf) {
+    descargarComprobantePdf();
+  }
+
   const totalUsd = Number(d.tasa) > 0 ? Number(d.totalBs || 0) / Number(d.tasa) : 0;
   const msg = [
     `*${String(d.emisorNombre || 'MiFacturaDigital').toUpperCase()}* (${d.emisorRif || ''})`,
     `${d.tituloDoc || 'FACTURA'}: *${d.numDoc || ''}*`,
     `Nro. Control: ${d.nroControl || 'N/A'}`,
-    `Fecha: ${d.fechaMostrar || ''}`,
+    `Fecha: ${d.fechaFormateada || ''}`,
     `Cliente: ${d.cliNombre || ''} (${d.cliRif || ''})`,
     `Exento: Bs. ${Number(d.montoExentoBs || 0).toFixed(2)}`,
     `IGTF 3%: Bs. ${Number(d.igtfBs || 0).toFixed(2)}`,
@@ -2389,7 +2573,139 @@ function enviarWhatsApp() {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  avisarReporte(`Resumen fiscal ${d.numDoc} preparado para WhatsApp (copiado también al portapapeles).`, 'success');
+  avisarReporte(
+    descargarPdf
+      ? `PDF ${d.numDoc}.pdf descargado y WhatsApp abierto. Adjunta el PDF recién descargado en el chat.`
+      : `Resumen fiscal ${d.numDoc} preparado para WhatsApp (copiado también al portapapeles).`,
+    'success',
+    6500
+  );
+}
+
+async function abrirModalEnviarCorreo() {
+  const d = comprobanteRenderCache;
+  if (!d) {
+    avisarReporte('Abre primero un comprobante fiscal para enviarlo por correo.', 'warning');
+    return;
+  }
+
+  const modal = document.getElementById('modalEnviarCorreoFactura');
+  if (!modal) return;
+
+  let emailCli = '';
+  if (typeof clientesCache !== 'undefined' && Array.isArray(clientesCache)) {
+    const cli = clientesCache.find(c => String(c.rif || '').toUpperCase() === String(d.cliRif || '').toUpperCase());
+    if (cli?.email) emailCli = cli.email;
+  }
+
+  const totalUsd = Number(d.tasa) > 0 ? Number(d.totalBs || 0) / Number(d.tasa) : 0;
+  document.getElementById('correoDestinoInput').value = emailCli;
+  document.getElementById('correoAsuntoInput').value = `${d.tituloDoc || 'FACTURA'} ${d.numDoc} - ${d.emisorNombre}`;
+  document.getElementById('correoMensajeInput').value = [
+    `Estimado(a) ${d.cliNombre || 'Cliente'},`,
+    '',
+    `Adjuntamos su comprobante fiscal digital emitido por ${d.emisorNombre} (${d.emisorRif}):`,
+    `• Documento: ${d.tituloDoc || 'FACTURA'} ${d.numDoc}`,
+    `• Nro. Control: ${d.nroControl || 'N/A'}`,
+    `• Fecha: ${d.fechaFormateada || ''}`,
+    `• Total: Bs. ${Number(d.totalBs || 0).toFixed(2)} (Ref. $ ${totalUsd.toFixed(2)})`,
+    '',
+    'Gracias por su preferencia.'
+  ].join('\n');
+
+  const badge = document.getElementById('correoServidorEstadoBadge');
+  if (badge) {
+    badge.textContent = 'Verificando servidor de correo...';
+    badge.className = 'text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300';
+    try {
+      const r = await fetch('/api/email/estado');
+      const j = await r.json();
+      if (j?.configurado) {
+        badge.textContent = `Envío Directo con PDF Adjunto (${String(j.proveedor || 'SMTP').toUpperCase()})`;
+        badge.className = 'text-[11px] font-mono px-2.5 py-1 rounded-lg bg-emerald-950 text-emerald-300 border border-emerald-500/40';
+      } else {
+        badge.textContent = 'Modo Cliente Local: descarga PDF + abre tu correo (configura RESEND_API_KEY o BREVO_API_KEY en .env para envío automático)';
+        badge.className = 'text-[11px] font-mono px-2.5 py-1 rounded-lg bg-amber-950 text-amber-300 border border-amber-500/40';
+      }
+    } catch (e) {}
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function cerrarModalEnviarCorreo() {
+  document.getElementById('modalEnviarCorreoFactura')?.classList.add('hidden');
+}
+
+async function enviarComprobanteCorreoPdf(e) {
+  if (e) e.preventDefault();
+  const d = comprobanteRenderCache;
+  if (!d) return;
+
+  const para = (document.getElementById('correoDestinoInput')?.value || '').trim();
+  const asunto = (document.getElementById('correoAsuntoInput')?.value || '').trim();
+  const mensajeTexto = (document.getElementById('correoMensajeInput')?.value || '').trim();
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(para)) {
+    avisarReporte('Ingresa un correo electrónico destino válido.', 'warning');
+    return;
+  }
+
+  const prevFmt = formatoComprobanteActual;
+  formatoComprobanteActual = 'digital';
+  const resPdf = construirComprobanteJsPdf();
+  formatoComprobanteActual = prevFmt;
+
+  if (!resPdf || !resPdf.pdf) {
+    avisarReporte('No se pudo generar el PDF del comprobante.', 'error');
+    return;
+  }
+
+  const dataUri = resPdf.pdf.output('datauristring');
+  const pdfBase64 = String(dataUri || '').split(',')[1] || '';
+
+  const btn = document.getElementById('btnConfirmarEnvioCorreo');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+
+  try {
+    const resp = await fetch('/api/enviar-comprobante-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        para,
+        asunto,
+        mensajeTexto,
+        emisorNombre: d.emisorNombre || tenantActual?.razon_social || 'MiFacturaDigital',
+        nombreArchivo: resPdf.fileName || `${d.numDoc}.pdf`,
+        pdfBase64
+      })
+    });
+    const json = await resp.json().catch(() => ({}));
+    if (resp.ok && json.ok) {
+      cerrarModalEnviarCorreo();
+      avisarReporte(`Comprobante ${resPdf.fileName} enviado por correo a ${para}.`, 'success', 6500);
+      return;
+    }
+
+    if (json?.fallbackCliente || resp.status === 503) {
+      resPdf.pdf.save(resPdf.fileName || `${d.numDoc}.pdf`);
+      const mailto = `mailto:${encodeURIComponent(para)}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(mensajeTexto)}`;
+      const a = document.createElement('a');
+      a.href = mailto;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      cerrarModalEnviarCorreo();
+      avisarReporte(`PDF ${resPdf.fileName} descargado y cliente de correo abierto hacia ${para}.`, 'info', 7500);
+      return;
+    }
+
+    avisarReporte(json?.error || 'Error enviando comprobante por correo.', 'error');
+  } catch (err) {
+    avisarReporte('No se pudo conectar con el servidor de correo.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Enviar Comprobante PDF'; }
+  }
 }
 
 // ==========================================

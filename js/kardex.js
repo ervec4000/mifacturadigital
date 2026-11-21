@@ -62,6 +62,7 @@ async function inicializarModuloCompras() {
     consultarTasaBcvCompra(true)
   ]);
 
+  onCambioCondicionCompra();
   renderizarTablaItemsCompra();
 }
 
@@ -196,6 +197,48 @@ async function cargarProveedoresSelectCompra() {
   compraProveedoresCache.forEach(p => {
     sel.innerHTML += `<option value="${esc(p.id)}">${esc(p.razon_social)} (${esc(p.rif)})</option>`;
   });
+}
+
+function onSeleccionarProveedorCompra() {
+  const provId = document.getElementById('compraProveedorSelect')?.value || '';
+  const prov = compraProveedoresCache.find(p => String(p.id) === String(provId));
+  const diasEl = document.getElementById('compraDiasCredito');
+  const condEl = document.getElementById('compraCondicionPago');
+  if (prov && Number(prov.dias_credito || 0) > 0) {
+    if (diasEl) diasEl.value = String(Number(prov.dias_credito));
+    if (condEl) condEl.value = 'CRÉDITO';
+  }
+  onCambioCondicionCompra();
+}
+
+function onCambioCondicionCompra() {
+  const cond = String(document.getElementById('compraCondicionPago')?.value || 'CONTADO').toUpperCase();
+  const diasEl = document.getElementById('compraDiasCredito');
+  const vencEl = document.getElementById('compraFechaVencimientoDoc');
+  const fechaCompra = document.getElementById('compraFecha')?.value || new Date().toISOString().slice(0, 10);
+  const esCredito = cond.includes('CRÉDITO') || cond.includes('CREDITO');
+
+  if (diasEl) {
+    diasEl.disabled = !esCredito;
+    if (esCredito && (parseInt(diasEl.value || '0', 10) || 0) <= 0) {
+      diasEl.value = '15';
+    } else if (!esCredito) {
+      diasEl.value = '0';
+    }
+  }
+  if (vencEl) {
+    vencEl.disabled = !esCredito;
+    if (esCredito) {
+      const dias = Math.max(1, parseInt(diasEl?.value || '15', 10) || 15);
+      const dt = new Date(`${fechaCompra}T00:00:00`);
+      if (!isNaN(dt)) {
+        dt.setDate(dt.getDate() + dias);
+        vencEl.value = dt.toISOString().slice(0, 10);
+      }
+    } else {
+      vencEl.value = fechaCompra;
+    }
+  }
 }
 
 async function cargarSucursalesYAlmacenesCompra() {
@@ -653,7 +696,15 @@ async function registrarCompraInventario() {
       }
     }
 
-    // Persistir documento nativo en compras_documentos + compras_detalle (si tablas v100 existen)
+    // Persistir documento nativo en compras_documentos + compras_detalle (con campos CxP v120 y respaldo compatible)
+    const condicionPago = String(document.getElementById('compraCondicionPago')?.value || 'CONTADO').toUpperCase();
+    const esCompraCredito = condicionPago.includes('CRÉDITO') || condicionPago.includes('CREDITO');
+    const diasCredito = esCompraCredito ? Math.max(1, parseInt(document.getElementById('compraDiasCredito')?.value || '15', 10) || 15) : 0;
+    const fechaVencDoc = esCompraCredito
+      ? (document.getElementById('compraFechaVencimientoDoc')?.value || fechaCompra)
+      : null;
+    const metodoPagoCompra = String(document.getElementById('compraMetodoPago')?.value || (esCompraCredito ? 'CRÉDITO' : 'TRANSFERENCIA')).toUpperCase();
+
     try {
       const actorDoc = typeof obtenerActorActual === 'function' ? obtenerActorActual() : null;
       const actorDocUuid = actorDoc?.usuarioId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(actorDoc.usuarioId))
@@ -661,30 +712,62 @@ async function registrarCompraInventario() {
         : null;
       const totalCompraUsd = baseGravadaCompraUsd + montoExentoCompraUsd + ivaCompraUsd;
       const firstItem = carritoCompraItems[0] || {};
-      const { data: docCab, error: errCab } = await supabaseClient
-        .from('compras_documentos')
-        .insert([{
+      const baseCompraRow = {
+        tenant_id: tenantId,
+        doc_nro: docNro,
+        fecha: fechaCompra,
+        tasa_bcv: tasaBcv,
+        nro_factura: nroFactura,
+        nro_control: nroControl,
+        proveedor_id: proveedorId || null,
+        proveedor_nombre: provLabel,
+        sucursal_id: firstItem.sucursalId || null,
+        almacen_id: firstItem.almacenId || null,
+        base_gravada_usd: Number(baseGravadaCompraUsd.toFixed(2)),
+        monto_exento_usd: Number(montoExentoCompraUsd.toFixed(2)),
+        iva_usd: Number(ivaCompraUsd.toFixed(2)),
+        total_usd: Number(totalCompraUsd.toFixed(2)),
+        total_bs: Number((totalCompraUsd * tasaBcv).toFixed(2)),
+        items_count: carritoCompraItems.length,
+        usuario_id: actorDocUuid,
+        usuario_nombre: actorDoc?.usuarioNombre || null
+      };
+      const extCompraRow = {
+        ...baseCompraRow,
+        condicion_pago: condicionPago,
+        dias_credito: diasCredito,
+        fecha_vencimiento: fechaVencDoc,
+        metodo_pago: metodoPagoCompra,
+        saldo_pendiente_usd: esCompraCredito ? Number(totalCompraUsd.toFixed(2)) : 0,
+        estado_pago: esCompraCredito ? 'PENDIENTE' : 'PAGADA'
+      };
+
+      let resCab = await supabaseClient.from('compras_documentos').insert([extCompraRow]).select('id').single();
+      if (resCab.error && typeof esErrorColumnaOTablaFaltante === 'function' && esErrorColumnaOTablaFaltante(resCab.error)) {
+        resCab = await supabaseClient.from('compras_documentos').insert([baseCompraRow]).select('id').single();
+      }
+      const docCab = resCab.data;
+      const errCab = resCab.error;
+
+      const metaCxpPayload = {
+        docKey: docCab?.id || docNro,
+        docNro,
+        condicionPago,
+        diasCredito,
+        fechaVencimiento: fechaVencDoc,
+        metodoPago: metodoPagoCompra
+      };
+      if (typeof guardarCxpLocalMeta === 'function') {
+        guardarCxpLocalMeta(tenantId, metaCxpPayload.docKey, metaCxpPayload);
+        guardarCxpLocalMeta(tenantId, docNro, metaCxpPayload);
+      }
+      if (esCompraCredito) {
+        await supabaseClient.from('audit_logs').insert([{
           tenant_id: tenantId,
-          doc_nro: docNro,
-          fecha: fechaCompra,
-          tasa_bcv: tasaBcv,
-          nro_factura: nroFactura,
-          nro_control: nroControl,
-          proveedor_id: proveedorId || null,
-          proveedor_nombre: provLabel,
-          sucursal_id: firstItem.sucursalId || null,
-          almacen_id: firstItem.almacenId || null,
-          base_gravada_usd: Number(baseGravadaCompraUsd.toFixed(2)),
-          monto_exento_usd: Number(montoExentoCompraUsd.toFixed(2)),
-          iva_usd: Number(ivaCompraUsd.toFixed(2)),
-          total_usd: Number(totalCompraUsd.toFixed(2)),
-          total_bs: Number((totalCompraUsd * tasaBcv).toFixed(2)),
-          items_count: carritoCompraItems.length,
-          usuario_id: actorDocUuid,
-          usuario_nombre: actorDoc?.usuarioNombre || null
-        }])
-        .select('id')
-        .single();
+          accion: 'COMPRA_CXP_META',
+          detalle: JSON.stringify(metaCxpPayload)
+        }]);
+      }
 
       if (!errCab && docCab?.id) {
         const detRows = carritoCompraItems.map(it => ({
@@ -711,6 +794,7 @@ async function registrarCompraInventario() {
         nroFactura,
         fecha: fechaCompra,
         tasaBcv,
+        condicionPago,
         proveedorRif: prov?.rif || 'N/A',
         proveedorNombre: prov?.razon_social || provLabel,
         proveedorCuenta: prov?.cuenta_contable || null,
@@ -720,7 +804,7 @@ async function registrarCompraInventario() {
       });
     }
 
-    avisarKardex(`¡Documento de Compra ${docNro} registrado y contabilizado (${carritoCompraItems.length} renglón/es)!`, 'success', 7000);
+    avisarKardex(`¡Documento de Compra ${docNro} registrado (${condicionPago}) y contabilizado (${carritoCompraItems.length} renglón/es)!`, 'success', 7000);
     carritoCompraItems = [];
     document.getElementById('compraNumeroFactura').value = '';
     document.getElementById('compraNumeroControl').value = '';

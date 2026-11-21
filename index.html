@@ -27,6 +27,7 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
   <style id="estiloPaginaImpresion"></style>
   <style>
@@ -292,9 +293,17 @@
         <!-- 1. POS y Facturación -->
         <div class="sidebar-section-group cliente-erp-group space-y-1">
           <p class="sidebar-section-title px-2.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">POS y Facturación</p>
+          <button type="button" onclick="cambiarPestana('dashboard')" id="btnTabDashboard" title="Dashboard Ejecutivo" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+            <span class="sidebar-label truncate">Dashboard Ejecutivo</span>
+          </button>
           <button type="button" onclick="cambiarPestana('pos')" id="btnTabPos" title="Facturación POS" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m-2 4h2M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
             <span class="sidebar-label truncate">Facturación POS</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('caja')" id="btnTabCaja" title="Caja, Turnos y Arqueo" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+            <span class="sidebar-label truncate">Caja y Turnos</span>
           </button>
         </div>
 
@@ -312,6 +321,10 @@
           <button type="button" onclick="cambiarPestana('cierrez')" id="btnTabCierrez" title="Cierres y Libros" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             <span class="sidebar-label truncate">Cierres Z y Libros</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('reportesVentas')" id="btnTabReportesVentas" title="Reportes Gerenciales de Ventas" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            <span class="sidebar-label truncate">Reportes de Ventas</span>
           </button>
           <button type="button" onclick="cambiarPestana('cuentas')" id="btnTabCuentas" title="Cuentas por Cobrar" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -350,6 +363,10 @@
           <button type="button" onclick="cambiarPestana('compras')" id="btnTabCompras" title="Registro de Compras" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
             <span class="sidebar-label truncate">Registro de Compras</span>
+          </button>
+          <button type="button" onclick="cambiarPestana('cxp')" id="btnTabCxp" title="Cuentas por Pagar y Conciliación Bancaria" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
+            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+            <span class="sidebar-label truncate">CxP y Conciliación</span>
           </button>
           <button type="button" onclick="cambiarPestana('retenciones')" id="btnTabRetenciones" title="Retenciones IVA" class="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg border border-transparent text-xs font-medium transition cursor-pointer whitespace-nowrap">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>
@@ -453,6 +470,124 @@
 
       <!-- CONTENEDOR DE SECCIONES -->
       <main class="p-4 sm:p-6 flex-1 space-y-6 max-w-7xl w-full mx-auto">
+      <!-- Sección Dashboard Ejecutivo -->
+      <div id="seccionDashboard" class="hidden space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Dashboard Ejecutivo &amp; Rentabilidad</h3>
+            <p class="text-xs text-slate-400">Indicadores en tiempo real de ventas, margen bruto PPM, flujo de caja, cartera CxC y alertas de inventario.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="dashPeriodoPreset" onchange="aplicarPresetDashboard(this.value)" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-semibold">
+              <option value="HOY">Hoy</option>
+              <option value="7D">Últimos 7 días</option>
+              <option value="30D" selected>Últimos 30 días</option>
+              <option value="MES">Mes en curso</option>
+              <option value="PERSONALIZADO">Personalizado</option>
+            </select>
+            <input type="date" id="dashFechaDesde" onchange="if(document.getElementById('dashPeriodoPreset'))document.getElementById('dashPeriodoPreset').value='PERSONALIZADO';cargarDashboardEjecutivo();" class="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-xs font-mono text-slate-200">
+            <input type="date" id="dashFechaHasta" onchange="if(document.getElementById('dashPeriodoPreset'))document.getElementById('dashPeriodoPreset').value='PERSONALIZADO';cargarDashboardEjecutivo();" class="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-xs font-mono text-slate-200">
+            <select id="dashSucursalSelect" onchange="cargarDashboardEjecutivo()" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200">
+              <option value="">Todas las Sucursales</option>
+            </select>
+            <button type="button" onclick="cargarDashboardEjecutivo()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Actualizar</button>
+          </div>
+        </div>
+
+        <!-- Accesos rápidos -->
+        <div class="flex flex-wrap gap-2">
+          <button type="button" onclick="cambiarPestana('pos')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">+ Facturar en POS</button>
+          <button type="button" onclick="cambiarPestana('caja')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Abrir / Arqueo de Caja</button>
+          <button type="button" onclick="cambiarPestana('reportesVentas')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Ver Reportes de Ventas</button>
+          <button type="button" onclick="cambiarPestana('cuentas')" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Monitor CxC</button>
+        </div>
+
+        <!-- 8 KPI Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Ventas Netas (Período)</p>
+            <p id="dashKpiVentasPeriodoUsd" class="text-xl font-bold font-mono tabular-nums text-emerald-400 mt-1">$ 0.00</p>
+            <p id="dashKpiVentasPeriodoSub" class="text-[11px] font-mono text-slate-400 mt-1">Bs. 0.00 · 0 facs</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Facturación de Hoy</p>
+            <p id="dashKpiVentasHoyUsd" class="text-xl font-bold font-mono tabular-nums text-white mt-1">$ 0.00</p>
+            <p id="dashKpiVentasHoySub" class="text-[11px] font-mono text-slate-400 mt-1">Bs. 0.00 · 0 doc(s) hoy</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Ticket Promedio</p>
+            <p id="dashKpiTicketUsd" class="text-xl font-bold font-mono tabular-nums text-sky-400 mt-1">$ 0.00</p>
+            <p id="dashKpiTicketSub" class="text-[11px] font-mono text-slate-400 mt-1">0 und. vendidas</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Utilidad Bruta Est. (PPM)</p>
+            <p id="dashKpiUtilidadUsd" class="text-xl font-bold font-mono tabular-nums text-emerald-300 mt-1">$ 0.00</p>
+            <p id="dashKpiMargenSub" class="text-[11px] font-mono text-slate-400 mt-1">Margen bruto: 0.0%</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Cobrado al Contado</p>
+            <p id="dashKpiContadoVsCred" class="text-xl font-bold font-mono tabular-nums text-white mt-1">$ 0.00</p>
+            <p id="dashKpiCreditoSub" class="text-[11px] font-mono text-slate-400 mt-1">Crédito emitido: $ 0.00</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Cartera CxC Pendiente</p>
+            <p id="dashKpiCxcUsd" class="text-xl font-bold font-mono tabular-nums text-amber-300 mt-1">$ 0.00</p>
+            <p id="dashKpiCxcSub" class="text-[11px] font-mono text-slate-400 mt-1">0 vencida(s) &gt; 15d</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Gaveta Efectivo Turno</p>
+            <p id="dashKpiCajaUsd" class="text-xl font-bold font-mono tabular-nums text-emerald-400 mt-1">Cerrada</p>
+            <p id="dashKpiCajaSub" class="text-[11px] font-mono text-slate-400 mt-1">Sin turno abierto</p>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Alertas de Inventario</p>
+            <p id="dashKpiAlertasInv" class="text-xl font-bold font-mono tabular-nums text-rose-400 mt-1">0 alerta(s)</p>
+            <p id="dashKpiAlertasSub" class="text-[11px] font-mono text-slate-400 mt-1">0 stock bajo · 0 lotes</p>
+          </div>
+        </div>
+
+        <!-- Gráficos Chart.js -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Evolución Diaria: Ventas vs. Utilidad Estimada ($ USD)</h4>
+            <div class="h-64"><canvas id="chartVentasDiarias"></canvas></div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Participación por Vía de Pago</h4>
+            <div class="h-64"><canvas id="chartMetodosPago"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Top 8 Artículos Más Vendidos ($ USD)</h4>
+            <div class="h-64"><canvas id="chartTopProductos"></canvas></div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Stock Bajo y Lotes por Vencer (30d)</h4>
+            <div class="overflow-x-auto max-h-64 overflow-y-auto">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                  <tr><th class="p-2.5">Artículo / Lote</th><th class="p-2.5 text-right">Stock</th><th class="p-2.5 text-right">Estado</th></tr>
+                </thead>
+                <tbody id="dashAlertasStock" class="divide-y divide-slate-800/50"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Últimos Documentos del Período</h4>
+            <div class="overflow-x-auto max-h-64 overflow-y-auto">
+              <table class="w-full text-left text-xs text-slate-300">
+                <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                  <tr><th class="p-2.5">Doc.</th><th class="p-2.5">Cliente</th><th class="p-2.5 text-right">Total</th><th class="p-2.5 text-center">Ver</th></tr>
+                </thead>
+                <tbody id="dashUltimasVentas" class="divide-y divide-slate-800/50"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Sección POS -->
       <div id="seccionPos" class="space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
@@ -461,10 +596,21 @@
             <p class="text-xs text-slate-400">Emite, edita o anula documentos fiscales con cálculo automático de IVA, IGTF 3% y registro en Kardex.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
+            <button type="button" id="posCajaEstadoBadge" onclick="cambiarPestana('caja')" class="bg-amber-950/60 hover:bg-amber-900/60 border border-amber-500/40 rounded-xl px-3 py-2 text-xs text-amber-200 font-semibold cursor-pointer flex items-center gap-2 whitespace-nowrap">
+              <span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>
+              <span>Verificar Caja</span>
+            </button>
+            <select id="posProtocoloFiscalSelect" onchange="cambiarProtocoloFiscalPos(this.value)" title="Protocolo Impresora Fiscal" class="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-200 font-semibold">
+              <option value="GENERICO_ESCPOS">ESC/POS 80mm</option>
+              <option value="TFHKA_VENEZUELA">TFHKA Venezuela (STX/LRC)</option>
+              <option value="EPSON_VE">Epson Fiscal VE</option>
+            </select>
             <button type="button" onclick="conectarImpresoraFiscalWebSerial()" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 font-semibold cursor-pointer flex items-center gap-2 whitespace-nowrap">
               <span>Impresora Serial</span>
               <span id="posEstadoWebSerial" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Desconectada</span>
             </button>
+            <button type="button" onclick="imprimirReporteFiscalWebSerial('X')" title="Enviar Corte X a Impresora Fiscal Serial" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-sky-300 font-mono font-bold cursor-pointer whitespace-nowrap">Fiscal X</button>
+            <button type="button" onclick="imprimirReporteFiscalWebSerial('Z')" title="Enviar Reporte Z a Impresora Fiscal Serial" class="bg-slate-900 hover:bg-slate-800 border border-rose-500/30 rounded-xl px-2.5 py-2 text-xs text-rose-300 font-mono font-bold cursor-pointer whitespace-nowrap">Fiscal Z</button>
             <div class="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-xs font-mono">
               <span class="text-slate-400">Próximo Documento:</span>
               <span id="posProximoDoc" class="text-emerald-400 font-bold ml-1 tabular-nums">FAC-00000001</span>
@@ -623,7 +769,10 @@
             <div class="border-t border-slate-800 pt-3 flex justify-between font-bold text-emerald-400 text-base"><span>TOTAL A PAGAR:</span><span id="totalBs">$ 0.00 | Bs. 0.00</span></div>
           </div>
           <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-3 text-xs font-mono tabular-nums">
-            <h4 class="font-bold text-slate-300 uppercase tracking-wider">Calculadora de Vuelto Multidivisa</h4>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h4 class="font-bold text-slate-300 uppercase tracking-wider">Vuelto Multidivisa y Pago Mixto</h4>
+              <button type="button" id="btnTogglePagoMixtoPos" onclick="togglePagoMixtoPos()" class="bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer whitespace-nowrap">+ Pago Mixto (Multi-Vía)</button>
+            </div>
             <div class="grid grid-cols-2 gap-3">
               <div><label class="block text-slate-400 mb-1">Divisas ($)</label><input type="number" id="pagoRecibidoUsd" step="0.01" value="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" oninput="calcularVuelto()"></div>
               <div><label class="block text-slate-400 mb-1">Bolívares (Bs.)</label><input type="number" id="pagoRecibidoBs" step="0.01" value="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white" oninput="calcularVuelto()"></div>
@@ -631,6 +780,31 @@
             <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
               <div class="flex justify-between"><span>Vuelto Bs:</span><span id="vueltoBs" class="text-slate-200 font-semibold">Bs. 0.00</span></div>
               <div class="flex justify-between"><span>Vuelto USD:</span><span id="vueltoUsd" class="text-emerald-400 font-bold">$ 0.00</span></div>
+            </div>
+
+            <!-- Panel colapsable Pago Mixto Multi-Vía -->
+            <div id="panelPagoMixtoPos" class="hidden pt-2 border-t border-slate-800 space-y-2.5 font-sans">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <select id="mixtoViaSelect" class="col-span-2 sm:col-span-2 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-white"></select>
+                <select id="mixtoMonedaSelect" class="bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs font-mono text-emerald-400">
+                  <option value="USD">USD ($)</option>
+                  <option value="VES">Bs. (VES)</option>
+                </select>
+                <input type="number" id="mixtoMontoInput" step="0.01" min="0.01" placeholder="Monto" class="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs font-mono text-white">
+              </div>
+              <div class="flex gap-2">
+                <input type="text" id="mixtoRefInput" placeholder="Ref / Lote / Ult. 4 dígitos (opcional)" class="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white">
+                <button type="button" onclick="agregarLineaPagoMixto()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer whitespace-nowrap">+ Añadir Pago</button>
+              </div>
+              <div class="overflow-x-auto bg-slate-950 rounded-xl border border-slate-800">
+                <table class="w-full text-left text-xs text-slate-300">
+                  <thead class="text-[10px] uppercase font-mono text-slate-500 border-b border-slate-800">
+                    <tr><th class="p-2">Vía / Ref</th><th class="p-2">Mon</th><th class="p-2 text-right">Monto</th><th class="p-2 text-center">Quitar</th></tr>
+                  </thead>
+                  <tbody id="tablaPagosMixtosPos"></tbody>
+                </table>
+              </div>
+              <div id="resumenPagosMixtosPos" class="text-[11px] font-mono text-slate-400">Pago único según selector superior</div>
             </div>
           </div>
         </div>
@@ -664,6 +838,197 @@
                 </tr>
               </thead>
               <tbody id="tablaDocumentosPos" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección Caja, Turnos, Ingresos/Egresos y Arqueo -->
+      <div id="seccionCaja" class="hidden space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Control de Caja, Turnos y Arqueo X / Z</h3>
+            <p class="text-xs text-slate-400">Gestiona apertura con fondo inicial, ingresos/egresos de gaveta, retiros parciales y cuadre por vía de pago.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span id="cajaEstadoTurnoBadge" class="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-amber-950 text-amber-300 border border-amber-500/40">SIN TURNO ABIERTO</span>
+            <label class="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 cursor-pointer" title="Oculta los montos esperados del sistema mientras el turno está abierto para evitar conteos dirigidos">
+              <input type="checkbox" id="cajaSwitchArqueoCiego" onchange="toggleArqueoCiegoCaja()" class="accent-amber-500 w-3.5 h-3.5 cursor-pointer">
+              <span class="text-[11px] font-semibold text-slate-200">Arqueo Ciego</span>
+              <span id="cajaArqueoCiegoBadge" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">ARQUEO VISIBLE</span>
+            </label>
+            <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5">
+              <span class="text-[11px] text-slate-400">BCV:</span>
+              <input type="number" id="cajaTasaBcv" step="0.0001" class="w-24 bg-transparent text-emerald-400 font-mono font-bold text-xs focus:outline-none">
+            </div>
+            <button type="button" onclick="cargarModuloCaja()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Actualizar</button>
+            <button type="button" onclick="exportarHistorialCajasExcel()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-300 px-3 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Exportar Historial Excel</button>
+          </div>
+        </div>
+
+        <!-- Panel Apertura de Caja -->
+        <div id="cajaPanelApertura" class="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <h4 class="text-sm font-bold text-white">Abrir Nuevo Turno de Caja</h4>
+          <form id="formAbrirTurnoCaja" onsubmit="abrirTurnoCaja(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Nombre / Estación de Caja *</label>
+              <input type="text" id="cajaNombreInput" value="Caja 1 - Principal" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Sucursal</label>
+              <select id="cajaSucursalApertura" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+                <option value="">Sede Principal</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Fondo Inicial Divisas ($ USD)</label>
+              <input type="number" id="cajaFondoInicialUsd" step="0.01" min="0" value="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-mono text-sm">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Fondo Inicial Bolívares (Bs.)</label>
+              <input type="number" id="cajaFondoInicialBs" step="0.01" min="0" value="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-sky-400 font-mono text-sm">
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5">Observaciones de Apertura (Opcional)</label>
+              <input type="text" id="cajaObsApertura" placeholder="Ej: Fondo sencillo para vueltos turno mañana" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+            </div>
+            <div class="flex items-end">
+              <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 px-4 rounded-xl text-sm cursor-pointer whitespace-nowrap">Abrir Turno de Caja</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Panel Operación de Caja Activa -->
+        <div id="cajaPanelOperacion" class="hidden space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+              <p class="text-xs text-slate-400">Fondo Inicial de Turno</p>
+              <p id="cajaKpiFondoInicial" class="text-base font-bold font-mono text-white mt-1">$ 0.00 | Bs. 0.00</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+              <p class="text-xs text-slate-400">Ventas Netas del Turno</p>
+              <p id="cajaKpiVentasTurno" class="text-base font-bold font-mono text-emerald-400 mt-1">$ 0.00 (0 docs)</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+              <p class="text-xs text-slate-400">Ingresos / Egresos Manuales</p>
+              <p id="cajaKpiMovsNetos" class="text-sm font-bold font-mono text-sky-300 mt-1">+$0.00 / -$0.00</p>
+            </div>
+            <div class="bg-slate-900 border border-emerald-500/30 rounded-2xl p-4">
+              <p class="text-xs text-slate-400">Gaveta Efectivo Esperado</p>
+              <p id="cajaKpiGavetaEsperada" class="text-base font-bold font-mono text-emerald-300 mt-1">$ 0.00 | Bs. 0.00</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <!-- Registro de Movimientos de Caja -->
+            <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Registrar Ingreso, Egreso o Retiro de Gaveta</h4>
+              <form id="formMovimientoCaja" onsubmit="registrarMovimientoCaja(event)" class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1">Tipo *</label>
+                    <select id="cajaMovTipo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white font-semibold">
+                      <option value="EGRESO">Egreso / Pago / Vale</option>
+                      <option value="RETIRO_PARCIAL">Retiro Parcial (Bóveda)</option>
+                      <option value="INGRESO">Ingreso Extra de Sencillo</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1">Moneda *</label>
+                    <select id="cajaMovMoneda" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-emerald-400 font-bold">
+                      <option value="USD">USD ($ Dólares)</option>
+                      <option value="VES">VES (Bs. Bolívares)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1">Monto *</label>
+                    <input type="number" id="cajaMovMonto" step="0.01" min="0.01" required placeholder="0.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-white">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1">Categoría</label>
+                    <select id="cajaMovCategoria" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+                      <option value="OPERATIVO">Gasto Operativo</option>
+                      <option value="PROVEEDOR">Pago Menor Proveedor</option>
+                      <option value="VALE_PERSONAL">Vale / Adelanto</option>
+                      <option value="BOVEDA">Traslado a Bóveda</option>
+                      <option value="FONDO">Reposición de Sencillo</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label class="block text-xs text-slate-400 mb-1">Referencia</label>
+                    <input type="text" id="cajaMovReferencia" placeholder="Recibo / Ref" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs font-mono text-white">
+                  </div>
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs text-slate-400 mb-1">Concepto / Detalle *</label>
+                    <input type="text" id="cajaMovConcepto" required placeholder="Ej: Compra bolsas / Entrega parcial a gerencia" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+                  </div>
+                </div>
+                <button type="submit" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-300 font-semibold py-2.5 rounded-xl text-xs cursor-pointer">Registrar Movimiento en Caja</button>
+              </form>
+
+              <div class="overflow-x-auto bg-slate-950 rounded-xl border border-slate-800 max-h-60 overflow-y-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                  <thead class="bg-slate-950 text-slate-400 uppercase font-mono border-b border-slate-800">
+                    <tr><th class="p-2.5">Hora</th><th class="p-2.5">Tipo</th><th class="p-2.5">Concepto</th><th class="p-2.5">Usuario</th><th class="p-2.5 text-right">Monto</th></tr>
+                  </thead>
+                  <tbody id="tablaMovimientosCaja"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Arqueo y Cierre Z -->
+            <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Arqueo por Canal de Pago (Esperado vs. Conteo Físico)</h4>
+                  <p class="text-[11px] text-slate-400">Ajusta el monto físico contado para calcular sobrante o faltante antes del Cierre Z.</p>
+                </div>
+                <span id="cajaArqueoDiferenciaTotal" class="text-xs font-mono font-bold text-emerald-400">CUADRE EXACTO ($ 0.00)</span>
+              </div>
+              <div class="overflow-x-auto bg-slate-950 rounded-xl border border-slate-800">
+                <table class="w-full text-left text-xs text-slate-300">
+                  <thead class="bg-slate-950 text-slate-400 uppercase font-mono border-b border-slate-800">
+                    <tr><th class="p-3">Medio / Canal</th><th class="p-3 text-right">Esperado Sistema</th><th class="p-3 text-right">Contado Físico</th><th class="p-3 text-right">Diferencia</th></tr>
+                  </thead>
+                  <tbody id="tablaArqueoCanales"></tbody>
+                </table>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                <div class="md:col-span-3">
+                  <label class="block text-xs text-slate-400 mb-1">Observaciones de Cierre Z</label>
+                  <input type="text" id="cajaObsCierre" placeholder="Novedades de turno, lotes de punto de venta, observaciones de arqueo..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-white">
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-3">
+                <button type="button" onclick="imprimirArqueoCajaPdf(cajaTurnoActivoCache?.id)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-300 font-semibold px-4 py-2.5 rounded-xl text-xs cursor-pointer whitespace-nowrap">Imprimir Corte X en Vivo (PDF)</button>
+                <button type="button" onclick="cerrarTurnoCaja()" class="flex-1 bg-rose-600 hover:bg-rose-500 text-white font-semibold px-4 py-2.5 rounded-xl text-xs cursor-pointer whitespace-nowrap">Ejecutar Cierre Z y Arqueo Final</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Historial de Turnos Cerrados y Abiertos -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Historial de Turnos de Caja y Arqueos Z</h4>
+          <div class="overflow-x-auto bg-slate-950 rounded-xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono border-b border-slate-800">
+                <tr>
+                  <th class="p-3">Turno / Caja</th>
+                  <th class="p-3">Operador / Sucursal</th>
+                  <th class="p-3">Apertura / Cierre</th>
+                  <th class="p-3 text-right">Fondo Inicial</th>
+                  <th class="p-3 text-right">Ventas Netas</th>
+                  <th class="p-3 text-right">Diferencia</th>
+                  <th class="p-3">Estado</th>
+                  <th class="p-3 text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tablaHistorialTurnosCaja" class="divide-y divide-slate-800/50"></tbody>
             </table>
           </div>
         </div>
@@ -885,51 +1250,144 @@
           </div>
         </div>
         <div class="flex flex-wrap gap-3">
-          <button onclick="generarReporteZ()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 rounded-xl text-white font-semibold text-xs cursor-pointer whitespace-nowrap">Generar Reporte Z</button>
-          <button onclick="descargarLibroVentasOficialExcel()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2.5 rounded-xl text-slate-200 font-semibold text-xs cursor-pointer whitespace-nowrap">Descargar Libro de Ventas (.xlsx)</button>
-          <button onclick="descargarLibroComprasOficialExcel()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2.5 rounded-xl text-slate-200 font-semibold text-xs cursor-pointer whitespace-nowrap">Descargar Libro de Compras (.xlsx)</button>
+          <button type="button" onclick="generarReporteZ()" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2.5 rounded-xl text-white font-semibold text-xs cursor-pointer whitespace-nowrap">Generar Reporte Z</button>
+          <button type="button" onclick="imprimirReporteZFiscalPdf()" class="bg-sky-700 hover:bg-sky-600 px-4 py-2.5 rounded-xl text-white font-semibold text-xs cursor-pointer whitespace-nowrap">Imprimir Reporte Z (PDF 80mm)</button>
+          <button type="button" onclick="descargarLibroVentasOficialExcel()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2.5 rounded-xl text-slate-200 font-semibold text-xs cursor-pointer whitespace-nowrap">Descargar Libro de Ventas (.xlsx)</button>
+          <button type="button" onclick="descargarLibroComprasOficialExcel()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-4 py-2.5 rounded-xl text-slate-200 font-semibold text-xs cursor-pointer whitespace-nowrap">Descargar Libro de Compras (.xlsx)</button>
+          <button type="button" onclick="exportarResumenFiscalXml()" class="bg-slate-800 hover:bg-slate-700 border border-amber-500/40 px-4 py-2.5 rounded-xl text-amber-300 font-semibold text-xs cursor-pointer whitespace-nowrap">Exportar Declaración IVA (.xml)</button>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
             <p class="text-slate-400 text-xs">Total Documentos en Período</p>
-            <p id="zTotalFacturas" class="text-white font-bold text-2xl font-mono tabular-nums mt-1">0</p>
+            <p id="zTotalFacturas" class="text-white font-bold text-xl font-mono tabular-nums mt-1">0</p>
           </div>
           <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
             <p class="text-slate-400 text-xs">Total Gaveta / Facturación Neta</p>
-            <p id="totalGavetaEfectivo" class="text-emerald-400 font-bold text-2xl font-mono tabular-nums mt-1">Bs. 0.00</p>
+            <p id="totalGavetaEfectivo" class="text-emerald-400 font-bold text-xl font-mono tabular-nums mt-1">Bs. 0.00</p>
+          </div>
+        </div>
+        <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800 space-y-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-300">Desglose de Cobranza por Vía de Pago</h4>
+          <div id="zDesgloseCanales" class="space-y-1">
+            <p class="text-xs text-slate-500">Presiona "Generar Reporte Z" para calcular el resumen fiscal y canales de cobro.</p>
           </div>
         </div>
       </div>
 
-      <!-- Cuentas por Cobrar (CIE-005 / CAT-007) -->
-      <div id="seccionCuentas" class="hidden space-y-6">
+      <!-- Sección Reportes Gerenciales de Ventas -->
+      <div id="seccionReportesVentas" class="hidden space-y-6">
         <div class="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 class="text-base font-bold text-white tracking-tight">Cuentas por Cobrar y Alertas Financieras</h3>
-            <p class="text-xs text-slate-400">Monitoreo de facturas emitidas a CRÉDITO, vencimientos (&gt; 15 días) y registro de abonos.</p>
+            <h3 class="text-base font-bold text-white tracking-tight">Reportes Gerenciales de Ventas y Rentabilidad</h3>
+            <p class="text-xs text-slate-400">Análisis detallado por producto con costo PPM, rendimiento de cajeros, ranking de clientes, vías de pago y horario pico.</p>
           </div>
-          <div class="flex gap-2">
-            <button type="button" onclick="cargarCuentasPorCobrar()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Actualizar</button>
-            <button type="button" onclick="exportarCuentasPorCobrarExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Exportar Excel</button>
+          <div class="flex flex-wrap items-center gap-2">
+            <input type="date" id="repVentasDesde" class="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-xs font-mono text-slate-200">
+            <input type="date" id="repVentasHasta" class="bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-2 text-xs font-mono text-slate-200">
+            <select id="repVentasSucursal" class="bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200">
+              <option value="">Todas las Sucursales</option>
+            </select>
+            <button type="button" onclick="cargarReportesVentasGerenciales()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Consultar</button>
+            <button type="button" onclick="imprimirReporteVentasPdf()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sky-300 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Imprimir PDF</button>
+            <button type="button" onclick="exportarReportesVentasExcel()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-300 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer whitespace-nowrap">Excel Multi-Hoja</button>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
-            <p class="text-xs text-slate-400">Cartera Total a Crédito</p>
-            <p id="cxcTotalCartera" class="text-xl font-bold font-mono tabular-nums text-white mt-1">$ 0.00</p>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Ventas Netas ($ USD)</p>
+            <p id="repKpiVentasNetas" class="text-xl font-bold font-mono text-emerald-400 mt-1">$ 0.00</p>
           </div>
-          <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
-            <p class="text-xs text-slate-400">Saldo Pendiente por Cobrar</p>
-            <p id="cxcPendienteCobro" class="text-xl font-bold font-mono tabular-nums text-emerald-400 mt-1">$ 0.00</p>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Costo Inventario PPM ($)</p>
+            <p id="repKpiCostoTotal" class="text-xl font-bold font-mono text-slate-200 mt-1">$ 0.00</p>
           </div>
-          <div class="bg-slate-900 p-5 rounded-2xl border border-slate-800">
-            <p class="text-xs text-slate-400">Alertas de Mora / Vencidas</p>
-            <p id="cxcVencidasAlerta" class="text-xl font-bold font-mono tabular-nums text-amber-300 mt-1">0 factura(s)</p>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Utilidad Bruta y Margen</p>
+            <p id="repKpiUtilidadBruta" class="text-xl font-bold font-mono text-sky-400 mt-1">$ 0.00 (0.0%)</p>
           </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p class="text-xs text-slate-400">Documentos del Período</p>
+            <p id="repKpiDocsTotal" class="text-base font-bold font-mono text-white mt-1.5">0 facs / 0 NC</p>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button type="button" id="btnSubRep_productos" onclick="cambiarSubtabReporteVentas('productos')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white cursor-pointer whitespace-nowrap">Por Producto / Rentabilidad</button>
+          <button type="button" id="btnSubRep_cajeros" onclick="cambiarSubtabReporteVentas('cajeros')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 cursor-pointer whitespace-nowrap">Por Cajero / Sucursal</button>
+          <button type="button" id="btnSubRep_clientes" onclick="cambiarSubtabReporteVentas('clientes')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 cursor-pointer whitespace-nowrap">Ranking de Clientes</button>
+          <button type="button" id="btnSubRep_pagos" onclick="cambiarSubtabReporteVentas('pagos')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 cursor-pointer whitespace-nowrap">Por Forma de Pago</button>
+          <button type="button" id="btnSubRep_horario" onclick="cambiarSubtabReporteVentas('horario')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 cursor-pointer whitespace-nowrap">Por Franja Horaria</button>
         </div>
 
         <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead id="theadReporteVentas" class="bg-slate-950 text-slate-400 uppercase font-mono"></thead>
+            <tbody id="tbodyReporteVentas" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Cuentas por Cobrar Avanzadas (CIE-005 / CXC-002 / CXC-003) -->
+      <div id="seccionCuentas" class="hidden space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Cuentas por Cobrar, Aging de Cartera y Conciliación</h3>
+            <p class="text-xs text-slate-400">Gestión integral de créditos por cliente, antigüedad de saldos (0-15 / 16-30 / 31-60 / +60d), histórico de abonos por fechas y Estado de Cuenta PDF.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="cargarCuentasPorCobrar()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Actualizar</button>
+            <button type="button" onclick="imprimirReporteGlobalCxcPdf()" class="bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">PDF Aging Cartera</button>
+            <button type="button" onclick="exportarCuentasPorCobrarExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Excel Multi-Hoja</button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+            <p class="text-xs text-slate-400">Cartera Total a Crédito</p>
+            <p id="cxcTotalCartera" class="text-xl font-bold font-mono tabular-nums text-white mt-1">$ 0.00</p>
+          </div>
+          <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+            <p class="text-xs text-slate-400">Saldo Pendiente por Cobrar</p>
+            <p id="cxcPendienteCobro" class="text-xl font-bold font-mono tabular-nums text-emerald-400 mt-1">$ 0.00</p>
+          </div>
+          <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+            <p class="text-xs text-slate-400">Alertas de Mora / Vencidas</p>
+            <p id="cxcVencidasAlerta" class="text-lg font-bold font-mono tabular-nums text-amber-300 mt-1">0 fac. ($ 0.00)</p>
+          </div>
+          <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800">
+            <p class="text-xs text-slate-400">Cobrado en Período / Filtro</p>
+            <p id="cxcTotalCobradoPeriodo" class="text-xl font-bold font-mono tabular-nums text-sky-400 mt-1">$ 0.00</p>
+            <p id="cxcCobradoSub" class="text-[11px] text-slate-400 mt-0.5">0 abono(s) · 0 conciliado(s)</p>
+          </div>
+        </div>
+
+        <!-- Filtros Globales CxC -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-slate-900 p-4 rounded-2xl border border-slate-800">
+          <input type="text" id="cxcFiltroTexto" oninput="renderizarModuloCxc()" placeholder="Buscar factura, cliente, recibo o ref..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+          <select id="cxcFiltroCliente" onchange="renderizarModuloCxc()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+            <option value="">Todos los Clientes</option>
+          </select>
+          <select id="cxcFiltroEstado" onchange="renderizarModuloCxc()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+            <option value="TODOS">Todos los Estatus</option>
+            <option value="PENDIENTE">Pendientes por Cobrar</option>
+            <option value="VENCIDA">Vencidas / En Mora</option>
+            <option value="SOLVENTE">Solventes / Liquidadas</option>
+          </select>
+          <input type="date" id="cxcFechaDesde" onchange="renderizarModuloCxc()" title="Fecha Desde" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-200">
+          <input type="date" id="cxcFechaHasta" onchange="renderizarModuloCxc()" title="Fecha Hasta" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-200">
+        </div>
+
+        <!-- Subpestañas CxC -->
+        <div class="flex flex-wrap gap-2">
+          <button type="button" id="btnSubCxc_facturas" onclick="cambiarSubtabCxc('facturas')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white cursor-pointer whitespace-nowrap">Facturas a Crédito</button>
+          <button type="button" id="btnSubCxc_clientes" onclick="cambiarSubtabCxc('clientes')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 cursor-pointer whitespace-nowrap">Por Cliente y Antigüedad (Aging)</button>
+          <button type="button" id="btnSubCxc_historial" onclick="cambiarSubtabCxc('historial')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 cursor-pointer whitespace-nowrap">Historial de Abonos y Conciliación</button>
+          <button type="button" id="btnSubCxc_estadoCuenta" onclick="cambiarSubtabCxc('estadoCuenta')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 cursor-pointer whitespace-nowrap">Estado de Cuenta por Cliente</button>
+        </div>
+
+        <!-- Subpanel 1: Facturas -->
+        <div id="cxcSubPanel_facturas" class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
           <table class="w-full text-left text-xs text-slate-300">
             <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
               <tr>
@@ -939,11 +1397,214 @@
                 <th class="p-3">Abonado ($)</th>
                 <th class="p-3">Saldo ($)</th>
                 <th class="p-3">Estatus</th>
-                <th class="p-3 text-center">Abono Rápido ($)</th>
+                <th class="p-3 text-center">Abonos</th>
               </tr>
             </thead>
             <tbody id="tablaCuentasPorCobrar" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
           </table>
+        </div>
+
+        <!-- Subpanel 2: Por Cliente y Aging -->
+        <div id="cxcSubPanel_clientes" class="hidden overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+              <tr>
+                <th class="p-3">Cliente / RIF</th>
+                <th class="p-3 text-right">Facturado ($)</th>
+                <th class="p-3 text-right">Abonado ($)</th>
+                <th class="p-3 text-right">Saldo Total ($)</th>
+                <th class="p-3 text-right">0-15 días</th>
+                <th class="p-3 text-right">16-30 días</th>
+                <th class="p-3 text-right">31-60 días</th>
+                <th class="p-3 text-right">+60 días</th>
+                <th class="p-3 text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="tablaCxcClientesAging" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+          </table>
+        </div>
+
+        <!-- Subpanel 3: Historial de Abonos y Conciliación -->
+        <div id="cxcSubPanel_historial" class="hidden overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+              <tr>
+                <th class="p-3">Fecha / Recibo</th>
+                <th class="p-3">Factura</th>
+                <th class="p-3">Cliente</th>
+                <th class="p-3">Vía / Referencia</th>
+                <th class="p-3 text-right">Monto</th>
+                <th class="p-3">Operador</th>
+                <th class="p-3 text-center">Conciliación</th>
+                <th class="p-3 text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaCxcHistorialAbonos" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+          </table>
+        </div>
+
+        <!-- Subpanel 4: Estado de Cuenta por Cliente -->
+        <div id="cxcSubPanel_estadoCuenta" class="hidden space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-6 gap-3 bg-slate-900 p-4 rounded-2xl border border-slate-800 items-end">
+            <div class="md:col-span-2">
+              <label class="block text-xs text-slate-400 mb-1">Cliente *</label>
+              <select id="cxcEdoCtaClienteSelect" onchange="generarEstadoCuentaClienteCxc()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white"></select>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Desde</label>
+              <input type="date" id="cxcEdoCtaDesde" onchange="generarEstadoCuentaClienteCxc()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-200">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Hasta</label>
+              <input type="date" id="cxcEdoCtaHasta" onchange="generarEstadoCuentaClienteCxc()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-200">
+            </div>
+            <div class="md:col-span-2 flex flex-wrap gap-2">
+              <button type="button" onclick="generarEstadoCuentaClienteCxc()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer">Consultar</button>
+              <button type="button" onclick="imprimirEstadoCuentaClientePdf()" class="bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer">Imprimir PDF</button>
+              <button type="button" onclick="exportarEstadoCuentaClienteExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer">Excel</button>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800"><p class="text-xs text-slate-400">Saldo Anterior</p><p id="edoCtaSaldoAnterior" class="text-lg font-bold font-mono text-slate-200 mt-1">$ 0.00</p></div>
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800"><p class="text-xs text-slate-400">Cargos del Período</p><p id="edoCtaCargosPeriodo" class="text-lg font-bold font-mono text-amber-300 mt-1">$ 0.00</p></div>
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800"><p class="text-xs text-slate-400">Abonos / NC del Período</p><p id="edoCtaAbonosPeriodo" class="text-lg font-bold font-mono text-emerald-400 mt-1">$ 0.00</p></div>
+            <div class="bg-slate-900 p-4 rounded-2xl border border-emerald-500/30"><p class="text-xs text-slate-400">Saldo Final Pendiente</p><p id="edoCtaSaldoFinal" class="text-lg font-bold font-mono text-white mt-1">$ 0.00</p></div>
+          </div>
+
+          <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr>
+                  <th class="p-3">Fecha</th>
+                  <th class="p-3">Documento</th>
+                  <th class="p-3">Tipo</th>
+                  <th class="p-3">Detalle / Referencia</th>
+                  <th class="p-3 text-right">Cargo ($)</th>
+                  <th class="p-3 text-right">Abono ($)</th>
+                  <th class="p-3 text-right">Saldo Corrido ($)</th>
+                </tr>
+              </thead>
+              <tbody id="tablaCxcEstadoCuenta" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cuentas por Pagar y Conciliación Bancaria (CXP-001) -->
+      <div id="seccionCxp" class="hidden space-y-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Cuentas por Pagar (Proveedores) y Conciliación Bancaria</h3>
+            <p class="text-xs text-slate-400">Control de facturas de compra a crédito, pagos a proveedores con asiento automático y conciliación de lotes POS / bancos.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="cargarModuloCxpYBancos()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer">Actualizar</button>
+            <button type="button" onclick="exportarCxpExcel()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer">Exportar CxP Excel</button>
+            <button type="button" onclick="exportarConciliacionBancariaExcel()" class="bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer">Exportar Conciliación Excel</button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          <button type="button" id="btnSubCxp_cxp" onclick="cambiarSubtabCxpBancos('cxp')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 text-white cursor-pointer whitespace-nowrap">Facturas por Pagar (CxP)</button>
+          <button type="button" id="btnSubCxp_pagosCxp" onclick="cambiarSubtabCxpBancos('pagosCxp')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 cursor-pointer whitespace-nowrap">Historial de Pagos a Proveedores</button>
+          <button type="button" id="btnSubCxp_conciliacion" onclick="cambiarSubtabCxpBancos('conciliacion')" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 cursor-pointer whitespace-nowrap">Conciliación Bancaria y Puntos POS</button>
+        </div>
+
+        <!-- Subpanel 1: CxP -->
+        <div id="cxpSubPanel_cxp" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800"><p class="text-xs text-slate-400">Compras a Crédito</p><p id="cxpKpiTotalCompras" class="text-xl font-bold font-mono text-white mt-1">$ 0.00</p></div>
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800"><p class="text-xs text-slate-400">Saldo Pendiente por Pagar</p><p id="cxpKpiSaldoPendiente" class="text-xl font-bold font-mono text-rose-300 mt-1">$ 0.00</p></div>
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800"><p class="text-xs text-slate-400">Facturas Vencidas</p><p id="cxpKpiVencidas" class="text-lg font-bold font-mono text-amber-300 mt-1">0 fac. ($ 0.00)</p></div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-slate-900 p-4 rounded-2xl border border-slate-800">
+            <input type="text" id="cxpFiltroTexto" oninput="renderizarTablaCxp()" placeholder="Buscar doc, factura o proveedor..." class="md:col-span-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+            <select id="cxpFiltroEstado" onchange="renderizarTablaCxp()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+              <option value="TODOS">Todas</option>
+              <option value="PENDIENTE">Pendientes</option>
+              <option value="VENCIDA">Vencidas</option>
+              <option value="PAGADA">Pagadas</option>
+            </select>
+          </div>
+
+          <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr>
+                  <th class="p-3">Documento</th>
+                  <th class="p-3">Proveedor / Vencimiento</th>
+                  <th class="p-3 text-right">Total ($)</th>
+                  <th class="p-3 text-right">Abonado ($)</th>
+                  <th class="p-3 text-right">Saldo ($)</th>
+                  <th class="p-3 text-center">Estado</th>
+                  <th class="p-3 text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tablaCuentasPorPagar" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Subpanel 2: Pagos CxP -->
+        <div id="cxpSubPanel_pagosCxp" class="hidden overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+              <tr>
+                <th class="p-3">Fecha / Comprobante</th>
+                <th class="p-3">Compra / Factura</th>
+                <th class="p-3">Proveedor</th>
+                <th class="p-3">Vía / Referencia</th>
+                <th class="p-3 text-right">Monto</th>
+                <th class="p-3 text-center">Recibo</th>
+              </tr>
+            </thead>
+            <tbody id="tablaHistorialPagosCxp" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+          </table>
+        </div>
+
+        <!-- Subpanel 3: Conciliación Bancaria -->
+        <div id="cxpSubPanel_conciliacion" class="hidden space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800"><p class="text-xs text-slate-400">Total Conciliado en Bancos</p><p id="concilKpiConciliado" class="text-xl font-bold font-mono text-emerald-400 mt-1">$ 0.00</p></div>
+            <div class="bg-slate-900 p-4 rounded-2xl border border-slate-800"><p class="text-xs text-slate-400">Pendiente por Conciliar</p><p id="concilKpiPendiente" class="text-xl font-bold font-mono text-amber-300 mt-1">$ 0.00</p></div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-900 p-4 rounded-2xl border border-slate-800">
+            <input type="text" id="concilBancoNombreInput" value="Banesco / Banco Principal" placeholder="Banco destino al conciliar..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-emerald-300 font-semibold">
+            <select id="concilFiltroCanal" onchange="renderizarTablaConciliacionBancaria()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+              <option value="TODOS">Todos los Canales</option>
+              <option value="PAGO">Pago Móvil</option>
+              <option value="PUNTO">Punto / Biopago</option>
+              <option value="TRANSFER">Transferencia</option>
+              <option value="ZELLE">Zelle</option>
+              <option value="BINANCE">Binance / USDT</option>
+            </select>
+            <select id="concilFiltroEstado" onchange="renderizarTablaConciliacionBancaria()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+              <option value="TODOS">Todos</option>
+              <option value="PENDIENTE">Pendientes</option>
+              <option value="CONCILIADO">Conciliados</option>
+            </select>
+            <input type="text" id="concilFiltroTexto" oninput="renderizarTablaConciliacionBancaria()" placeholder="Buscar doc, cliente o ref..." class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white">
+          </div>
+
+          <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800">
+            <table class="w-full text-left text-xs text-slate-300">
+              <thead class="bg-slate-950 text-slate-400 uppercase font-mono">
+                <tr>
+                  <th class="p-3">Fecha / Origen</th>
+                  <th class="p-3">Documento / Tercero</th>
+                  <th class="p-3">Canal</th>
+                  <th class="p-3">Referencia</th>
+                  <th class="p-3 text-right">Monto</th>
+                  <th class="p-3 text-center">Estado</th>
+                  <th class="p-3 text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tablaConciliacionBancaria" class="divide-y divide-slate-800/60 tabular-nums"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -986,7 +1647,7 @@
           </div>
           <div class="md:col-span-2">
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Proveedor *</label>
-            <select id="compraProveedorSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
+            <select id="compraProveedorSelect" onchange="onSeleccionarProveedorCompra()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"></select>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Sucursal Destino *</label>
@@ -998,6 +1659,32 @@
             <label class="block text-xs font-semibold text-slate-300 mb-1.5">Almacén Destino *</label>
             <select id="compraAlmacenSelect" onchange="cargarLotesSugeridosCompra()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
               <option value="">-- Seleccionar Almacén --</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Condición de Pago</label>
+            <select id="compraCondicionPago" onchange="onCambioCondicionCompra()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-amber-300 font-semibold text-sm">
+              <option value="CONTADO" selected>CONTADO</option>
+              <option value="CRÉDITO">CRÉDITO (CxP)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Días Crédito</label>
+            <input type="number" min="0" id="compraDiasCredito" value="0" oninput="onCambioCondicionCompra()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Vencimiento Factura</label>
+            <input type="date" id="compraFechaVencimientoDoc" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Método Pago</label>
+            <select id="compraMetodoPago" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm">
+              <option value="TRANSFERENCIA">Transferencia Bancaria</option>
+              <option value="EFECTIVO DIVISAS">Efectivo Divisas ($)</option>
+              <option value="EFECTIVO BOLIVARES">Efectivo Bolívares (Bs.)</option>
+              <option value="ZELLE">Zelle</option>
+              <option value="BINANCE">Binance / USDT</option>
+              <option value="CRÉDITO">Crédito Proveedor</option>
             </select>
           </div>
         </div>
@@ -1152,12 +1839,26 @@
 
       <!-- Retenciones IVA -->
       <div id="seccionRetenciones" class="hidden space-y-6">
-        <h3 class="text-base font-bold text-white tracking-tight">Comprobantes de Retención de IVA (SENIAT)</h3>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Comprobantes de Retención de IVA (SENIAT)</h3>
+            <p class="text-xs text-slate-400">Emite comprobantes Art. 16 Prov. SNAT/2015/0049 en PDF y descarga el archivo TXT oficial para declarar en el portal SENIAT.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="cargarRetenciones()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer">Actualizar</button>
+            <button type="button" onclick="exportarRetencionesSeniatTxt()" class="bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Exportar TXT Portal SENIAT</button>
+          </div>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900 p-5 rounded-2xl border border-slate-800 items-end">
+          <div class="md:col-span-2"><label class="block text-xs font-semibold text-slate-300 mb-1">Proveedor (Opcional)</label><select id="retProveedorSelect" onchange="onSeleccionarProveedorRetencion()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="">-- Seleccionar Proveedor --</option></select></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">RIF Proveedor *</label><input type="text" id="retProveedorRif" placeholder="J-12345678-0" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Fecha Factura</label><input type="date" id="retFechaFactura" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nro. Factura Ref.</label><input type="text" id="retFacturaRef" placeholder="FAC-0001" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
-          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Base Imponible ($ USD)</label><input type="number" step="0.01" id="retBaseUsd" placeholder="100.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Nro. Control Factura</label><input type="text" id="retNroControl" placeholder="00-00000001" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Base Imponible ($ USD) *</label><input type="number" step="0.01" id="retBaseUsd" placeholder="100.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums"></div>
+          <div><label class="block text-xs font-semibold text-slate-300 mb-1">Monto Exento ($ USD)</label><input type="number" step="0.01" id="retMontoExentoUsd" value="0.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm font-mono tabular-nums"></div>
           <div><label class="block text-xs font-semibold text-slate-300 mb-1">% Retención</label><select id="retPorcentaje" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white text-sm"><option value="75">75%</option><option value="100" selected>100%</option></select></div>
-          <div><button onclick="generarComprobanteRetencion()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Generar Comprobante</button></div>
+          <div class="md:col-span-3 flex justify-end"><button type="button" onclick="generarComprobanteRetencion()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-6 py-2.5 rounded-xl text-sm cursor-pointer whitespace-nowrap">Generar Comprobante</button></div>
         </div>
         <div class="overflow-x-auto bg-slate-900 rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300"><thead class="bg-slate-950 text-slate-400 uppercase font-mono"><tr><th class="p-3">Comprobante</th><th class="p-3">Factura Ref.</th><th class="p-3">Base Imponible</th><th class="p-3">IVA</th><th class="p-3">IVA Retenido</th><th class="p-3 text-center">Acción</th></tr></thead><tbody id="tablaRetenciones" class="divide-y divide-slate-800/60 tabular-nums"></tbody></table></div>
       </div>
@@ -2789,13 +3490,35 @@
               </div>
               <div class="bg-slate-950 border border-emerald-500/40 rounded-xl p-4 space-y-3 md:col-span-2">
                 <div class="flex flex-wrap items-center justify-between gap-2">
-                  <span class="text-xs font-bold text-emerald-400">3. Seguridad Bcrypt, Multi-Usuario, Bitácora Entradas/Salidas & Tablas Nativas (v100)</span>
+                  <span class="text-xs font-bold text-emerald-400">3. Seguridad Bcrypt, Multi-Usuario, Bitácora Entradas/Salidas &amp; Tablas Nativas (v100)</span>
                   <span id="v100EstadoEsquemaBadge" class="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">Verificando BD...</span>
                 </div>
                 <p class="text-[11px] text-slate-400">Bóveda <code class="text-slate-300">credenciales_erp</code> (hash bcrypt + pgcrypto), <code class="text-slate-300">tenant_usuarios</code>, <code class="text-slate-300">sesiones_auditoria</code>, <code class="text-slate-300">compras_documentos</code>, <code class="text-slate-300">abonos_cxc</code>, <code class="text-slate-300">inventario_fisico_actas</code>, políticas RLS multitenant estrictas y funciones <code class="text-slate-300">SECURITY DEFINER</code>.</p>
                 <div class="flex flex-wrap gap-2">
                   <button type="button" onclick="copiarScriptSqlV100()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Copiar .SQL Seguridad v100</button>
                   <button type="button" onclick="descargarScriptSqlV100()" class="bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Descargar .SQL Seguridad v100</button>
+                </div>
+              </div>
+              <div class="bg-slate-950 border border-sky-500/40 rounded-xl p-4 space-y-3 md:col-span-2">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span class="text-xs font-bold text-sky-400">4. Esquema Caja, Turnos, Arqueo X/Z y Pagos Mixtos POS (v110)</span>
+                  <span id="v110EstadoEsquemaBadge" class="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">Verificando BD...</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Tablas <code class="text-slate-300">cajas_turnos</code>, <code class="text-slate-300">cajas_movimientos</code>, <code class="text-slate-300">invoice_pagos</code>, enlace <code class="text-slate-300">invoices.turno_caja_id</code>, vuelto USD/Bs, pago mixto JSONB, políticas RLS multitenant y función <code class="text-slate-300">mfd_estado_esquema_v110()</code>.</p>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="copiarScriptSqlV110()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Copiar .SQL Caja &amp; POS v110</button>
+                  <button type="button" onclick="descargarScriptSqlV110()" class="bg-slate-800 hover:bg-slate-700 text-sky-300 border border-sky-500/40 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Descargar .SQL Caja &amp; POS v110</button>
+                </div>
+              </div>
+              <div class="bg-slate-950 border border-amber-500/40 rounded-xl p-4 space-y-3 md:col-span-2">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span class="text-xs font-bold text-amber-300">5. Esquema Enterprise CxC/CxP, Conciliación Bancaria, Arqueo Ciego &amp; Fiscal VE (v120)</span>
+                  <span id="v120EstadoEsquemaBadge" class="px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold bg-slate-800 text-slate-300 border border-slate-700">Verificando BD...</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Tablas <code class="text-slate-300">abonos_cxp</code> y <code class="text-slate-300">conciliaciones_bancarias</code>, columnas de conciliación en <code class="text-slate-300">abonos_cxc</code>, crédito/vencimiento en <code class="text-slate-300">compras_documentos</code>, campos SENIAT TXT en <code class="text-slate-300">retenciones_iva</code> y preferencias <code class="text-slate-300">caja_arqueo_ciego</code> / <code class="text-slate-300">protocolo_fiscal</code> en <code class="text-slate-300">tenants</code>.</p>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="copiarScriptSqlV120()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Copiar .SQL Enterprise v120</button>
+                  <button type="button" onclick="descargarScriptSqlV120()" class="bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 text-xs font-semibold px-3.5 py-2 rounded-xl cursor-pointer whitespace-nowrap">Descargar .SQL Enterprise v120</button>
                 </div>
               </div>
             </div>
@@ -3168,8 +3891,10 @@
           <button type="button" onclick="descargarComprobantePdf()" class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">📥 PDF</button>
           <button type="button" onclick="imprimirComprobante()" class="bg-sky-700 hover:bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">🖨️ Imprimir</button>
           <button type="button" onclick="imprimirTicketWebSerial()" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">Serial</button>
+          <button type="button" onclick="descargarComandosTfhkaTxt()" title="Descargar trama de comandos TFHKA/Epson para spooler fiscal" class="bg-slate-800 hover:bg-slate-700 text-amber-300 px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">Trama TFHKA</button>
           <button type="button" onclick="imprimirBluetoothReal()" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">BT 80mm</button>
-          <button type="button" onclick="enviarWhatsApp()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">WhatsApp</button>
+          <button type="button" onclick="enviarWhatsApp(true)" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">WA + PDF</button>
+          <button type="button" onclick="abrirModalEnviarCorreo()" class="bg-sky-600 hover:bg-sky-500 text-white px-2.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">Correo PDF</button>
           <button type="button" onclick="cerrarTicket()" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer">✕ Cerrar</button>
         </div>
       </div>
@@ -3478,6 +4203,177 @@
     </div>
   </div>
 
+  <!-- MODAL ABONO DETALLADO CXC -->
+  <div id="modalAbonoCxcDetallado" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h4 class="text-sm font-bold text-white">Registrar Abono a Cuenta por Cobrar</h4>
+          <p id="cxcModalInfoFactura" class="text-[11px] font-mono text-emerald-400 mt-0.5"></p>
+        </div>
+        <button type="button" onclick="cerrarModalAbonoCxc()" class="text-slate-400 hover:text-white text-sm font-bold cursor-pointer">✕</button>
+      </div>
+      <form onsubmit="guardarAbonoCxcDetallado(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="cxcModalInvoiceId">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Fecha de Abono *</label>
+            <input type="date" id="cxcModalFecha" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Vía / Método de Pago *</label>
+            <select id="cxcModalMetodo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+              <option value="EFECTIVO DIVISAS">Efectivo Divisas ($)</option>
+              <option value="PAGO MOVIL">Pago Móvil (Bs.)</option>
+              <option value="TRANSFERENCIA">Transferencia Bancaria</option>
+              <option value="ZELLE">Zelle</option>
+              <option value="BINANCE">Binance / USDT</option>
+              <option value="PUNTO DE VENTA">Punto / Biopago</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Moneda *</label>
+            <select id="cxcModalMoneda" onchange="recalcularEquivalenteModalAbonoCxc()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold font-mono">
+              <option value="USD">USD ($)</option>
+              <option value="VES">VES (Bs.)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Tasa BCV</label>
+            <input type="number" step="0.0001" id="cxcModalTasaBcv" oninput="recalcularEquivalenteModalAbonoCxc()" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Monto *</label>
+            <input type="number" step="0.01" min="0.01" id="cxcModalMonto" oninput="recalcularEquivalenteModalAbonoCxc()" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-300 font-bold font-mono">
+          </div>
+        </div>
+        <p id="cxcModalEquivalenteTxt" class="text-[11px] font-mono text-sky-300"></p>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Referencia / Recibo Banco</label>
+            <input type="text" id="cxcModalReferencia" placeholder="Nro. referencia" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Notas / Observaciones</label>
+            <input type="text" id="cxcModalNotas" placeholder="Opcional..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-4 pt-1">
+          <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+            <input type="checkbox" id="cxcModalIngresoCaja" class="accent-emerald-500">
+            <span>Registrar ingreso en turno de caja abierto</span>
+          </label>
+          <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+            <input type="checkbox" id="cxcModalConciliado" class="accent-sky-500">
+            <span>Marcar conciliado</span>
+          </label>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer">Aplicar Abono y Emitir Recibo</button>
+          <button type="button" onclick="cerrarModalAbonoCxc()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl font-semibold cursor-pointer">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL PAGO A PROVEEDOR CXP -->
+  <div id="modalPagoCxp" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h4 class="text-sm font-bold text-white">Registrar Pago a Proveedor (CxP)</h4>
+          <p id="cxpModalInfo" class="text-[11px] font-mono text-rose-300 mt-0.5"></p>
+        </div>
+        <button type="button" onclick="cerrarModalPagoCxp()" class="text-slate-400 hover:text-white text-sm font-bold cursor-pointer">✕</button>
+      </div>
+      <form onsubmit="guardarPagoCxp(event)" class="space-y-3 text-xs">
+        <input type="hidden" id="cxpModalCompraId">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Fecha de Pago *</label>
+            <input type="date" id="cxpModalFecha" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Vía de Pago *</label>
+            <select id="cxpModalMetodo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+              <option value="TRANSFERENCIA">Transferencia Bancaria</option>
+              <option value="EFECTIVO DIVISAS">Efectivo Divisas ($)</option>
+              <option value="ZELLE">Zelle</option>
+              <option value="BINANCE">Binance / USDT</option>
+              <option value="PAGO MOVIL">Pago Móvil (Bs.)</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Moneda *</label>
+            <select id="cxpModalMoneda" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-emerald-400 font-bold font-mono">
+              <option value="USD">USD ($)</option>
+              <option value="VES">VES (Bs.)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Tasa BCV</label>
+            <input type="number" step="0.0001" id="cxpModalTasaBcv" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Monto *</label>
+            <input type="number" step="0.01" min="0.01" id="cxpModalMonto" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-rose-300 font-bold font-mono">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Referencia Bancaria</label>
+            <input type="text" id="cxpModalReferencia" placeholder="Nro. transferencia" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white font-mono">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Notas</label>
+            <input type="text" id="cxpModalNotas" placeholder="Observaciones" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+          </div>
+        </div>
+        <label class="flex items-center gap-2 text-slate-300 cursor-pointer pt-1">
+          <input type="checkbox" id="cxpModalEgresoCaja" class="accent-rose-500">
+          <span>Registrar egreso en turno de caja abierto</span>
+        </label>
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer">Confirmar Pago a Proveedor</button>
+          <button type="button" onclick="cerrarModalPagoCxp()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl font-semibold cursor-pointer">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL ENVIAR COMPROBANTE PDF POR CORREO -->
+  <div id="modalEnviarCorreoFactura" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-[60]">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h4 class="text-sm font-bold text-white">Enviar Comprobante Fiscal PDF por Correo</h4>
+        <button type="button" onclick="cerrarModalEnviarCorreo()" class="text-slate-400 hover:text-white text-sm font-bold cursor-pointer">✕</button>
+      </div>
+      <div id="correoServidorEstadoBadge" class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300">Verificando servidor...</div>
+      <form onsubmit="enviarComprobanteCorreoPdf(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Correo Destinatario *</label>
+          <input type="email" id="correoDestinoInput" required placeholder="cliente@empresa.com" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Asunto *</label>
+          <input type="text" id="correoAsuntoInput" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">Mensaje</label>
+          <textarea id="correoMensajeInput" rows="5" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white"></textarea>
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="submit" id="btnConfirmarEnvioCorreo" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white py-2.5 rounded-xl font-semibold cursor-pointer">Enviar Comprobante PDF</button>
+          <button type="button" onclick="cerrarModalEnviarCorreo()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-2.5 rounded-xl font-semibold cursor-pointer">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- INICIALIZADOR SUPABASE GLOBAL -->
   <script>
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
@@ -3664,9 +4560,13 @@
   <script src="./js/usuarios.js"></script>
   <script src="./js/contabilidad.js"></script>
   <script src="./js/escaner.js"></script>
+  <script src="./js/caja.js"></script>
+  <script src="./js/dashboard.js"></script>
   <script src="./js/pos.js"></script>
   <script src="./js/kardex.js"></script>
   <script src="./js/inventarioFisico.js"></script>
+  <script src="./js/cxc.js"></script>
+  <script src="./js/cxp_bancos.js"></script>
   <script src="./js/reportes.js"></script>
   <script src="./js/catalogos.js"></script>
 </body>

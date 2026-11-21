@@ -46,10 +46,13 @@ function clonarCatalogoPlanes(base) {
 let PLANES_SAAS_CATALOGO = clonarCatalogoPlanes(PLANES_SAAS_DEFECTO);
 
 const MODULOS_ERP_SAAS = [
+  { id: 'dashboard', grupo: 'POS y Facturación', nombre: 'Dashboard Ejecutivo', btnId: 'btnTabDashboard', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
   { id: 'pos', grupo: 'POS y Facturación', nombre: 'Facturación POS', btnId: 'btnTabPos', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
+  { id: 'caja', grupo: 'POS y Facturación', nombre: 'Caja, Turnos y Arqueo', btnId: 'btnTabCaja', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
   { id: 'historial', grupo: 'Historial y Cierres', nombre: 'Historial Comprobantes', btnId: 'btnTabHistorial', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
   { id: 'notasFiscales', grupo: 'Historial y Cierres', nombre: 'Notas SENIAT (NC/ND)', btnId: 'btnTabNotasFiscales', defaultPlans: ['Pyme', 'Enterprise', 'Administración'] },
   { id: 'cierrez', grupo: 'Historial y Cierres', nombre: 'Cierres Z y Libros', btnId: 'btnTabCierrez', defaultPlans: ['Pyme', 'Enterprise', 'Administración'] },
+  { id: 'reportesVentas', grupo: 'Historial y Cierres', nombre: 'Reportes de Ventas', btnId: 'btnTabReportesVentas', defaultPlans: ['Pyme', 'Enterprise', 'Administración'] },
   { id: 'cuentas', grupo: 'Historial y Cierres', nombre: 'Cuentas por Cobrar', btnId: 'btnTabCuentas', defaultPlans: ['Pyme', 'Enterprise', 'Administración'] },
   { id: 'kardex', grupo: 'Inventario y Kardex', nombre: 'Trazabilidad Kardex', btnId: 'btnTabKardex', defaultPlans: ['Pyme', 'Enterprise', 'Administración'] },
   { id: 'fisico', grupo: 'Inventario y Kardex', nombre: 'Conteo Físico', btnId: 'btnTabFisico', defaultPlans: ['Pyme', 'Enterprise', 'Administración'] },
@@ -57,6 +60,7 @@ const MODULOS_ERP_SAAS = [
   { id: 'lotes', grupo: 'Inventario y Kardex', nombre: 'Lotes y Vencimientos', btnId: 'btnTabLotes', defaultPlans: ['Enterprise', 'Administración'] },
   { id: 'etiquetas', grupo: 'Inventario y Kardex', nombre: 'Etiquetas QR (Carta)', btnId: 'btnTabEtiquetas', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
   { id: 'compras', grupo: 'Compras y Tributos', nombre: 'Registro de Compras', btnId: 'btnTabCompras', defaultPlans: ['Pyme', 'Enterprise', 'Administración'] },
+  { id: 'cxp', grupo: 'Compras y Tributos', nombre: 'CxP y Conciliación Bancaria', btnId: 'btnTabCxp', defaultPlans: ['Pyme', 'Enterprise', 'Administración'] },
   { id: 'retenciones', grupo: 'Compras y Tributos', nombre: 'Retenciones IVA', btnId: 'btnTabRetenciones', defaultPlans: ['Enterprise', 'Administración'] },
   { id: 'contabilidad', grupo: 'Compras y Tributos', nombre: 'Contabilidad y ERP', btnId: 'btnTabContabilidad', defaultPlans: ['Enterprise', 'Administración'] },
   { id: 'productos', grupo: 'Catálogos y Maestros', nombre: 'Gestión de Artículos', btnId: 'btnTabProductos', defaultPlans: ['Freemium', 'Pyme', 'Enterprise', 'Administración'] },
@@ -279,7 +283,14 @@ function obtenerPermisosEfectivosTenant(tenant = tenantActual) {
         set.add('etiquetas');
       }
       if (enriched.permisos_manuales !== true) {
+        set.add('dashboard');
+        set.add('caja');
         set.add('usuarios');
+        const pNom = normalizarNombrePlan(enriched.plan_activo || 'Freemium');
+        if (pNom === 'Pyme' || pNom === 'Enterprise' || pNom === 'Administración') {
+          set.add('reportesVentas');
+          set.add('cxp');
+        }
       }
       modsEmpresa = Array.from(set);
     } else {
@@ -738,6 +749,8 @@ function cambiarSubtabMaster(subtab) {
     if (typeof verificarEstadoEsquemaContable === 'function') verificarEstadoEsquemaContable();
     verificarEstadoEsquemaSaas();
     if (typeof verificarEstadoEsquemaSeguridadV100 === 'function') verificarEstadoEsquemaSeguridadV100();
+    if (typeof verificarEstadoEsquemaV110 === 'function') verificarEstadoEsquemaV110();
+    if (typeof verificarEstadoEsquemaV120 === 'function') verificarEstadoEsquemaV120();
   }
 }
 
